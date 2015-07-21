@@ -1,0 +1,15 @@
+--- old/src/cpu/ppc/vm/vm_version_ppc.cpp	2015-07-20 21:11:12.147178500 +0300
++++ new/src/cpu/ppc/vm/vm_version_ppc.cpp	2015-07-20 21:11:11.837314300 +0300
+@@ -165,6 +165,12 @@
+     FLAG_SET_DEFAULT(UseCRC32Intrinsics, false);
+   }
+ 
++  if (UseSpinLoopHintIntrinsic) {
++    if (!FLAG_IS_DEFAULT(UseSpinLoopHintIntrinsic))
++      warning("spinLoopHint intrinsic is not available on this CPU");
++    FLAG_SET_DEFAULT(UseSpinLoopHintIntrinsic, false);
++  }
++
+   // The AES intrinsic stubs require AES instruction support.
+   if (UseAES) {
+     warning("AES instructions are not available on this CPU");

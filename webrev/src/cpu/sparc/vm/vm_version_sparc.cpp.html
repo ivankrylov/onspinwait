@@ -1,0 +1,580 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta charset="utf-8">
+<meta http-equiv="cache-control" content="no-cache" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="-1" />
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+a.print { font-size: x-small; }
+
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>New src/cpu/sparc/vm/vm_version_sparc.cpp</title>
+<body id="SUNWwebrev">
+<pre>
+   1 /*
+   2  * Copyright (c) 1997, 2015, Oracle and/or its affiliates. All rights reserved.
+   3  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4  *
+   5  * This code is free software; you can redistribute it and/or modify it
+   6  * under the terms of the GNU General Public License version 2 only, as
+   7  * published by the Free Software Foundation.
+   8  *
+   9  * This code is distributed in the hope that it will be useful, but WITHOUT
+  10  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  11  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  12  * version 2 for more details (a copy is included in the LICENSE file that
+  13  * accompanied this code).
+  14  *
+  15  * You should have received a copy of the GNU General Public License version
+  16  * 2 along with this work; if not, write to the Free Software Foundation,
+  17  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  18  *
+  19  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  20  * or visit www.oracle.com if you need additional information or have any
+  21  * questions.
+  22  *
+  23  */
+  24 
+  25 #include "precompiled.hpp"
+  26 #include "asm/macroAssembler.inline.hpp"
+  27 #include "memory/resourceArea.hpp"
+  28 #include "runtime/java.hpp"
+  29 #include "runtime/os.hpp"
+  30 #include "runtime/stubCodeGenerator.hpp"
+  31 #include "vm_version_sparc.hpp"
+  32 
+  33 int VM_Version::_features = VM_Version::unknown_m;
+  34 const char* VM_Version::_features_str = "";
+  35 unsigned int VM_Version::_L2_data_cache_line_size = 0;
+  36 
+  37 void VM_Version::initialize() {
+  38   _features = determine_features();
+  39   PrefetchCopyIntervalInBytes = prefetch_copy_interval_in_bytes();
+  40   PrefetchScanIntervalInBytes = prefetch_scan_interval_in_bytes();
+  41   PrefetchFieldsAhead         = prefetch_fields_ahead();
+  42 
+  43   assert(0 &lt;= AllocatePrefetchInstr &amp;&amp; AllocatePrefetchInstr &lt;= 1, "invalid value");
+  44   if( AllocatePrefetchInstr &lt; 0 ) AllocatePrefetchInstr = 0;
+  45   if( AllocatePrefetchInstr &gt; 1 ) AllocatePrefetchInstr = 0;
+  46 
+  47   // Allocation prefetch settings
+  48   intx cache_line_size = prefetch_data_size();
+  49   if( cache_line_size &gt; AllocatePrefetchStepSize )
+  50     AllocatePrefetchStepSize = cache_line_size;
+  51 
+  52   assert(AllocatePrefetchLines &gt; 0, "invalid value");
+  53   if( AllocatePrefetchLines &lt; 1 )     // set valid value in product VM
+  54     AllocatePrefetchLines = 3;
+  55   assert(AllocateInstancePrefetchLines &gt; 0, "invalid value");
+  56   if( AllocateInstancePrefetchLines &lt; 1 ) // set valid value in product VM
+  57     AllocateInstancePrefetchLines = 1;
+  58 
+  59   AllocatePrefetchDistance = allocate_prefetch_distance();
+  60   AllocatePrefetchStyle    = allocate_prefetch_style();
+  61 
+  62   assert((AllocatePrefetchDistance % AllocatePrefetchStepSize) == 0 &amp;&amp;
+  63          (AllocatePrefetchDistance &gt; 0), "invalid value");
+  64   if ((AllocatePrefetchDistance % AllocatePrefetchStepSize) != 0 ||
+  65       (AllocatePrefetchDistance &lt;= 0)) {
+  66     AllocatePrefetchDistance = AllocatePrefetchStepSize;
+  67   }
+  68 
+  69   if (AllocatePrefetchStyle == 3 &amp;&amp; !has_blk_init()) {
+  70     warning("BIS instructions are not available on this CPU");
+  71     FLAG_SET_DEFAULT(AllocatePrefetchStyle, 1);
+  72   }
+  73 
+  74   guarantee(VM_Version::has_v9(), "only SPARC v9 is supported");
+  75 
+  76   assert(ArraycopySrcPrefetchDistance &lt; 4096, "invalid value");
+  77   if (ArraycopySrcPrefetchDistance &gt;= 4096)
+  78     ArraycopySrcPrefetchDistance = 4064;
+  79   assert(ArraycopyDstPrefetchDistance &lt; 4096, "invalid value");
+  80   if (ArraycopyDstPrefetchDistance &gt;= 4096)
+  81     ArraycopyDstPrefetchDistance = 4064;
+  82 
+  83   UseSSE = 0; // Only on x86 and x64
+  84 
+  85   _supports_cx8 = has_v9();
+  86   _supports_atomic_getset4 = true; // swap instruction
+  87 
+  88   // There are Fujitsu Sparc64 CPUs which support blk_init as well so
+  89   // we have to take this check out of the 'is_niagara()' block below.
+  90   if (has_blk_init()) {
+  91     // When using CMS or G1, we cannot use memset() in BOT updates
+  92     // because the sun4v/CMT version in libc_psr uses BIS which
+  93     // exposes "phantom zeros" to concurrent readers. See 6948537.
+  94     if (FLAG_IS_DEFAULT(UseMemSetInBOT) &amp;&amp; (UseConcMarkSweepGC || UseG1GC)) {
+  95       FLAG_SET_DEFAULT(UseMemSetInBOT, false);
+  96     }
+  97     // Issue a stern warning if the user has explicitly set
+  98     // UseMemSetInBOT (it is known to cause issues), but allow
+  99     // use for experimentation and debugging.
+ 100     if (UseConcMarkSweepGC || UseG1GC) {
+ 101       if (UseMemSetInBOT) {
+ 102         assert(!FLAG_IS_DEFAULT(UseMemSetInBOT), "Error");
+ 103         warning("Experimental flag -XX:+UseMemSetInBOT is known to cause instability"
+ 104                 " on sun4v; please understand that you are using at your own risk!");
+ 105       }
+ 106     }
+ 107   }
+ 108 
+ 109   if (is_niagara()) {
+ 110     // Indirect branch is the same cost as direct
+ 111     if (FLAG_IS_DEFAULT(UseInlineCaches)) {
+ 112       FLAG_SET_DEFAULT(UseInlineCaches, false);
+ 113     }
+ 114     // Align loops on a single instruction boundary.
+ 115     if (FLAG_IS_DEFAULT(OptoLoopAlignment)) {
+ 116       FLAG_SET_DEFAULT(OptoLoopAlignment, 4);
+ 117     }
+ 118 #ifdef _LP64
+ 119     // 32-bit oops don't make sense for the 64-bit VM on sparc
+ 120     // since the 32-bit VM has the same registers and smaller objects.
+ 121     Universe::set_narrow_oop_shift(LogMinObjAlignmentInBytes);
+ 122     Universe::set_narrow_klass_shift(LogKlassAlignmentInBytes);
+ 123 #endif // _LP64
+ 124 #ifdef COMPILER2
+ 125     // Indirect branch is the same cost as direct
+ 126     if (FLAG_IS_DEFAULT(UseJumpTables)) {
+ 127       FLAG_SET_DEFAULT(UseJumpTables, true);
+ 128     }
+ 129     // Single-issue, so entry and loop tops are
+ 130     // aligned on a single instruction boundary
+ 131     if (FLAG_IS_DEFAULT(InteriorEntryAlignment)) {
+ 132       FLAG_SET_DEFAULT(InteriorEntryAlignment, 4);
+ 133     }
+ 134     if (is_niagara_plus()) {
+ 135       if (has_blk_init() &amp;&amp; UseTLAB &amp;&amp;
+ 136           FLAG_IS_DEFAULT(AllocatePrefetchInstr)) {
+ 137         // Use BIS instruction for TLAB allocation prefetch.
+ 138         FLAG_SET_ERGO(intx, AllocatePrefetchInstr, 1);
+ 139         if (FLAG_IS_DEFAULT(AllocatePrefetchStyle)) {
+ 140           FLAG_SET_ERGO(intx, AllocatePrefetchStyle, 3);
+ 141         }
+ 142         if (FLAG_IS_DEFAULT(AllocatePrefetchDistance)) {
+ 143           // Use smaller prefetch distance with BIS
+ 144           FLAG_SET_DEFAULT(AllocatePrefetchDistance, 64);
+ 145         }
+ 146       }
+ 147       if (is_T4()) {
+ 148         // Double number of prefetched cache lines on T4
+ 149         // since L2 cache line size is smaller (32 bytes).
+ 150         if (FLAG_IS_DEFAULT(AllocatePrefetchLines)) {
+ 151           FLAG_SET_ERGO(intx, AllocatePrefetchLines, AllocatePrefetchLines*2);
+ 152         }
+ 153         if (FLAG_IS_DEFAULT(AllocateInstancePrefetchLines)) {
+ 154           FLAG_SET_ERGO(intx, AllocateInstancePrefetchLines, AllocateInstancePrefetchLines*2);
+ 155         }
+ 156       }
+ 157       if (AllocatePrefetchStyle != 3 &amp;&amp; FLAG_IS_DEFAULT(AllocatePrefetchDistance)) {
+ 158         // Use different prefetch distance without BIS
+ 159         FLAG_SET_DEFAULT(AllocatePrefetchDistance, 256);
+ 160       }
+ 161       if (AllocatePrefetchInstr == 1) {
+ 162         // Need a space at the end of TLAB for BIS since it
+ 163         // will fault when accessing memory outside of heap.
+ 164 
+ 165         // +1 for rounding up to next cache line, +1 to be safe
+ 166         int lines = AllocatePrefetchLines + 2;
+ 167         int step_size = AllocatePrefetchStepSize;
+ 168         int distance = AllocatePrefetchDistance;
+ 169         _reserve_for_allocation_prefetch = (distance + step_size*lines)/(int)HeapWordSize;
+ 170       }
+ 171     }
+ 172 #endif
+ 173   }
+ 174 
+ 175   // Use hardware population count instruction if available.
+ 176   if (has_hardware_popc()) {
+ 177     if (FLAG_IS_DEFAULT(UsePopCountInstruction)) {
+ 178       FLAG_SET_DEFAULT(UsePopCountInstruction, true);
+ 179     }
+ 180   } else if (UsePopCountInstruction) {
+ 181     warning("POPC instruction is not available on this CPU");
+ 182     FLAG_SET_DEFAULT(UsePopCountInstruction, false);
+ 183   }
+ 184 
+ 185   // T4 and newer Sparc cpus have new compare and branch instruction.
+ 186   if (has_cbcond()) {
+ 187     if (FLAG_IS_DEFAULT(UseCBCond)) {
+ 188       FLAG_SET_DEFAULT(UseCBCond, true);
+ 189     }
+ 190   } else if (UseCBCond) {
+ 191     warning("CBCOND instruction is not available on this CPU");
+ 192     FLAG_SET_DEFAULT(UseCBCond, false);
+ 193   }
+ 194 
+ 195   assert(BlockZeroingLowLimit &gt; 0, "invalid value");
+ 196   if (has_block_zeroing() &amp;&amp; cache_line_size &gt; 0) {
+ 197     if (FLAG_IS_DEFAULT(UseBlockZeroing)) {
+ 198       FLAG_SET_DEFAULT(UseBlockZeroing, true);
+ 199     }
+ 200   } else if (UseBlockZeroing) {
+ 201     warning("BIS zeroing instructions are not available on this CPU");
+ 202     FLAG_SET_DEFAULT(UseBlockZeroing, false);
+ 203   }
+ 204 
+ 205   assert(BlockCopyLowLimit &gt; 0, "invalid value");
+ 206   if (has_block_zeroing() &amp;&amp; cache_line_size &gt; 0) { // has_blk_init() &amp;&amp; is_T4(): core's local L2 cache
+ 207     if (FLAG_IS_DEFAULT(UseBlockCopy)) {
+ 208       FLAG_SET_DEFAULT(UseBlockCopy, true);
+ 209     }
+ 210   } else if (UseBlockCopy) {
+ 211     warning("BIS instructions are not available or expensive on this CPU");
+ 212     FLAG_SET_DEFAULT(UseBlockCopy, false);
+ 213   }
+ 214 
+ 215 #ifdef COMPILER2
+ 216   // T4 and newer Sparc cpus have fast RDPC.
+ 217   if (has_fast_rdpc() &amp;&amp; FLAG_IS_DEFAULT(UseRDPCForConstantTableBase)) {
+ 218     FLAG_SET_DEFAULT(UseRDPCForConstantTableBase, true);
+ 219   }
+ 220 
+ 221   // Currently not supported anywhere.
+ 222   FLAG_SET_DEFAULT(UseFPUForSpilling, false);
+ 223 
+ 224   MaxVectorSize = 8;
+ 225 
+ 226   assert((InteriorEntryAlignment % relocInfo::addr_unit()) == 0, "alignment is not a multiple of NOP size");
+ 227 #endif
+ 228 
+ 229   assert((CodeEntryAlignment % relocInfo::addr_unit()) == 0, "alignment is not a multiple of NOP size");
+ 230   assert((OptoLoopAlignment % relocInfo::addr_unit()) == 0, "alignment is not a multiple of NOP size");
+ 231 
+ 232   char buf[512];
+ 233   jio_snprintf(buf, sizeof(buf), "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s",
+ 234                (has_v9() ? ", v9" : (has_v8() ? ", v8" : "")),
+ 235                (has_hardware_popc() ? ", popc" : ""),
+ 236                (has_vis1() ? ", vis1" : ""),
+ 237                (has_vis2() ? ", vis2" : ""),
+ 238                (has_vis3() ? ", vis3" : ""),
+ 239                (has_blk_init() ? ", blk_init" : ""),
+ 240                (has_cbcond() ? ", cbcond" : ""),
+ 241                (has_aes() ? ", aes" : ""),
+ 242                (has_sha1() ? ", sha1" : ""),
+ 243                (has_sha256() ? ", sha256" : ""),
+ 244                (has_sha512() ? ", sha512" : ""),
+ 245                (has_crc32c() ? ", crc32c" : ""),
+ 246                (is_ultra3() ? ", ultra3" : ""),
+ 247                (is_sun4v() ? ", sun4v" : ""),
+ 248                (is_niagara_plus() ? ", niagara_plus" : (is_niagara() ? ", niagara" : "")),
+ 249                (is_sparc64() ? ", sparc64" : ""),
+ 250                (!has_hardware_mul32() ? ", no-mul32" : ""),
+ 251                (!has_hardware_div32() ? ", no-div32" : ""),
+ 252                (!has_hardware_fsmuld() ? ", no-fsmuld" : ""));
+ 253 
+ 254   // buf is started with ", " or is empty
+ 255   _features_str = os::strdup(strlen(buf) &gt; 2 ? buf + 2 : buf);
+ 256 
+ 257   // UseVIS is set to the smallest of what hardware supports and what
+ 258   // the command line requires.  I.e., you cannot set UseVIS to 3 on
+ 259   // older UltraSparc which do not support it.
+ 260   if (UseVIS &gt; 3) UseVIS=3;
+ 261   if (UseVIS &lt; 0) UseVIS=0;
+ 262   if (!has_vis3()) // Drop to 2 if no VIS3 support
+ 263     UseVIS = MIN2((intx)2,UseVIS);
+ 264   if (!has_vis2()) // Drop to 1 if no VIS2 support
+ 265     UseVIS = MIN2((intx)1,UseVIS);
+ 266   if (!has_vis1()) // Drop to 0 if no VIS1 support
+ 267     UseVIS = 0;
+ 268 
+ 269   // SPARC T4 and above should have support for AES instructions
+ 270   if (has_aes()) {
+ 271     if (UseVIS &gt; 2) { // AES intrinsics use MOVxTOd/MOVdTOx which are VIS3
+ 272       if (FLAG_IS_DEFAULT(UseAES)) {
+ 273         FLAG_SET_DEFAULT(UseAES, true);
+ 274       }
+ 275       if (FLAG_IS_DEFAULT(UseAESIntrinsics)) {
+ 276         FLAG_SET_DEFAULT(UseAESIntrinsics, true);
+ 277       }
+ 278       // we disable both the AES flags if either of them is disabled on the command line
+ 279       if (!UseAES || !UseAESIntrinsics) {
+ 280         FLAG_SET_DEFAULT(UseAES, false);
+ 281         FLAG_SET_DEFAULT(UseAESIntrinsics, false);
+ 282       }
+ 283     } else {
+ 284         if (UseAES || UseAESIntrinsics) {
+ 285           warning("SPARC AES intrinsics require VIS3 instruction support. Intrinsics will be disabled.");
+ 286           if (UseAES) {
+ 287             FLAG_SET_DEFAULT(UseAES, false);
+ 288           }
+ 289           if (UseAESIntrinsics) {
+ 290             FLAG_SET_DEFAULT(UseAESIntrinsics, false);
+ 291           }
+ 292         }
+ 293     }
+ 294   } else if (UseAES || UseAESIntrinsics) {
+ 295     warning("AES instructions are not available on this CPU");
+ 296     if (UseAES) {
+ 297       FLAG_SET_DEFAULT(UseAES, false);
+ 298     }
+ 299     if (UseAESIntrinsics) {
+ 300       FLAG_SET_DEFAULT(UseAESIntrinsics, false);
+ 301     }
+ 302   }
+ 303 
+ 304   // GHASH/GCM intrinsics
+ 305   if (has_vis3() &amp;&amp; (UseVIS &gt; 2)) {
+ 306     if (FLAG_IS_DEFAULT(UseGHASHIntrinsics)) {
+ 307       UseGHASHIntrinsics = true;
+ 308     }
+ 309   } else if (UseGHASHIntrinsics) {
+ 310     if (!FLAG_IS_DEFAULT(UseGHASHIntrinsics))
+ 311       warning("GHASH intrinsics require VIS3 insructions support. Intriniscs will be disabled");
+ 312     FLAG_SET_DEFAULT(UseGHASHIntrinsics, false);
+ 313   }
+ 314 
+ 315   // SHA1, SHA256, and SHA512 instructions were added to SPARC T-series at different times
+ 316   if (has_sha1() || has_sha256() || has_sha512()) {
+ 317     if (UseVIS &gt; 0) { // SHA intrinsics use VIS1 instructions
+ 318       if (FLAG_IS_DEFAULT(UseSHA)) {
+ 319         FLAG_SET_DEFAULT(UseSHA, true);
+ 320       }
+ 321     } else {
+ 322       if (UseSHA) {
+ 323         warning("SPARC SHA intrinsics require VIS1 instruction support. Intrinsics will be disabled.");
+ 324         FLAG_SET_DEFAULT(UseSHA, false);
+ 325       }
+ 326     }
+ 327   } else if (UseSHA) {
+ 328     warning("SHA instructions are not available on this CPU");
+ 329     FLAG_SET_DEFAULT(UseSHA, false);
+ 330   }
+ 331 
+ 332   if (!UseSHA) {
+ 333     FLAG_SET_DEFAULT(UseSHA1Intrinsics, false);
+ 334     FLAG_SET_DEFAULT(UseSHA256Intrinsics, false);
+ 335     FLAG_SET_DEFAULT(UseSHA512Intrinsics, false);
+ 336   } else {
+ 337     if (has_sha1()) {
+ 338       if (FLAG_IS_DEFAULT(UseSHA1Intrinsics)) {
+ 339         FLAG_SET_DEFAULT(UseSHA1Intrinsics, true);
+ 340       }
+ 341     } else if (UseSHA1Intrinsics) {
+ 342       warning("SHA1 instruction is not available on this CPU.");
+ 343       FLAG_SET_DEFAULT(UseSHA1Intrinsics, false);
+ 344     }
+ 345     if (has_sha256()) {
+ 346       if (FLAG_IS_DEFAULT(UseSHA256Intrinsics)) {
+ 347         FLAG_SET_DEFAULT(UseSHA256Intrinsics, true);
+ 348       }
+ 349     } else if (UseSHA256Intrinsics) {
+ 350       warning("SHA256 instruction (for SHA-224 and SHA-256) is not available on this CPU.");
+ 351       FLAG_SET_DEFAULT(UseSHA256Intrinsics, false);
+ 352     }
+ 353 
+ 354     if (has_sha512()) {
+ 355       if (FLAG_IS_DEFAULT(UseSHA512Intrinsics)) {
+ 356         FLAG_SET_DEFAULT(UseSHA512Intrinsics, true);
+ 357       }
+ 358     } else if (UseSHA512Intrinsics) {
+ 359       warning("SHA512 instruction (for SHA-384 and SHA-512) is not available on this CPU.");
+ 360       FLAG_SET_DEFAULT(UseSHA512Intrinsics, false);
+ 361     }
+ 362     if (!(UseSHA1Intrinsics || UseSHA256Intrinsics || UseSHA512Intrinsics)) {
+ 363       FLAG_SET_DEFAULT(UseSHA, false);
+ 364     }
+ 365   }
+ 366 
+ 367   // SPARC T4 and above should have support for CRC32C instruction
+ 368   if (has_crc32c()) {
+ 369     if (UseVIS &gt; 2) { // CRC32C intrinsics use VIS3 instructions
+ 370       if (FLAG_IS_DEFAULT(UseCRC32CIntrinsics)) {
+ 371         FLAG_SET_DEFAULT(UseCRC32CIntrinsics, true);
+ 372       }
+ 373     } else {
+ 374       if (UseCRC32CIntrinsics) {
+ 375         warning("SPARC CRC32C intrinsics require VIS3 instruction support. Intrinsics will be disabled.");
+ 376         FLAG_SET_DEFAULT(UseCRC32CIntrinsics, false);
+ 377       }
+ 378     }
+ 379   } else if (UseCRC32CIntrinsics) {
+ 380     warning("CRC32C instruction is not available on this CPU");
+ 381     FLAG_SET_DEFAULT(UseCRC32CIntrinsics, false);
+ 382   }
+ 383 
+ 384   if (UseSpinLoopHintIntrinsic) {
+ 385     if (!FLAG_IS_DEFAULT(UseSpinLoopHintIntrinsic))
+ 386       warning("spinLoopHint intrinsic is not available on this CPU");
+ 387     FLAG_SET_DEFAULT(UseSpinLoopHintIntrinsic, false);
+ 388   }
+ 389 
+ 390   if (FLAG_IS_DEFAULT(ContendedPaddingWidth) &amp;&amp;
+ 391     (cache_line_size &gt; ContendedPaddingWidth))
+ 392     ContendedPaddingWidth = cache_line_size;
+ 393 
+ 394   // This machine does not allow unaligned memory accesses
+ 395   if (UseUnalignedAccesses) {
+ 396     if (!FLAG_IS_DEFAULT(UseUnalignedAccesses))
+ 397       warning("Unaligned memory access is not available on this CPU");
+ 398     FLAG_SET_DEFAULT(UseUnalignedAccesses, false);
+ 399   }
+ 400 
+ 401 #ifndef PRODUCT
+ 402   if (PrintMiscellaneous &amp;&amp; Verbose) {
+ 403     tty-&gt;print_cr("L1 data cache line size: %u", L1_data_cache_line_size());
+ 404     tty-&gt;print_cr("L2 data cache line size: %u", L2_data_cache_line_size());
+ 405     tty-&gt;print("Allocation");
+ 406     if (AllocatePrefetchStyle &lt;= 0) {
+ 407       tty-&gt;print_cr(": no prefetching");
+ 408     } else {
+ 409       tty-&gt;print(" prefetching: ");
+ 410       if (AllocatePrefetchInstr == 0) {
+ 411           tty-&gt;print("PREFETCH");
+ 412       } else if (AllocatePrefetchInstr == 1) {
+ 413           tty-&gt;print("BIS");
+ 414       }
+ 415       if (AllocatePrefetchLines &gt; 1) {
+ 416         tty-&gt;print_cr(" at distance %d, %d lines of %d bytes", (int) AllocatePrefetchDistance, (int) AllocatePrefetchLines, (int) AllocatePrefetchStepSize);
+ 417       } else {
+ 418         tty-&gt;print_cr(" at distance %d, one line of %d bytes", (int) AllocatePrefetchDistance, (int) AllocatePrefetchStepSize);
+ 419       }
+ 420     }
+ 421     if (PrefetchCopyIntervalInBytes &gt; 0) {
+ 422       tty-&gt;print_cr("PrefetchCopyIntervalInBytes %d", (int) PrefetchCopyIntervalInBytes);
+ 423     }
+ 424     if (PrefetchScanIntervalInBytes &gt; 0) {
+ 425       tty-&gt;print_cr("PrefetchScanIntervalInBytes %d", (int) PrefetchScanIntervalInBytes);
+ 426     }
+ 427     if (PrefetchFieldsAhead &gt; 0) {
+ 428       tty-&gt;print_cr("PrefetchFieldsAhead %d", (int) PrefetchFieldsAhead);
+ 429     }
+ 430     if (ContendedPaddingWidth &gt; 0) {
+ 431       tty-&gt;print_cr("ContendedPaddingWidth %d", (int) ContendedPaddingWidth);
+ 432     }
+ 433   }
+ 434 #endif // PRODUCT
+ 435 }
+ 436 
+ 437 void VM_Version::print_features() {
+ 438   tty-&gt;print_cr("Version:%s", cpu_features());
+ 439 }
+ 440 
+ 441 int VM_Version::determine_features() {
+ 442   if (UseV8InstrsOnly) {
+ 443     NOT_PRODUCT(if (PrintMiscellaneous &amp;&amp; Verbose) tty-&gt;print_cr("Version is Forced-V8");)
+ 444     return generic_v8_m;
+ 445   }
+ 446 
+ 447   int features = platform_features(unknown_m); // platform_features() is os_arch specific
+ 448 
+ 449   if (features == unknown_m) {
+ 450     features = generic_v9_m;
+ 451     warning("Cannot recognize SPARC version. Default to V9");
+ 452   }
+ 453 
+ 454   assert(is_T_family(features) == is_niagara(features), "Niagara should be T series");
+ 455   if (UseNiagaraInstrs) { // Force code generation for Niagara
+ 456     if (is_T_family(features)) {
+ 457       // Happy to accomodate...
+ 458     } else {
+ 459       NOT_PRODUCT(if (PrintMiscellaneous &amp;&amp; Verbose) tty-&gt;print_cr("Version is Forced-Niagara");)
+ 460       features |= T_family_m;
+ 461     }
+ 462   } else {
+ 463     if (is_T_family(features) &amp;&amp; !FLAG_IS_DEFAULT(UseNiagaraInstrs)) {
+ 464       NOT_PRODUCT(if (PrintMiscellaneous &amp;&amp; Verbose) tty-&gt;print_cr("Version is Forced-Not-Niagara");)
+ 465       features &amp;= ~(T_family_m | T1_model_m);
+ 466     } else {
+ 467       // Happy to accomodate...
+ 468     }
+ 469   }
+ 470 
+ 471   return features;
+ 472 }
+ 473 
+ 474 static int saved_features = 0;
+ 475 
+ 476 void VM_Version::allow_all() {
+ 477   saved_features = _features;
+ 478   _features      = all_features_m;
+ 479 }
+ 480 
+ 481 void VM_Version::revert() {
+ 482   _features = saved_features;
+ 483 }
+ 484 
+ 485 unsigned int VM_Version::calc_parallel_worker_threads() {
+ 486   unsigned int result;
+ 487   if (is_M_series()) {
+ 488     // for now, use same gc thread calculation for M-series as for niagara-plus
+ 489     // in future, we may want to tweak parameters for nof_parallel_worker_thread
+ 490     result = nof_parallel_worker_threads(5, 16, 8);
+ 491   } else if (is_niagara_plus()) {
+ 492     result = nof_parallel_worker_threads(5, 16, 8);
+ 493   } else {
+ 494     result = nof_parallel_worker_threads(5, 8, 8);
+ 495   }
+ 496   return result;
+ 497 }
+</pre></body></html>

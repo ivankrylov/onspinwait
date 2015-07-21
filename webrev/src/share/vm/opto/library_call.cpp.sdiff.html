@@ -1,0 +1,455 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta charset="utf-8">
+<meta http-equiv="cache-control" content="no-cache" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="-1" />
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+a.print { font-size: x-small; }
+
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>hotspot Sdiff src/share/vm/opto </title>
+</head><body id="SUNWwebrev">
+<h2>src/share/vm/opto/library_call.cpp</h2>
+<a class="print" href="javascript:print()">Print this page</a>
+<pre></pre>
+
+<table><tr valign="top">
+<td><pre>
+
+</pre><hr></hr><pre>
+ 252   bool inline_array_copyOf(bool is_copyOfRange);
+ 253   bool inline_array_equals();
+ 254   void copy_to_clone(Node* obj, Node* alloc_obj, Node* obj_size, bool is_array, bool card_mark);
+ 255   bool inline_native_clone(bool is_virtual);
+ 256   bool inline_native_Reflection_getCallerClass();
+ 257   // Helper function for inlining native object hash method
+ 258   bool inline_native_hashcode(bool is_virtual, bool is_static);
+ 259   bool inline_native_getClass();
+ 260 
+ 261   // Helper functions for inlining arraycopy
+ 262   bool inline_arraycopy();
+ 263   AllocateArrayNode* tightly_coupled_allocation(Node* ptr,
+ 264                                                 RegionNode* slow_region);
+ 265   JVMState* arraycopy_restore_alloc_state(AllocateArrayNode* alloc, int&amp; saved_reexecute_sp);
+ 266   void arraycopy_move_allocation_here(AllocateArrayNode* alloc, Node* dest, JVMState* saved_jvms, int saved_reexecute_sp);
+ 267 
+ 268   typedef enum { LS_xadd, LS_xchg, LS_cmpxchg } LoadStoreKind;
+ 269   bool inline_unsafe_load_store(BasicType type,  LoadStoreKind kind);
+ 270   bool inline_unsafe_ordered_store(BasicType type);
+ 271   bool inline_unsafe_fence(vmIntrinsics::ID id);
+
+ 272   bool inline_fp_conversions(vmIntrinsics::ID id);
+ 273   bool inline_number_methods(vmIntrinsics::ID id);
+ 274   bool inline_reference_get();
+ 275   bool inline_Class_cast();
+ 276   bool inline_aescrypt_Block(vmIntrinsics::ID id);
+ 277   bool inline_cipherBlockChaining_AESCrypt(vmIntrinsics::ID id);
+ 278   Node* inline_cipherBlockChaining_AESCrypt_predicate(bool decrypting);
+ 279   Node* get_key_start_from_aescrypt_object(Node* aescrypt_object);
+ 280   Node* get_original_key_start_from_aescrypt_object(Node* aescrypt_object);
+ 281   bool inline_ghash_processBlocks();
+ 282   bool inline_sha_implCompress(vmIntrinsics::ID id);
+ 283   bool inline_digestBase_implCompressMB(int predicate);
+ 284   bool inline_sha_implCompressMB(Node* digestBaseObj, ciInstanceKlass* instklass_SHA,
+ 285                                  bool long_state, address stubAddr, const char *stubName,
+ 286                                  Node* src_start, Node* ofs, Node* limit);
+ 287   Node* get_state_from_sha_object(Node *sha_object);
+ 288   Node* get_state_from_sha5_object(Node *sha_object);
+ 289   Node* inline_digestBase_implCompressMB_predicate(int predicate);
+ 290   bool inline_encodeISOArray();
+ 291   bool inline_updateCRC32();
+
+</pre><hr></hr><pre>
+ 491     break;
+ 492 #endif
+ 493 
+ 494   case vmIntrinsics::_aescrypt_encryptBlock:
+ 495   case vmIntrinsics::_aescrypt_decryptBlock:
+ 496     if (!UseAESIntrinsics) return NULL;
+ 497     break;
+ 498 
+ 499   case vmIntrinsics::_multiplyToLen:
+ 500     if (!UseMultiplyToLenIntrinsic) return NULL;
+ 501     break;
+ 502 
+ 503   case vmIntrinsics::_squareToLen:
+ 504     if (!UseSquareToLenIntrinsic) return NULL;
+ 505     break;
+ 506 
+ 507   case vmIntrinsics::_mulAdd:
+ 508     if (!UseMulAddIntrinsic) return NULL;
+ 509     break;
+ 510 
+
+
+
+
+ 511   case vmIntrinsics::_cipherBlockChaining_encryptAESCrypt:
+ 512   case vmIntrinsics::_cipherBlockChaining_decryptAESCrypt:
+ 513     if (!UseAESIntrinsics) return NULL;
+ 514     // these two require the predicated logic
+ 515     predicates = 1;
+ 516     break;
+ 517 
+ 518   case vmIntrinsics::_sha_implCompress:
+ 519     if (!UseSHA1Intrinsics) return NULL;
+ 520     break;
+ 521 
+ 522   case vmIntrinsics::_sha2_implCompress:
+ 523     if (!UseSHA256Intrinsics) return NULL;
+ 524     break;
+ 525 
+ 526   case vmIntrinsics::_sha5_implCompress:
+ 527     if (!UseSHA512Intrinsics) return NULL;
+ 528     break;
+ 529 
+ 530   case vmIntrinsics::_digestBase_implCompressMB:
+
+</pre><hr></hr><pre>
+ 848   case vmIntrinsics::_putLongUnaligned:         return inline_unsafe_access(!is_native_ptr,  is_store, T_LONG,    !is_volatile);
+ 849 
+ 850   case vmIntrinsics::_compareAndSwapObject:     return inline_unsafe_load_store(T_OBJECT, LS_cmpxchg);
+ 851   case vmIntrinsics::_compareAndSwapInt:        return inline_unsafe_load_store(T_INT,    LS_cmpxchg);
+ 852   case vmIntrinsics::_compareAndSwapLong:       return inline_unsafe_load_store(T_LONG,   LS_cmpxchg);
+ 853 
+ 854   case vmIntrinsics::_putOrderedObject:         return inline_unsafe_ordered_store(T_OBJECT);
+ 855   case vmIntrinsics::_putOrderedInt:            return inline_unsafe_ordered_store(T_INT);
+ 856   case vmIntrinsics::_putOrderedLong:           return inline_unsafe_ordered_store(T_LONG);
+ 857 
+ 858   case vmIntrinsics::_getAndAddInt:             return inline_unsafe_load_store(T_INT,    LS_xadd);
+ 859   case vmIntrinsics::_getAndAddLong:            return inline_unsafe_load_store(T_LONG,   LS_xadd);
+ 860   case vmIntrinsics::_getAndSetInt:             return inline_unsafe_load_store(T_INT,    LS_xchg);
+ 861   case vmIntrinsics::_getAndSetLong:            return inline_unsafe_load_store(T_LONG,   LS_xchg);
+ 862   case vmIntrinsics::_getAndSetObject:          return inline_unsafe_load_store(T_OBJECT, LS_xchg);
+ 863 
+ 864   case vmIntrinsics::_loadFence:
+ 865   case vmIntrinsics::_storeFence:
+ 866   case vmIntrinsics::_fullFence:                return inline_unsafe_fence(intrinsic_id());
+ 867 
+
+
+ 868   case vmIntrinsics::_currentThread:            return inline_native_currentThread();
+ 869   case vmIntrinsics::_isInterrupted:            return inline_native_isInterrupted();
+ 870 
+ 871 #ifdef TRACE_HAVE_INTRINSICS
+ 872   case vmIntrinsics::_classID:                  return inline_native_classID();
+ 873   case vmIntrinsics::_threadID:                 return inline_native_threadID();
+ 874   case vmIntrinsics::_counterTime:              return inline_native_time_funcs(CAST_FROM_FN_PTR(address, TRACE_TIME_METHOD), "counterTime");
+ 875 #endif
+ 876   case vmIntrinsics::_currentTimeMillis:        return inline_native_time_funcs(CAST_FROM_FN_PTR(address, os::javaTimeMillis), "currentTimeMillis");
+ 877   case vmIntrinsics::_nanoTime:                 return inline_native_time_funcs(CAST_FROM_FN_PTR(address, os::javaTimeNanos), "nanoTime");
+ 878   case vmIntrinsics::_allocateInstance:         return inline_unsafe_allocate();
+ 879   case vmIntrinsics::_copyMemory:               return inline_unsafe_copyMemory();
+ 880   case vmIntrinsics::_newArray:                 return inline_native_newArray();
+ 881   case vmIntrinsics::_getLength:                return inline_native_getLength();
+ 882   case vmIntrinsics::_copyOf:                   return inline_array_copyOf(false);
+ 883   case vmIntrinsics::_copyOfRange:              return inline_array_copyOf(true);
+ 884   case vmIntrinsics::_equalsC:                  return inline_array_equals();
+ 885   case vmIntrinsics::_clone:                    return inline_native_clone(intrinsic()-&gt;is_virtual());
+ 886 
+ 887   case vmIntrinsics::_isAssignableFrom:         return inline_native_subtype_check();
+
+</pre><hr></hr><pre>
+3066 }
+3067 
+3068 bool LibraryCallKit::inline_unsafe_fence(vmIntrinsics::ID id) {
+3069   // Regardless of form, don't allow previous ld/st to move down,
+3070   // then issue acquire, release, or volatile mem_bar.
+3071   insert_mem_bar(Op_MemBarCPUOrder);
+3072   switch(id) {
+3073     case vmIntrinsics::_loadFence:
+3074       insert_mem_bar(Op_LoadFence);
+3075       return true;
+3076     case vmIntrinsics::_storeFence:
+3077       insert_mem_bar(Op_StoreFence);
+3078       return true;
+3079     case vmIntrinsics::_fullFence:
+3080       insert_mem_bar(Op_MemBarVolatile);
+3081       return true;
+3082     default:
+3083       fatal_unexpected_iid(id);
+3084       return false;
+3085   }
+
+
+
+
+
+3086 }
+3087 
+3088 bool LibraryCallKit::klass_needs_init_guard(Node* kls) {
+3089   if (!kls-&gt;is_Con()) {
+3090     return true;
+3091   }
+3092   const TypeKlassPtr* klsptr = kls-&gt;bottom_type()-&gt;isa_klassptr();
+3093   if (klsptr == NULL) {
+3094     return true;
+3095   }
+3096   ciInstanceKlass* ik = klsptr-&gt;klass()-&gt;as_instance_klass();
+3097   // don't need a guard for a klass that is already initialized
+3098   return !ik-&gt;is_initialized();
+3099 }
+3100 
+3101 //----------------------------inline_unsafe_allocate---------------------------
+3102 // public native Object sun.misc.Unsafe.allocateInstance(Class&lt;?&gt; cls);
+3103 bool LibraryCallKit::inline_unsafe_allocate() {
+3104   if (callee()-&gt;is_static())  return false;  // caller must have the capability!
+3105 
+
+</pre><hr></hr>
+</pre></td><td><pre>
+
+</pre><hr></hr><pre>
+ 252   bool inline_array_copyOf(bool is_copyOfRange);
+ 253   bool inline_array_equals();
+ 254   void copy_to_clone(Node* obj, Node* alloc_obj, Node* obj_size, bool is_array, bool card_mark);
+ 255   bool inline_native_clone(bool is_virtual);
+ 256   bool inline_native_Reflection_getCallerClass();
+ 257   // Helper function for inlining native object hash method
+ 258   bool inline_native_hashcode(bool is_virtual, bool is_static);
+ 259   bool inline_native_getClass();
+ 260 
+ 261   // Helper functions for inlining arraycopy
+ 262   bool inline_arraycopy();
+ 263   AllocateArrayNode* tightly_coupled_allocation(Node* ptr,
+ 264                                                 RegionNode* slow_region);
+ 265   JVMState* arraycopy_restore_alloc_state(AllocateArrayNode* alloc, int&amp; saved_reexecute_sp);
+ 266   void arraycopy_move_allocation_here(AllocateArrayNode* alloc, Node* dest, JVMState* saved_jvms, int saved_reexecute_sp);
+ 267 
+ 268   typedef enum { LS_xadd, LS_xchg, LS_cmpxchg } LoadStoreKind;
+ 269   bool inline_unsafe_load_store(BasicType type,  LoadStoreKind kind);
+ 270   bool inline_unsafe_ordered_store(BasicType type);
+ 271   bool inline_unsafe_fence(vmIntrinsics::ID id);
+<span class="new"> 272   bool inline_spinloophint();</span>
+ 273   bool inline_fp_conversions(vmIntrinsics::ID id);
+ 274   bool inline_number_methods(vmIntrinsics::ID id);
+ 275   bool inline_reference_get();
+ 276   bool inline_Class_cast();
+ 277   bool inline_aescrypt_Block(vmIntrinsics::ID id);
+ 278   bool inline_cipherBlockChaining_AESCrypt(vmIntrinsics::ID id);
+ 279   Node* inline_cipherBlockChaining_AESCrypt_predicate(bool decrypting);
+ 280   Node* get_key_start_from_aescrypt_object(Node* aescrypt_object);
+ 281   Node* get_original_key_start_from_aescrypt_object(Node* aescrypt_object);
+ 282   bool inline_ghash_processBlocks();
+ 283   bool inline_sha_implCompress(vmIntrinsics::ID id);
+ 284   bool inline_digestBase_implCompressMB(int predicate);
+ 285   bool inline_sha_implCompressMB(Node* digestBaseObj, ciInstanceKlass* instklass_SHA,
+ 286                                  bool long_state, address stubAddr, const char *stubName,
+ 287                                  Node* src_start, Node* ofs, Node* limit);
+ 288   Node* get_state_from_sha_object(Node *sha_object);
+ 289   Node* get_state_from_sha5_object(Node *sha_object);
+ 290   Node* inline_digestBase_implCompressMB_predicate(int predicate);
+ 291   bool inline_encodeISOArray();
+ 292   bool inline_updateCRC32();
+
+</pre><hr></hr><pre>
+ 492     break;
+ 493 #endif
+ 494 
+ 495   case vmIntrinsics::_aescrypt_encryptBlock:
+ 496   case vmIntrinsics::_aescrypt_decryptBlock:
+ 497     if (!UseAESIntrinsics) return NULL;
+ 498     break;
+ 499 
+ 500   case vmIntrinsics::_multiplyToLen:
+ 501     if (!UseMultiplyToLenIntrinsic) return NULL;
+ 502     break;
+ 503 
+ 504   case vmIntrinsics::_squareToLen:
+ 505     if (!UseSquareToLenIntrinsic) return NULL;
+ 506     break;
+ 507 
+ 508   case vmIntrinsics::_mulAdd:
+ 509     if (!UseMulAddIntrinsic) return NULL;
+ 510     break;
+ 511   
+<span class="new"> 512   case vmIntrinsics::_spinLoopHint:</span>
+<span class="new"> 513     if (!UseSpinLoopHintIntrinsic) return NULL;</span>
+<span class="new"> 514     break;</span>
+<span class="new"> 515 </span>
+ 516   case vmIntrinsics::_cipherBlockChaining_encryptAESCrypt:
+ 517   case vmIntrinsics::_cipherBlockChaining_decryptAESCrypt:
+ 518     if (!UseAESIntrinsics) return NULL;
+ 519     // these two require the predicated logic
+ 520     predicates = 1;
+ 521     break;
+ 522 
+ 523   case vmIntrinsics::_sha_implCompress:
+ 524     if (!UseSHA1Intrinsics) return NULL;
+ 525     break;
+ 526 
+ 527   case vmIntrinsics::_sha2_implCompress:
+ 528     if (!UseSHA256Intrinsics) return NULL;
+ 529     break;
+ 530 
+ 531   case vmIntrinsics::_sha5_implCompress:
+ 532     if (!UseSHA512Intrinsics) return NULL;
+ 533     break;
+ 534 
+ 535   case vmIntrinsics::_digestBase_implCompressMB:
+
+</pre><hr></hr><pre>
+ 853   case vmIntrinsics::_putLongUnaligned:         return inline_unsafe_access(!is_native_ptr,  is_store, T_LONG,    !is_volatile);
+ 854 
+ 855   case vmIntrinsics::_compareAndSwapObject:     return inline_unsafe_load_store(T_OBJECT, LS_cmpxchg);
+ 856   case vmIntrinsics::_compareAndSwapInt:        return inline_unsafe_load_store(T_INT,    LS_cmpxchg);
+ 857   case vmIntrinsics::_compareAndSwapLong:       return inline_unsafe_load_store(T_LONG,   LS_cmpxchg);
+ 858 
+ 859   case vmIntrinsics::_putOrderedObject:         return inline_unsafe_ordered_store(T_OBJECT);
+ 860   case vmIntrinsics::_putOrderedInt:            return inline_unsafe_ordered_store(T_INT);
+ 861   case vmIntrinsics::_putOrderedLong:           return inline_unsafe_ordered_store(T_LONG);
+ 862 
+ 863   case vmIntrinsics::_getAndAddInt:             return inline_unsafe_load_store(T_INT,    LS_xadd);
+ 864   case vmIntrinsics::_getAndAddLong:            return inline_unsafe_load_store(T_LONG,   LS_xadd);
+ 865   case vmIntrinsics::_getAndSetInt:             return inline_unsafe_load_store(T_INT,    LS_xchg);
+ 866   case vmIntrinsics::_getAndSetLong:            return inline_unsafe_load_store(T_LONG,   LS_xchg);
+ 867   case vmIntrinsics::_getAndSetObject:          return inline_unsafe_load_store(T_OBJECT, LS_xchg);
+ 868 
+ 869   case vmIntrinsics::_loadFence:
+ 870   case vmIntrinsics::_storeFence:
+ 871   case vmIntrinsics::_fullFence:                return inline_unsafe_fence(intrinsic_id());
+ 872 
+<span class="new"> 873   case vmIntrinsics::_spinLoopHint:             return inline_spinloophint();</span>
+<span class="new"> 874 </span>
+ 875   case vmIntrinsics::_currentThread:            return inline_native_currentThread();
+ 876   case vmIntrinsics::_isInterrupted:            return inline_native_isInterrupted();
+ 877 
+ 878 #ifdef TRACE_HAVE_INTRINSICS
+ 879   case vmIntrinsics::_classID:                  return inline_native_classID();
+ 880   case vmIntrinsics::_threadID:                 return inline_native_threadID();
+ 881   case vmIntrinsics::_counterTime:              return inline_native_time_funcs(CAST_FROM_FN_PTR(address, TRACE_TIME_METHOD), "counterTime");
+ 882 #endif
+ 883   case vmIntrinsics::_currentTimeMillis:        return inline_native_time_funcs(CAST_FROM_FN_PTR(address, os::javaTimeMillis), "currentTimeMillis");
+ 884   case vmIntrinsics::_nanoTime:                 return inline_native_time_funcs(CAST_FROM_FN_PTR(address, os::javaTimeNanos), "nanoTime");
+ 885   case vmIntrinsics::_allocateInstance:         return inline_unsafe_allocate();
+ 886   case vmIntrinsics::_copyMemory:               return inline_unsafe_copyMemory();
+ 887   case vmIntrinsics::_newArray:                 return inline_native_newArray();
+ 888   case vmIntrinsics::_getLength:                return inline_native_getLength();
+ 889   case vmIntrinsics::_copyOf:                   return inline_array_copyOf(false);
+ 890   case vmIntrinsics::_copyOfRange:              return inline_array_copyOf(true);
+ 891   case vmIntrinsics::_equalsC:                  return inline_array_equals();
+ 892   case vmIntrinsics::_clone:                    return inline_native_clone(intrinsic()-&gt;is_virtual());
+ 893 
+ 894   case vmIntrinsics::_isAssignableFrom:         return inline_native_subtype_check();
+
+</pre><hr></hr><pre>
+3073 }
+3074 
+3075 bool LibraryCallKit::inline_unsafe_fence(vmIntrinsics::ID id) {
+3076   // Regardless of form, don't allow previous ld/st to move down,
+3077   // then issue acquire, release, or volatile mem_bar.
+3078   insert_mem_bar(Op_MemBarCPUOrder);
+3079   switch(id) {
+3080     case vmIntrinsics::_loadFence:
+3081       insert_mem_bar(Op_LoadFence);
+3082       return true;
+3083     case vmIntrinsics::_storeFence:
+3084       insert_mem_bar(Op_StoreFence);
+3085       return true;
+3086     case vmIntrinsics::_fullFence:
+3087       insert_mem_bar(Op_MemBarVolatile);
+3088       return true;
+3089     default:
+3090       fatal_unexpected_iid(id);
+3091       return false;
+3092   }
+<span class="new">3093 }</span>
+<span class="new">3094 </span>
+<span class="new">3095 bool LibraryCallKit::inline_spinloophint() {</span>
+<span class="new">3096   insert_mem_bar(Op_SpinLoopHint);</span>
+<span class="new">3097   return true;</span>
+3098 }
+3099 
+3100 bool LibraryCallKit::klass_needs_init_guard(Node* kls) {
+3101   if (!kls-&gt;is_Con()) {
+3102     return true;
+3103   }
+3104   const TypeKlassPtr* klsptr = kls-&gt;bottom_type()-&gt;isa_klassptr();
+3105   if (klsptr == NULL) {
+3106     return true;
+3107   }
+3108   ciInstanceKlass* ik = klsptr-&gt;klass()-&gt;as_instance_klass();
+3109   // don't need a guard for a klass that is already initialized
+3110   return !ik-&gt;is_initialized();
+3111 }
+3112 
+3113 //----------------------------inline_unsafe_allocate---------------------------
+3114 // public native Object sun.misc.Unsafe.allocateInstance(Class&lt;?&gt; cls);
+3115 bool LibraryCallKit::inline_unsafe_allocate() {
+3116   if (callee()-&gt;is_static())  return false;  // caller must have the capability!
+3117 
+
+</pre><hr></hr>
+</pre></td>
+</tr></table>
+</body></html>

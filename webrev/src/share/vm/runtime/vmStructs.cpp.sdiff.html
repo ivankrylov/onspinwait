@@ -1,0 +1,181 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta charset="utf-8">
+<meta http-equiv="cache-control" content="no-cache" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="-1" />
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+a.print { font-size: x-small; }
+
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>hotspot Sdiff src/share/vm/runtime </title>
+</head><body id="SUNWwebrev">
+<h2>src/share/vm/runtime/vmStructs.cpp</h2>
+<a class="print" href="javascript:print()">Print this page</a>
+<pre></pre>
+
+<table><tr valign="top">
+<td><pre>
+
+</pre><hr></hr><pre>
+1837   declare_c2_type(ConvD2INode, Node)                                      \
+1838   declare_c2_type(ConvD2LNode, Node)                                      \
+1839   declare_c2_type(ConvF2DNode, Node)                                      \
+1840   declare_c2_type(ConvF2INode, Node)                                      \
+1841   declare_c2_type(ConvF2LNode, Node)                                      \
+1842   declare_c2_type(ConvI2DNode, Node)                                      \
+1843   declare_c2_type(ConvI2FNode, Node)                                      \
+1844   declare_c2_type(ConvI2LNode, TypeNode)                                  \
+1845   declare_c2_type(ConvL2DNode, Node)                                      \
+1846   declare_c2_type(ConvL2FNode, Node)                                      \
+1847   declare_c2_type(ConvL2INode, Node)                                      \
+1848   declare_c2_type(CastX2PNode, Node)                                      \
+1849   declare_c2_type(CastP2XNode, Node)                                      \
+1850   declare_c2_type(MemBarNode, MultiNode)                                  \
+1851   declare_c2_type(MemBarAcquireNode, MemBarNode)                          \
+1852   declare_c2_type(MemBarReleaseNode, MemBarNode)                          \
+1853   declare_c2_type(LoadFenceNode, MemBarNode)                              \
+1854   declare_c2_type(StoreFenceNode, MemBarNode)                             \
+1855   declare_c2_type(MemBarVolatileNode, MemBarNode)                         \
+1856   declare_c2_type(MemBarCPUOrderNode, MemBarNode)                         \
+
+1857   declare_c2_type(InitializeNode, MemBarNode)                             \
+1858   declare_c2_type(ThreadLocalNode, Node)                                  \
+1859   declare_c2_type(Opaque1Node, Node)                                      \
+1860   declare_c2_type(Opaque2Node, Node)                                      \
+1861   declare_c2_type(PartialSubtypeCheckNode, Node)                          \
+1862   declare_c2_type(MoveI2FNode, Node)                                      \
+1863   declare_c2_type(MoveL2DNode, Node)                                      \
+1864   declare_c2_type(MoveF2INode, Node)                                      \
+1865   declare_c2_type(MoveD2LNode, Node)                                      \
+1866   declare_c2_type(DivINode, Node)                                         \
+1867   declare_c2_type(DivLNode, Node)                                         \
+1868   declare_c2_type(DivFNode, Node)                                         \
+1869   declare_c2_type(DivDNode, Node)                                         \
+1870   declare_c2_type(ModINode, Node)                                         \
+1871   declare_c2_type(ModLNode, Node)                                         \
+1872   declare_c2_type(ModFNode, Node)                                         \
+1873   declare_c2_type(ModDNode, Node)                                         \
+1874   declare_c2_type(DivModNode, MultiNode)                                  \
+1875   declare_c2_type(DivModINode, DivModNode)                                \
+1876   declare_c2_type(DivModLNode, DivModNode)                                \
+
+</pre><hr></hr>
+</pre></td><td><pre>
+
+</pre><hr></hr><pre>
+1837   declare_c2_type(ConvD2INode, Node)                                      \
+1838   declare_c2_type(ConvD2LNode, Node)                                      \
+1839   declare_c2_type(ConvF2DNode, Node)                                      \
+1840   declare_c2_type(ConvF2INode, Node)                                      \
+1841   declare_c2_type(ConvF2LNode, Node)                                      \
+1842   declare_c2_type(ConvI2DNode, Node)                                      \
+1843   declare_c2_type(ConvI2FNode, Node)                                      \
+1844   declare_c2_type(ConvI2LNode, TypeNode)                                  \
+1845   declare_c2_type(ConvL2DNode, Node)                                      \
+1846   declare_c2_type(ConvL2FNode, Node)                                      \
+1847   declare_c2_type(ConvL2INode, Node)                                      \
+1848   declare_c2_type(CastX2PNode, Node)                                      \
+1849   declare_c2_type(CastP2XNode, Node)                                      \
+1850   declare_c2_type(MemBarNode, MultiNode)                                  \
+1851   declare_c2_type(MemBarAcquireNode, MemBarNode)                          \
+1852   declare_c2_type(MemBarReleaseNode, MemBarNode)                          \
+1853   declare_c2_type(LoadFenceNode, MemBarNode)                              \
+1854   declare_c2_type(StoreFenceNode, MemBarNode)                             \
+1855   declare_c2_type(MemBarVolatileNode, MemBarNode)                         \
+1856   declare_c2_type(MemBarCPUOrderNode, MemBarNode)                         \
+<span class="new">1857   declare_c2_type(SpinLoopHintNode, MemBarNode)                           \</span>
+1858   declare_c2_type(InitializeNode, MemBarNode)                             \
+1859   declare_c2_type(ThreadLocalNode, Node)                                  \
+1860   declare_c2_type(Opaque1Node, Node)                                      \
+1861   declare_c2_type(Opaque2Node, Node)                                      \
+1862   declare_c2_type(PartialSubtypeCheckNode, Node)                          \
+1863   declare_c2_type(MoveI2FNode, Node)                                      \
+1864   declare_c2_type(MoveL2DNode, Node)                                      \
+1865   declare_c2_type(MoveF2INode, Node)                                      \
+1866   declare_c2_type(MoveD2LNode, Node)                                      \
+1867   declare_c2_type(DivINode, Node)                                         \
+1868   declare_c2_type(DivLNode, Node)                                         \
+1869   declare_c2_type(DivFNode, Node)                                         \
+1870   declare_c2_type(DivDNode, Node)                                         \
+1871   declare_c2_type(ModINode, Node)                                         \
+1872   declare_c2_type(ModLNode, Node)                                         \
+1873   declare_c2_type(ModFNode, Node)                                         \
+1874   declare_c2_type(ModDNode, Node)                                         \
+1875   declare_c2_type(DivModNode, MultiNode)                                  \
+1876   declare_c2_type(DivModINode, DivModNode)                                \
+1877   declare_c2_type(DivModLNode, DivModNode)                                \
+
+</pre><hr></hr>
+</pre></td>
+</tr></table>
+</body></html>

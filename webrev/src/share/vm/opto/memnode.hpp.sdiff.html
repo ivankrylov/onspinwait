@@ -1,0 +1,193 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta charset="utf-8">
+<meta http-equiv="cache-control" content="no-cache" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="-1" />
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+a.print { font-size: x-small; }
+
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>hotspot Sdiff src/share/vm/opto </title>
+</head><body id="SUNWwebrev">
+<h2>src/share/vm/opto/memnode.hpp</h2>
+<a class="print" href="javascript:print()">Print this page</a>
+<pre></pre>
+
+<table><tr valign="top">
+<td><pre>
+
+</pre><hr></hr><pre>
+1056 // Ordering between a volatile store and a following volatile load.
+1057 // Requires multi-CPU visibility?
+1058 class MemBarVolatileNode: public MemBarNode {
+1059 public:
+1060   MemBarVolatileNode(Compile* C, int alias_idx, Node* precedent)
+1061     : MemBarNode(C, alias_idx, precedent) {}
+1062   virtual int Opcode() const;
+1063 };
+1064 
+1065 // Ordering within the same CPU.  Used to order unsafe memory references
+1066 // inside the compiler when we lack alias info.  Not needed "outside" the
+1067 // compiler because the CPU does all the ordering for us.
+1068 class MemBarCPUOrderNode: public MemBarNode {
+1069 public:
+1070   MemBarCPUOrderNode(Compile* C, int alias_idx, Node* precedent)
+1071     : MemBarNode(C, alias_idx, precedent) {}
+1072   virtual int Opcode() const;
+1073   virtual uint ideal_reg() const { return 0; } // not matched in the AD file
+1074 };
+1075 
+
+
+
+
+
+
+
+1076 // Isolation of object setup after an AllocateNode and before next safepoint.
+1077 // (See comment in memnode.cpp near InitializeNode::InitializeNode for semantics.)
+1078 class InitializeNode: public MemBarNode {
+1079   friend class AllocateNode;
+1080 
+1081   enum {
+1082     Incomplete    = 0,
+1083     Complete      = 1,
+1084     WithArraycopy = 2
+1085   };
+1086   int _is_complete;
+1087 
+1088   bool _does_not_escape;
+1089 
+1090 public:
+1091   enum {
+1092     Control    = TypeFunc::Control,
+1093     Memory     = TypeFunc::Memory,     // MergeMem for states affected by this op
+1094     RawAddress = TypeFunc::Parms+0,    // the newly-allocated raw address
+1095     RawStores  = TypeFunc::Parms+1     // zero or more stores (or TOP)
+
+</pre><hr></hr>
+</pre></td><td><pre>
+
+</pre><hr></hr><pre>
+1056 // Ordering between a volatile store and a following volatile load.
+1057 // Requires multi-CPU visibility?
+1058 class MemBarVolatileNode: public MemBarNode {
+1059 public:
+1060   MemBarVolatileNode(Compile* C, int alias_idx, Node* precedent)
+1061     : MemBarNode(C, alias_idx, precedent) {}
+1062   virtual int Opcode() const;
+1063 };
+1064 
+1065 // Ordering within the same CPU.  Used to order unsafe memory references
+1066 // inside the compiler when we lack alias info.  Not needed "outside" the
+1067 // compiler because the CPU does all the ordering for us.
+1068 class MemBarCPUOrderNode: public MemBarNode {
+1069 public:
+1070   MemBarCPUOrderNode(Compile* C, int alias_idx, Node* precedent)
+1071     : MemBarNode(C, alias_idx, precedent) {}
+1072   virtual int Opcode() const;
+1073   virtual uint ideal_reg() const { return 0; } // not matched in the AD file
+1074 };
+1075 
+<span class="new">1076 class SpinLoopHintNode: public MemBarNode {</span>
+<span class="new">1077 public:</span>
+<span class="new">1078   SpinLoopHintNode(Compile* C, int alias_idx, Node* precedent)</span>
+<span class="new">1079     : MemBarNode(C, alias_idx, precedent) {}</span>
+<span class="new">1080   virtual int Opcode() const;</span>
+<span class="new">1081 };</span>
+<span class="new">1082 </span>
+1083 // Isolation of object setup after an AllocateNode and before next safepoint.
+1084 // (See comment in memnode.cpp near InitializeNode::InitializeNode for semantics.)
+1085 class InitializeNode: public MemBarNode {
+1086   friend class AllocateNode;
+1087 
+1088   enum {
+1089     Incomplete    = 0,
+1090     Complete      = 1,
+1091     WithArraycopy = 2
+1092   };
+1093   int _is_complete;
+1094 
+1095   bool _does_not_escape;
+1096 
+1097 public:
+1098   enum {
+1099     Control    = TypeFunc::Control,
+1100     Memory     = TypeFunc::Memory,     // MergeMem for states affected by this op
+1101     RawAddress = TypeFunc::Parms+0,    // the newly-allocated raw address
+1102     RawStores  = TypeFunc::Parms+1     // zero or more stores (or TOP)
+
+</pre><hr></hr>
+</pre></td>
+</tr></table>
+</body></html>

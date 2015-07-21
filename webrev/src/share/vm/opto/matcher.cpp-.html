@@ -1,0 +1,2734 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta charset="utf-8">
+<meta http-equiv="cache-control" content="no-cache" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="-1" />
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+a.print { font-size: x-small; }
+
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>Old src/share/vm/opto/matcher.cpp</title>
+<body id="SUNWwebrev">
+<pre>
+   1 /*
+   2  * Copyright (c) 1997, 2015, Oracle and/or its affiliates. All rights reserved.
+   3  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4  *
+   5  * This code is free software; you can redistribute it and/or modify it
+   6  * under the terms of the GNU General Public License version 2 only, as
+   7  * published by the Free Software Foundation.
+   8  *
+   9  * This code is distributed in the hope that it will be useful, but WITHOUT
+  10  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  11  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  12  * version 2 for more details (a copy is included in the LICENSE file that
+  13  * accompanied this code).
+  14  *
+  15  * You should have received a copy of the GNU General Public License version
+  16  * 2 along with this work; if not, write to the Free Software Foundation,
+  17  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  18  *
+  19  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  20  * or visit www.oracle.com if you need additional information or have any
+  21  * questions.
+  22  *
+  23  */
+  24 
+  25 #include "precompiled.hpp"
+  26 #include "memory/allocation.inline.hpp"
+  27 #include "opto/ad.hpp"
+  28 #include "opto/addnode.hpp"
+  29 #include "opto/callnode.hpp"
+  30 #include "opto/idealGraphPrinter.hpp"
+  31 #include "opto/matcher.hpp"
+  32 #include "opto/memnode.hpp"
+  33 #include "opto/movenode.hpp"
+  34 #include "opto/opcodes.hpp"
+  35 #include "opto/regmask.hpp"
+  36 #include "opto/rootnode.hpp"
+  37 #include "opto/runtime.hpp"
+  38 #include "opto/type.hpp"
+  39 #include "opto/vectornode.hpp"
+  40 #include "runtime/os.hpp"
+  41 #include "runtime/sharedRuntime.hpp"
+  42 
+  43 OptoReg::Name OptoReg::c_frame_pointer;
+  44 
+  45 const RegMask *Matcher::idealreg2regmask[_last_machine_leaf];
+  46 RegMask Matcher::mreg2regmask[_last_Mach_Reg];
+  47 RegMask Matcher::STACK_ONLY_mask;
+  48 RegMask Matcher::c_frame_ptr_mask;
+  49 const uint Matcher::_begin_rematerialize = _BEGIN_REMATERIALIZE;
+  50 const uint Matcher::_end_rematerialize   = _END_REMATERIALIZE;
+  51 
+  52 //---------------------------Matcher-------------------------------------------
+  53 Matcher::Matcher()
+  54 : PhaseTransform( Phase::Ins_Select ),
+  55 #ifdef ASSERT
+  56   _old2new_map(C-&gt;comp_arena()),
+  57   _new2old_map(C-&gt;comp_arena()),
+  58 #endif
+  59   _shared_nodes(C-&gt;comp_arena()),
+  60   _reduceOp(reduceOp), _leftOp(leftOp), _rightOp(rightOp),
+  61   _swallowed(swallowed),
+  62   _begin_inst_chain_rule(_BEGIN_INST_CHAIN_RULE),
+  63   _end_inst_chain_rule(_END_INST_CHAIN_RULE),
+  64   _must_clone(must_clone),
+  65   _register_save_policy(register_save_policy),
+  66   _c_reg_save_policy(c_reg_save_policy),
+  67   _register_save_type(register_save_type),
+  68   _ruleName(ruleName),
+  69   _allocation_started(false),
+  70   _states_arena(Chunk::medium_size),
+  71   _visited(&amp;_states_arena),
+  72   _shared(&amp;_states_arena),
+  73   _dontcare(&amp;_states_arena) {
+  74   C-&gt;set_matcher(this);
+  75 
+  76   idealreg2spillmask  [Op_RegI] = NULL;
+  77   idealreg2spillmask  [Op_RegN] = NULL;
+  78   idealreg2spillmask  [Op_RegL] = NULL;
+  79   idealreg2spillmask  [Op_RegF] = NULL;
+  80   idealreg2spillmask  [Op_RegD] = NULL;
+  81   idealreg2spillmask  [Op_RegP] = NULL;
+  82   idealreg2spillmask  [Op_VecS] = NULL;
+  83   idealreg2spillmask  [Op_VecD] = NULL;
+  84   idealreg2spillmask  [Op_VecX] = NULL;
+  85   idealreg2spillmask  [Op_VecY] = NULL;
+  86   idealreg2spillmask  [Op_VecZ] = NULL;
+  87 
+  88   idealreg2debugmask  [Op_RegI] = NULL;
+  89   idealreg2debugmask  [Op_RegN] = NULL;
+  90   idealreg2debugmask  [Op_RegL] = NULL;
+  91   idealreg2debugmask  [Op_RegF] = NULL;
+  92   idealreg2debugmask  [Op_RegD] = NULL;
+  93   idealreg2debugmask  [Op_RegP] = NULL;
+  94   idealreg2debugmask  [Op_VecS] = NULL;
+  95   idealreg2debugmask  [Op_VecD] = NULL;
+  96   idealreg2debugmask  [Op_VecX] = NULL;
+  97   idealreg2debugmask  [Op_VecY] = NULL;
+  98   idealreg2debugmask  [Op_VecZ] = NULL;
+  99 
+ 100   idealreg2mhdebugmask[Op_RegI] = NULL;
+ 101   idealreg2mhdebugmask[Op_RegN] = NULL;
+ 102   idealreg2mhdebugmask[Op_RegL] = NULL;
+ 103   idealreg2mhdebugmask[Op_RegF] = NULL;
+ 104   idealreg2mhdebugmask[Op_RegD] = NULL;
+ 105   idealreg2mhdebugmask[Op_RegP] = NULL;
+ 106   idealreg2mhdebugmask[Op_VecS] = NULL;
+ 107   idealreg2mhdebugmask[Op_VecD] = NULL;
+ 108   idealreg2mhdebugmask[Op_VecX] = NULL;
+ 109   idealreg2mhdebugmask[Op_VecY] = NULL;
+ 110   idealreg2mhdebugmask[Op_VecZ] = NULL;
+ 111 
+ 112   debug_only(_mem_node = NULL;)   // Ideal memory node consumed by mach node
+ 113 }
+ 114 
+ 115 //------------------------------warp_incoming_stk_arg------------------------
+ 116 // This warps a VMReg into an OptoReg::Name
+ 117 OptoReg::Name Matcher::warp_incoming_stk_arg( VMReg reg ) {
+ 118   OptoReg::Name warped;
+ 119   if( reg-&gt;is_stack() ) {  // Stack slot argument?
+ 120     warped = OptoReg::add(_old_SP, reg-&gt;reg2stack() );
+ 121     warped = OptoReg::add(warped, C-&gt;out_preserve_stack_slots());
+ 122     if( warped &gt;= _in_arg_limit )
+ 123       _in_arg_limit = OptoReg::add(warped, 1); // Bump max stack slot seen
+ 124     if (!RegMask::can_represent_arg(warped)) {
+ 125       // the compiler cannot represent this method's calling sequence
+ 126       C-&gt;record_method_not_compilable_all_tiers("unsupported incoming calling sequence");
+ 127       return OptoReg::Bad;
+ 128     }
+ 129     return warped;
+ 130   }
+ 131   return OptoReg::as_OptoReg(reg);
+ 132 }
+ 133 
+ 134 //---------------------------compute_old_SP------------------------------------
+ 135 OptoReg::Name Compile::compute_old_SP() {
+ 136   int fixed    = fixed_slots();
+ 137   int preserve = in_preserve_stack_slots();
+ 138   return OptoReg::stack2reg(round_to(fixed + preserve, Matcher::stack_alignment_in_slots()));
+ 139 }
+ 140 
+ 141 
+ 142 
+ 143 #ifdef ASSERT
+ 144 void Matcher::verify_new_nodes_only(Node* xroot) {
+ 145   // Make sure that the new graph only references new nodes
+ 146   ResourceMark rm;
+ 147   Unique_Node_List worklist;
+ 148   VectorSet visited(Thread::current()-&gt;resource_area());
+ 149   worklist.push(xroot);
+ 150   while (worklist.size() &gt; 0) {
+ 151     Node* n = worklist.pop();
+ 152     visited &lt;&lt;= n-&gt;_idx;
+ 153     assert(C-&gt;node_arena()-&gt;contains(n), "dead node");
+ 154     for (uint j = 0; j &lt; n-&gt;req(); j++) {
+ 155       Node* in = n-&gt;in(j);
+ 156       if (in != NULL) {
+ 157         assert(C-&gt;node_arena()-&gt;contains(in), "dead node");
+ 158         if (!visited.test(in-&gt;_idx)) {
+ 159           worklist.push(in);
+ 160         }
+ 161       }
+ 162     }
+ 163   }
+ 164 }
+ 165 #endif
+ 166 
+ 167 
+ 168 //---------------------------match---------------------------------------------
+ 169 void Matcher::match( ) {
+ 170   if( MaxLabelRootDepth &lt; 100 ) { // Too small?
+ 171     assert(false, "invalid MaxLabelRootDepth, increase it to 100 minimum");
+ 172     MaxLabelRootDepth = 100;
+ 173   }
+ 174   // One-time initialization of some register masks.
+ 175   init_spill_mask( C-&gt;root()-&gt;in(1) );
+ 176   _return_addr_mask = return_addr();
+ 177 #ifdef _LP64
+ 178   // Pointers take 2 slots in 64-bit land
+ 179   _return_addr_mask.Insert(OptoReg::add(return_addr(),1));
+ 180 #endif
+ 181 
+ 182   // Map a Java-signature return type into return register-value
+ 183   // machine registers for 0, 1 and 2 returned values.
+ 184   const TypeTuple *range = C-&gt;tf()-&gt;range();
+ 185   if( range-&gt;cnt() &gt; TypeFunc::Parms ) { // If not a void function
+ 186     // Get ideal-register return type
+ 187     int ireg = range-&gt;field_at(TypeFunc::Parms)-&gt;ideal_reg();
+ 188     // Get machine return register
+ 189     uint sop = C-&gt;start()-&gt;Opcode();
+ 190     OptoRegPair regs = return_value(ireg, false);
+ 191 
+ 192     // And mask for same
+ 193     _return_value_mask = RegMask(regs.first());
+ 194     if( OptoReg::is_valid(regs.second()) )
+ 195       _return_value_mask.Insert(regs.second());
+ 196   }
+ 197 
+ 198   // ---------------
+ 199   // Frame Layout
+ 200 
+ 201   // Need the method signature to determine the incoming argument types,
+ 202   // because the types determine which registers the incoming arguments are
+ 203   // in, and this affects the matched code.
+ 204   const TypeTuple *domain = C-&gt;tf()-&gt;domain();
+ 205   uint             argcnt = domain-&gt;cnt() - TypeFunc::Parms;
+ 206   BasicType *sig_bt        = NEW_RESOURCE_ARRAY( BasicType, argcnt );
+ 207   VMRegPair *vm_parm_regs  = NEW_RESOURCE_ARRAY( VMRegPair, argcnt );
+ 208   _parm_regs               = NEW_RESOURCE_ARRAY( OptoRegPair, argcnt );
+ 209   _calling_convention_mask = NEW_RESOURCE_ARRAY( RegMask, argcnt );
+ 210   uint i;
+ 211   for( i = 0; i&lt;argcnt; i++ ) {
+ 212     sig_bt[i] = domain-&gt;field_at(i+TypeFunc::Parms)-&gt;basic_type();
+ 213   }
+ 214 
+ 215   // Pass array of ideal registers and length to USER code (from the AD file)
+ 216   // that will convert this to an array of register numbers.
+ 217   const StartNode *start = C-&gt;start();
+ 218   start-&gt;calling_convention( sig_bt, vm_parm_regs, argcnt );
+ 219 #ifdef ASSERT
+ 220   // Sanity check users' calling convention.  Real handy while trying to
+ 221   // get the initial port correct.
+ 222   { for (uint i = 0; i&lt;argcnt; i++) {
+ 223       if( !vm_parm_regs[i].first()-&gt;is_valid() &amp;&amp; !vm_parm_regs[i].second()-&gt;is_valid() ) {
+ 224         assert(domain-&gt;field_at(i+TypeFunc::Parms)==Type::HALF, "only allowed on halve" );
+ 225         _parm_regs[i].set_bad();
+ 226         continue;
+ 227       }
+ 228       VMReg parm_reg = vm_parm_regs[i].first();
+ 229       assert(parm_reg-&gt;is_valid(), "invalid arg?");
+ 230       if (parm_reg-&gt;is_reg()) {
+ 231         OptoReg::Name opto_parm_reg = OptoReg::as_OptoReg(parm_reg);
+ 232         assert(can_be_java_arg(opto_parm_reg) ||
+ 233                C-&gt;stub_function() == CAST_FROM_FN_PTR(address, OptoRuntime::rethrow_C) ||
+ 234                opto_parm_reg == inline_cache_reg(),
+ 235                "parameters in register must be preserved by runtime stubs");
+ 236       }
+ 237       for (uint j = 0; j &lt; i; j++) {
+ 238         assert(parm_reg != vm_parm_regs[j].first(),
+ 239                "calling conv. must produce distinct regs");
+ 240       }
+ 241     }
+ 242   }
+ 243 #endif
+ 244 
+ 245   // Do some initial frame layout.
+ 246 
+ 247   // Compute the old incoming SP (may be called FP) as
+ 248   //   OptoReg::stack0() + locks + in_preserve_stack_slots + pad2.
+ 249   _old_SP = C-&gt;compute_old_SP();
+ 250   assert( is_even(_old_SP), "must be even" );
+ 251 
+ 252   // Compute highest incoming stack argument as
+ 253   //   _old_SP + out_preserve_stack_slots + incoming argument size.
+ 254   _in_arg_limit = OptoReg::add(_old_SP, C-&gt;out_preserve_stack_slots());
+ 255   assert( is_even(_in_arg_limit), "out_preserve must be even" );
+ 256   for( i = 0; i &lt; argcnt; i++ ) {
+ 257     // Permit args to have no register
+ 258     _calling_convention_mask[i].Clear();
+ 259     if( !vm_parm_regs[i].first()-&gt;is_valid() &amp;&amp; !vm_parm_regs[i].second()-&gt;is_valid() ) {
+ 260       continue;
+ 261     }
+ 262     // calling_convention returns stack arguments as a count of
+ 263     // slots beyond OptoReg::stack0()/VMRegImpl::stack0.  We need to convert this to
+ 264     // the allocators point of view, taking into account all the
+ 265     // preserve area, locks &amp; pad2.
+ 266 
+ 267     OptoReg::Name reg1 = warp_incoming_stk_arg(vm_parm_regs[i].first());
+ 268     if( OptoReg::is_valid(reg1))
+ 269       _calling_convention_mask[i].Insert(reg1);
+ 270 
+ 271     OptoReg::Name reg2 = warp_incoming_stk_arg(vm_parm_regs[i].second());
+ 272     if( OptoReg::is_valid(reg2))
+ 273       _calling_convention_mask[i].Insert(reg2);
+ 274 
+ 275     // Saved biased stack-slot register number
+ 276     _parm_regs[i].set_pair(reg2, reg1);
+ 277   }
+ 278 
+ 279   // Finally, make sure the incoming arguments take up an even number of
+ 280   // words, in case the arguments or locals need to contain doubleword stack
+ 281   // slots.  The rest of the system assumes that stack slot pairs (in
+ 282   // particular, in the spill area) which look aligned will in fact be
+ 283   // aligned relative to the stack pointer in the target machine.  Double
+ 284   // stack slots will always be allocated aligned.
+ 285   _new_SP = OptoReg::Name(round_to(_in_arg_limit, RegMask::SlotsPerLong));
+ 286 
+ 287   // Compute highest outgoing stack argument as
+ 288   //   _new_SP + out_preserve_stack_slots + max(outgoing argument size).
+ 289   _out_arg_limit = OptoReg::add(_new_SP, C-&gt;out_preserve_stack_slots());
+ 290   assert( is_even(_out_arg_limit), "out_preserve must be even" );
+ 291 
+ 292   if (!RegMask::can_represent_arg(OptoReg::add(_out_arg_limit,-1))) {
+ 293     // the compiler cannot represent this method's calling sequence
+ 294     C-&gt;record_method_not_compilable("must be able to represent all call arguments in reg mask");
+ 295   }
+ 296 
+ 297   if (C-&gt;failing())  return;  // bailed out on incoming arg failure
+ 298 
+ 299   // ---------------
+ 300   // Collect roots of matcher trees.  Every node for which
+ 301   // _shared[_idx] is cleared is guaranteed to not be shared, and thus
+ 302   // can be a valid interior of some tree.
+ 303   find_shared( C-&gt;root() );
+ 304   find_shared( C-&gt;top() );
+ 305 
+ 306   C-&gt;print_method(PHASE_BEFORE_MATCHING);
+ 307 
+ 308   // Create new ideal node ConP #NULL even if it does exist in old space
+ 309   // to avoid false sharing if the corresponding mach node is not used.
+ 310   // The corresponding mach node is only used in rare cases for derived
+ 311   // pointers.
+ 312   Node* new_ideal_null = ConNode::make(TypePtr::NULL_PTR);
+ 313 
+ 314   // Swap out to old-space; emptying new-space
+ 315   Arena *old = C-&gt;node_arena()-&gt;move_contents(C-&gt;old_arena());
+ 316 
+ 317   // Save debug and profile information for nodes in old space:
+ 318   _old_node_note_array = C-&gt;node_note_array();
+ 319   if (_old_node_note_array != NULL) {
+ 320     C-&gt;set_node_note_array(new(C-&gt;comp_arena()) GrowableArray&lt;Node_Notes*&gt;
+ 321                            (C-&gt;comp_arena(), _old_node_note_array-&gt;length(),
+ 322                             0, NULL));
+ 323   }
+ 324 
+ 325   // Pre-size the new_node table to avoid the need for range checks.
+ 326   grow_new_node_array(C-&gt;unique());
+ 327 
+ 328   // Reset node counter so MachNodes start with _idx at 0
+ 329   int nodes = C-&gt;unique(); // save value
+ 330   C-&gt;set_unique(0);
+ 331   C-&gt;reset_dead_node_list();
+ 332 
+ 333   // Recursively match trees from old space into new space.
+ 334   // Correct leaves of new-space Nodes; they point to old-space.
+ 335   _visited.Clear();             // Clear visit bits for xform call
+ 336   C-&gt;set_cached_top_node(xform( C-&gt;top(), nodes ));
+ 337   if (!C-&gt;failing()) {
+ 338     Node* xroot =        xform( C-&gt;root(), 1 );
+ 339     if (xroot == NULL) {
+ 340       Matcher::soft_match_failure();  // recursive matching process failed
+ 341       C-&gt;record_method_not_compilable("instruction match failed");
+ 342     } else {
+ 343       // During matching shared constants were attached to C-&gt;root()
+ 344       // because xroot wasn't available yet, so transfer the uses to
+ 345       // the xroot.
+ 346       for( DUIterator_Fast jmax, j = C-&gt;root()-&gt;fast_outs(jmax); j &lt; jmax; j++ ) {
+ 347         Node* n = C-&gt;root()-&gt;fast_out(j);
+ 348         if (C-&gt;node_arena()-&gt;contains(n)) {
+ 349           assert(n-&gt;in(0) == C-&gt;root(), "should be control user");
+ 350           n-&gt;set_req(0, xroot);
+ 351           --j;
+ 352           --jmax;
+ 353         }
+ 354       }
+ 355 
+ 356       // Generate new mach node for ConP #NULL
+ 357       assert(new_ideal_null != NULL, "sanity");
+ 358       _mach_null = match_tree(new_ideal_null);
+ 359       // Don't set control, it will confuse GCM since there are no uses.
+ 360       // The control will be set when this node is used first time
+ 361       // in find_base_for_derived().
+ 362       assert(_mach_null != NULL, "");
+ 363 
+ 364       C-&gt;set_root(xroot-&gt;is_Root() ? xroot-&gt;as_Root() : NULL);
+ 365 
+ 366 #ifdef ASSERT
+ 367       verify_new_nodes_only(xroot);
+ 368 #endif
+ 369     }
+ 370   }
+ 371   if (C-&gt;top() == NULL || C-&gt;root() == NULL) {
+ 372     C-&gt;record_method_not_compilable("graph lost"); // %%% cannot happen?
+ 373   }
+ 374   if (C-&gt;failing()) {
+ 375     // delete old;
+ 376     old-&gt;destruct_contents();
+ 377     return;
+ 378   }
+ 379   assert( C-&gt;top(), "" );
+ 380   assert( C-&gt;root(), "" );
+ 381   validate_null_checks();
+ 382 
+ 383   // Now smoke old-space
+ 384   NOT_DEBUG( old-&gt;destruct_contents() );
+ 385 
+ 386   // ------------------------
+ 387   // Set up save-on-entry registers
+ 388   Fixup_Save_On_Entry( );
+ 389 }
+ 390 
+ 391 
+ 392 //------------------------------Fixup_Save_On_Entry----------------------------
+ 393 // The stated purpose of this routine is to take care of save-on-entry
+ 394 // registers.  However, the overall goal of the Match phase is to convert into
+ 395 // machine-specific instructions which have RegMasks to guide allocation.
+ 396 // So what this procedure really does is put a valid RegMask on each input
+ 397 // to the machine-specific variations of all Return, TailCall and Halt
+ 398 // instructions.  It also adds edgs to define the save-on-entry values (and of
+ 399 // course gives them a mask).
+ 400 
+ 401 static RegMask *init_input_masks( uint size, RegMask &amp;ret_adr, RegMask &amp;fp ) {
+ 402   RegMask *rms = NEW_RESOURCE_ARRAY( RegMask, size );
+ 403   // Do all the pre-defined register masks
+ 404   rms[TypeFunc::Control  ] = RegMask::Empty;
+ 405   rms[TypeFunc::I_O      ] = RegMask::Empty;
+ 406   rms[TypeFunc::Memory   ] = RegMask::Empty;
+ 407   rms[TypeFunc::ReturnAdr] = ret_adr;
+ 408   rms[TypeFunc::FramePtr ] = fp;
+ 409   return rms;
+ 410 }
+ 411 
+ 412 //---------------------------init_first_stack_mask-----------------------------
+ 413 // Create the initial stack mask used by values spilling to the stack.
+ 414 // Disallow any debug info in outgoing argument areas by setting the
+ 415 // initial mask accordingly.
+ 416 void Matcher::init_first_stack_mask() {
+ 417 
+ 418   // Allocate storage for spill masks as masks for the appropriate load type.
+ 419   RegMask *rms = (RegMask*)C-&gt;comp_arena()-&gt;Amalloc_D(sizeof(RegMask) * (3*6+5));
+ 420 
+ 421   idealreg2spillmask  [Op_RegN] = &amp;rms[0];
+ 422   idealreg2spillmask  [Op_RegI] = &amp;rms[1];
+ 423   idealreg2spillmask  [Op_RegL] = &amp;rms[2];
+ 424   idealreg2spillmask  [Op_RegF] = &amp;rms[3];
+ 425   idealreg2spillmask  [Op_RegD] = &amp;rms[4];
+ 426   idealreg2spillmask  [Op_RegP] = &amp;rms[5];
+ 427 
+ 428   idealreg2debugmask  [Op_RegN] = &amp;rms[6];
+ 429   idealreg2debugmask  [Op_RegI] = &amp;rms[7];
+ 430   idealreg2debugmask  [Op_RegL] = &amp;rms[8];
+ 431   idealreg2debugmask  [Op_RegF] = &amp;rms[9];
+ 432   idealreg2debugmask  [Op_RegD] = &amp;rms[10];
+ 433   idealreg2debugmask  [Op_RegP] = &amp;rms[11];
+ 434 
+ 435   idealreg2mhdebugmask[Op_RegN] = &amp;rms[12];
+ 436   idealreg2mhdebugmask[Op_RegI] = &amp;rms[13];
+ 437   idealreg2mhdebugmask[Op_RegL] = &amp;rms[14];
+ 438   idealreg2mhdebugmask[Op_RegF] = &amp;rms[15];
+ 439   idealreg2mhdebugmask[Op_RegD] = &amp;rms[16];
+ 440   idealreg2mhdebugmask[Op_RegP] = &amp;rms[17];
+ 441 
+ 442   idealreg2spillmask  [Op_VecS] = &amp;rms[18];
+ 443   idealreg2spillmask  [Op_VecD] = &amp;rms[19];
+ 444   idealreg2spillmask  [Op_VecX] = &amp;rms[20];
+ 445   idealreg2spillmask  [Op_VecY] = &amp;rms[21];
+ 446   idealreg2spillmask  [Op_VecZ] = &amp;rms[22];
+ 447 
+ 448   OptoReg::Name i;
+ 449 
+ 450   // At first, start with the empty mask
+ 451   C-&gt;FIRST_STACK_mask().Clear();
+ 452 
+ 453   // Add in the incoming argument area
+ 454   OptoReg::Name init_in = OptoReg::add(_old_SP, C-&gt;out_preserve_stack_slots());
+ 455   for (i = init_in; i &lt; _in_arg_limit; i = OptoReg::add(i,1)) {
+ 456     C-&gt;FIRST_STACK_mask().Insert(i);
+ 457   }
+ 458   // Add in all bits past the outgoing argument area
+ 459   guarantee(RegMask::can_represent_arg(OptoReg::add(_out_arg_limit,-1)),
+ 460             "must be able to represent all call arguments in reg mask");
+ 461   OptoReg::Name init = _out_arg_limit;
+ 462   for (i = init; RegMask::can_represent(i); i = OptoReg::add(i,1)) {
+ 463     C-&gt;FIRST_STACK_mask().Insert(i);
+ 464   }
+ 465   // Finally, set the "infinite stack" bit.
+ 466   C-&gt;FIRST_STACK_mask().set_AllStack();
+ 467 
+ 468   // Make spill masks.  Registers for their class, plus FIRST_STACK_mask.
+ 469   RegMask aligned_stack_mask = C-&gt;FIRST_STACK_mask();
+ 470   // Keep spill masks aligned.
+ 471   aligned_stack_mask.clear_to_pairs();
+ 472   assert(aligned_stack_mask.is_AllStack(), "should be infinite stack");
+ 473 
+ 474   *idealreg2spillmask[Op_RegP] = *idealreg2regmask[Op_RegP];
+ 475 #ifdef _LP64
+ 476   *idealreg2spillmask[Op_RegN] = *idealreg2regmask[Op_RegN];
+ 477    idealreg2spillmask[Op_RegN]-&gt;OR(C-&gt;FIRST_STACK_mask());
+ 478    idealreg2spillmask[Op_RegP]-&gt;OR(aligned_stack_mask);
+ 479 #else
+ 480    idealreg2spillmask[Op_RegP]-&gt;OR(C-&gt;FIRST_STACK_mask());
+ 481 #endif
+ 482   *idealreg2spillmask[Op_RegI] = *idealreg2regmask[Op_RegI];
+ 483    idealreg2spillmask[Op_RegI]-&gt;OR(C-&gt;FIRST_STACK_mask());
+ 484   *idealreg2spillmask[Op_RegL] = *idealreg2regmask[Op_RegL];
+ 485    idealreg2spillmask[Op_RegL]-&gt;OR(aligned_stack_mask);
+ 486   *idealreg2spillmask[Op_RegF] = *idealreg2regmask[Op_RegF];
+ 487    idealreg2spillmask[Op_RegF]-&gt;OR(C-&gt;FIRST_STACK_mask());
+ 488   *idealreg2spillmask[Op_RegD] = *idealreg2regmask[Op_RegD];
+ 489    idealreg2spillmask[Op_RegD]-&gt;OR(aligned_stack_mask);
+ 490 
+ 491   if (Matcher::vector_size_supported(T_BYTE,4)) {
+ 492     *idealreg2spillmask[Op_VecS] = *idealreg2regmask[Op_VecS];
+ 493      idealreg2spillmask[Op_VecS]-&gt;OR(C-&gt;FIRST_STACK_mask());
+ 494   }
+ 495   if (Matcher::vector_size_supported(T_FLOAT,2)) {
+ 496     // For VecD we need dual alignment and 8 bytes (2 slots) for spills.
+ 497     // RA guarantees such alignment since it is needed for Double and Long values.
+ 498     *idealreg2spillmask[Op_VecD] = *idealreg2regmask[Op_VecD];
+ 499      idealreg2spillmask[Op_VecD]-&gt;OR(aligned_stack_mask);
+ 500   }
+ 501   if (Matcher::vector_size_supported(T_FLOAT,4)) {
+ 502     // For VecX we need quadro alignment and 16 bytes (4 slots) for spills.
+ 503     //
+ 504     // RA can use input arguments stack slots for spills but until RA
+ 505     // we don't know frame size and offset of input arg stack slots.
+ 506     //
+ 507     // Exclude last input arg stack slots to avoid spilling vectors there
+ 508     // otherwise vector spills could stomp over stack slots in caller frame.
+ 509     OptoReg::Name in = OptoReg::add(_in_arg_limit, -1);
+ 510     for (int k = 1; (in &gt;= init_in) &amp;&amp; (k &lt; RegMask::SlotsPerVecX); k++) {
+ 511       aligned_stack_mask.Remove(in);
+ 512       in = OptoReg::add(in, -1);
+ 513     }
+ 514      aligned_stack_mask.clear_to_sets(RegMask::SlotsPerVecX);
+ 515      assert(aligned_stack_mask.is_AllStack(), "should be infinite stack");
+ 516     *idealreg2spillmask[Op_VecX] = *idealreg2regmask[Op_VecX];
+ 517      idealreg2spillmask[Op_VecX]-&gt;OR(aligned_stack_mask);
+ 518   }
+ 519   if (Matcher::vector_size_supported(T_FLOAT,8)) {
+ 520     // For VecY we need octo alignment and 32 bytes (8 slots) for spills.
+ 521     OptoReg::Name in = OptoReg::add(_in_arg_limit, -1);
+ 522     for (int k = 1; (in &gt;= init_in) &amp;&amp; (k &lt; RegMask::SlotsPerVecY); k++) {
+ 523       aligned_stack_mask.Remove(in);
+ 524       in = OptoReg::add(in, -1);
+ 525     }
+ 526      aligned_stack_mask.clear_to_sets(RegMask::SlotsPerVecY);
+ 527      assert(aligned_stack_mask.is_AllStack(), "should be infinite stack");
+ 528     *idealreg2spillmask[Op_VecY] = *idealreg2regmask[Op_VecY];
+ 529      idealreg2spillmask[Op_VecY]-&gt;OR(aligned_stack_mask);
+ 530   }
+ 531   if (Matcher::vector_size_supported(T_FLOAT,16)) {
+ 532     // For VecZ we need enough alignment and 64 bytes (16 slots) for spills.
+ 533     OptoReg::Name in = OptoReg::add(_in_arg_limit, -1);
+ 534     for (int k = 1; (in &gt;= init_in) &amp;&amp; (k &lt; RegMask::SlotsPerVecZ); k++) {
+ 535       aligned_stack_mask.Remove(in);
+ 536       in = OptoReg::add(in, -1);
+ 537     }
+ 538      aligned_stack_mask.clear_to_sets(RegMask::SlotsPerVecZ);
+ 539      assert(aligned_stack_mask.is_AllStack(), "should be infinite stack");
+ 540     *idealreg2spillmask[Op_VecZ] = *idealreg2regmask[Op_VecZ];
+ 541      idealreg2spillmask[Op_VecZ]-&gt;OR(aligned_stack_mask);
+ 542   }
+ 543    if (UseFPUForSpilling) {
+ 544      // This mask logic assumes that the spill operations are
+ 545      // symmetric and that the registers involved are the same size.
+ 546      // On sparc for instance we may have to use 64 bit moves will
+ 547      // kill 2 registers when used with F0-F31.
+ 548      idealreg2spillmask[Op_RegI]-&gt;OR(*idealreg2regmask[Op_RegF]);
+ 549      idealreg2spillmask[Op_RegF]-&gt;OR(*idealreg2regmask[Op_RegI]);
+ 550 #ifdef _LP64
+ 551      idealreg2spillmask[Op_RegN]-&gt;OR(*idealreg2regmask[Op_RegF]);
+ 552      idealreg2spillmask[Op_RegL]-&gt;OR(*idealreg2regmask[Op_RegD]);
+ 553      idealreg2spillmask[Op_RegD]-&gt;OR(*idealreg2regmask[Op_RegL]);
+ 554      idealreg2spillmask[Op_RegP]-&gt;OR(*idealreg2regmask[Op_RegD]);
+ 555 #else
+ 556      idealreg2spillmask[Op_RegP]-&gt;OR(*idealreg2regmask[Op_RegF]);
+ 557 #ifdef ARM
+ 558      // ARM has support for moving 64bit values between a pair of
+ 559      // integer registers and a double register
+ 560      idealreg2spillmask[Op_RegL]-&gt;OR(*idealreg2regmask[Op_RegD]);
+ 561      idealreg2spillmask[Op_RegD]-&gt;OR(*idealreg2regmask[Op_RegL]);
+ 562 #endif
+ 563 #endif
+ 564    }
+ 565 
+ 566   // Make up debug masks.  Any spill slot plus callee-save registers.
+ 567   // Caller-save registers are assumed to be trashable by the various
+ 568   // inline-cache fixup routines.
+ 569   *idealreg2debugmask  [Op_RegN]= *idealreg2spillmask[Op_RegN];
+ 570   *idealreg2debugmask  [Op_RegI]= *idealreg2spillmask[Op_RegI];
+ 571   *idealreg2debugmask  [Op_RegL]= *idealreg2spillmask[Op_RegL];
+ 572   *idealreg2debugmask  [Op_RegF]= *idealreg2spillmask[Op_RegF];
+ 573   *idealreg2debugmask  [Op_RegD]= *idealreg2spillmask[Op_RegD];
+ 574   *idealreg2debugmask  [Op_RegP]= *idealreg2spillmask[Op_RegP];
+ 575 
+ 576   *idealreg2mhdebugmask[Op_RegN]= *idealreg2spillmask[Op_RegN];
+ 577   *idealreg2mhdebugmask[Op_RegI]= *idealreg2spillmask[Op_RegI];
+ 578   *idealreg2mhdebugmask[Op_RegL]= *idealreg2spillmask[Op_RegL];
+ 579   *idealreg2mhdebugmask[Op_RegF]= *idealreg2spillmask[Op_RegF];
+ 580   *idealreg2mhdebugmask[Op_RegD]= *idealreg2spillmask[Op_RegD];
+ 581   *idealreg2mhdebugmask[Op_RegP]= *idealreg2spillmask[Op_RegP];
+ 582 
+ 583   // Prevent stub compilations from attempting to reference
+ 584   // callee-saved registers from debug info
+ 585   bool exclude_soe = !Compile::current()-&gt;is_method_compilation();
+ 586 
+ 587   for( i=OptoReg::Name(0); i&lt;OptoReg::Name(_last_Mach_Reg); i = OptoReg::add(i,1) ) {
+ 588     // registers the caller has to save do not work
+ 589     if( _register_save_policy[i] == 'C' ||
+ 590         _register_save_policy[i] == 'A' ||
+ 591         (_register_save_policy[i] == 'E' &amp;&amp; exclude_soe) ) {
+ 592       idealreg2debugmask  [Op_RegN]-&gt;Remove(i);
+ 593       idealreg2debugmask  [Op_RegI]-&gt;Remove(i); // Exclude save-on-call
+ 594       idealreg2debugmask  [Op_RegL]-&gt;Remove(i); // registers from debug
+ 595       idealreg2debugmask  [Op_RegF]-&gt;Remove(i); // masks
+ 596       idealreg2debugmask  [Op_RegD]-&gt;Remove(i);
+ 597       idealreg2debugmask  [Op_RegP]-&gt;Remove(i);
+ 598 
+ 599       idealreg2mhdebugmask[Op_RegN]-&gt;Remove(i);
+ 600       idealreg2mhdebugmask[Op_RegI]-&gt;Remove(i);
+ 601       idealreg2mhdebugmask[Op_RegL]-&gt;Remove(i);
+ 602       idealreg2mhdebugmask[Op_RegF]-&gt;Remove(i);
+ 603       idealreg2mhdebugmask[Op_RegD]-&gt;Remove(i);
+ 604       idealreg2mhdebugmask[Op_RegP]-&gt;Remove(i);
+ 605     }
+ 606   }
+ 607 
+ 608   // Subtract the register we use to save the SP for MethodHandle
+ 609   // invokes to from the debug mask.
+ 610   const RegMask save_mask = method_handle_invoke_SP_save_mask();
+ 611   idealreg2mhdebugmask[Op_RegN]-&gt;SUBTRACT(save_mask);
+ 612   idealreg2mhdebugmask[Op_RegI]-&gt;SUBTRACT(save_mask);
+ 613   idealreg2mhdebugmask[Op_RegL]-&gt;SUBTRACT(save_mask);
+ 614   idealreg2mhdebugmask[Op_RegF]-&gt;SUBTRACT(save_mask);
+ 615   idealreg2mhdebugmask[Op_RegD]-&gt;SUBTRACT(save_mask);
+ 616   idealreg2mhdebugmask[Op_RegP]-&gt;SUBTRACT(save_mask);
+ 617 }
+ 618 
+ 619 //---------------------------is_save_on_entry----------------------------------
+ 620 bool Matcher::is_save_on_entry( int reg ) {
+ 621   return
+ 622     _register_save_policy[reg] == 'E' ||
+ 623     _register_save_policy[reg] == 'A' || // Save-on-entry register?
+ 624     // Also save argument registers in the trampolining stubs
+ 625     (C-&gt;save_argument_registers() &amp;&amp; is_spillable_arg(reg));
+ 626 }
+ 627 
+ 628 //---------------------------Fixup_Save_On_Entry-------------------------------
+ 629 void Matcher::Fixup_Save_On_Entry( ) {
+ 630   init_first_stack_mask();
+ 631 
+ 632   Node *root = C-&gt;root();       // Short name for root
+ 633   // Count number of save-on-entry registers.
+ 634   uint soe_cnt = number_of_saved_registers();
+ 635   uint i;
+ 636 
+ 637   // Find the procedure Start Node
+ 638   StartNode *start = C-&gt;start();
+ 639   assert( start, "Expect a start node" );
+ 640 
+ 641   // Save argument registers in the trampolining stubs
+ 642   if( C-&gt;save_argument_registers() )
+ 643     for( i = 0; i &lt; _last_Mach_Reg; i++ )
+ 644       if( is_spillable_arg(i) )
+ 645         soe_cnt++;
+ 646 
+ 647   // Input RegMask array shared by all Returns.
+ 648   // The type for doubles and longs has a count of 2, but
+ 649   // there is only 1 returned value
+ 650   uint ret_edge_cnt = TypeFunc::Parms + ((C-&gt;tf()-&gt;range()-&gt;cnt() == TypeFunc::Parms) ? 0 : 1);
+ 651   RegMask *ret_rms  = init_input_masks( ret_edge_cnt + soe_cnt, _return_addr_mask, c_frame_ptr_mask );
+ 652   // Returns have 0 or 1 returned values depending on call signature.
+ 653   // Return register is specified by return_value in the AD file.
+ 654   if (ret_edge_cnt &gt; TypeFunc::Parms)
+ 655     ret_rms[TypeFunc::Parms+0] = _return_value_mask;
+ 656 
+ 657   // Input RegMask array shared by all Rethrows.
+ 658   uint reth_edge_cnt = TypeFunc::Parms+1;
+ 659   RegMask *reth_rms  = init_input_masks( reth_edge_cnt + soe_cnt, _return_addr_mask, c_frame_ptr_mask );
+ 660   // Rethrow takes exception oop only, but in the argument 0 slot.
+ 661   reth_rms[TypeFunc::Parms] = mreg2regmask[find_receiver(false)];
+ 662 #ifdef _LP64
+ 663   // Need two slots for ptrs in 64-bit land
+ 664   reth_rms[TypeFunc::Parms].Insert(OptoReg::add(OptoReg::Name(find_receiver(false)),1));
+ 665 #endif
+ 666 
+ 667   // Input RegMask array shared by all TailCalls
+ 668   uint tail_call_edge_cnt = TypeFunc::Parms+2;
+ 669   RegMask *tail_call_rms = init_input_masks( tail_call_edge_cnt + soe_cnt, _return_addr_mask, c_frame_ptr_mask );
+ 670 
+ 671   // Input RegMask array shared by all TailJumps
+ 672   uint tail_jump_edge_cnt = TypeFunc::Parms+2;
+ 673   RegMask *tail_jump_rms = init_input_masks( tail_jump_edge_cnt + soe_cnt, _return_addr_mask, c_frame_ptr_mask );
+ 674 
+ 675   // TailCalls have 2 returned values (target &amp; moop), whose masks come
+ 676   // from the usual MachNode/MachOper mechanism.  Find a sample
+ 677   // TailCall to extract these masks and put the correct masks into
+ 678   // the tail_call_rms array.
+ 679   for( i=1; i &lt; root-&gt;req(); i++ ) {
+ 680     MachReturnNode *m = root-&gt;in(i)-&gt;as_MachReturn();
+ 681     if( m-&gt;ideal_Opcode() == Op_TailCall ) {
+ 682       tail_call_rms[TypeFunc::Parms+0] = m-&gt;MachNode::in_RegMask(TypeFunc::Parms+0);
+ 683       tail_call_rms[TypeFunc::Parms+1] = m-&gt;MachNode::in_RegMask(TypeFunc::Parms+1);
+ 684       break;
+ 685     }
+ 686   }
+ 687 
+ 688   // TailJumps have 2 returned values (target &amp; ex_oop), whose masks come
+ 689   // from the usual MachNode/MachOper mechanism.  Find a sample
+ 690   // TailJump to extract these masks and put the correct masks into
+ 691   // the tail_jump_rms array.
+ 692   for( i=1; i &lt; root-&gt;req(); i++ ) {
+ 693     MachReturnNode *m = root-&gt;in(i)-&gt;as_MachReturn();
+ 694     if( m-&gt;ideal_Opcode() == Op_TailJump ) {
+ 695       tail_jump_rms[TypeFunc::Parms+0] = m-&gt;MachNode::in_RegMask(TypeFunc::Parms+0);
+ 696       tail_jump_rms[TypeFunc::Parms+1] = m-&gt;MachNode::in_RegMask(TypeFunc::Parms+1);
+ 697       break;
+ 698     }
+ 699   }
+ 700 
+ 701   // Input RegMask array shared by all Halts
+ 702   uint halt_edge_cnt = TypeFunc::Parms;
+ 703   RegMask *halt_rms = init_input_masks( halt_edge_cnt + soe_cnt, _return_addr_mask, c_frame_ptr_mask );
+ 704 
+ 705   // Capture the return input masks into each exit flavor
+ 706   for( i=1; i &lt; root-&gt;req(); i++ ) {
+ 707     MachReturnNode *exit = root-&gt;in(i)-&gt;as_MachReturn();
+ 708     switch( exit-&gt;ideal_Opcode() ) {
+ 709       case Op_Return   : exit-&gt;_in_rms = ret_rms;  break;
+ 710       case Op_Rethrow  : exit-&gt;_in_rms = reth_rms; break;
+ 711       case Op_TailCall : exit-&gt;_in_rms = tail_call_rms; break;
+ 712       case Op_TailJump : exit-&gt;_in_rms = tail_jump_rms; break;
+ 713       case Op_Halt     : exit-&gt;_in_rms = halt_rms; break;
+ 714       default          : ShouldNotReachHere();
+ 715     }
+ 716   }
+ 717 
+ 718   // Next unused projection number from Start.
+ 719   int proj_cnt = C-&gt;tf()-&gt;domain()-&gt;cnt();
+ 720 
+ 721   // Do all the save-on-entry registers.  Make projections from Start for
+ 722   // them, and give them a use at the exit points.  To the allocator, they
+ 723   // look like incoming register arguments.
+ 724   for( i = 0; i &lt; _last_Mach_Reg; i++ ) {
+ 725     if( is_save_on_entry(i) ) {
+ 726 
+ 727       // Add the save-on-entry to the mask array
+ 728       ret_rms      [      ret_edge_cnt] = mreg2regmask[i];
+ 729       reth_rms     [     reth_edge_cnt] = mreg2regmask[i];
+ 730       tail_call_rms[tail_call_edge_cnt] = mreg2regmask[i];
+ 731       tail_jump_rms[tail_jump_edge_cnt] = mreg2regmask[i];
+ 732       // Halts need the SOE registers, but only in the stack as debug info.
+ 733       // A just-prior uncommon-trap or deoptimization will use the SOE regs.
+ 734       halt_rms     [     halt_edge_cnt] = *idealreg2spillmask[_register_save_type[i]];
+ 735 
+ 736       Node *mproj;
+ 737 
+ 738       // Is this a RegF low half of a RegD?  Double up 2 adjacent RegF's
+ 739       // into a single RegD.
+ 740       if( (i&amp;1) == 0 &amp;&amp;
+ 741           _register_save_type[i  ] == Op_RegF &amp;&amp;
+ 742           _register_save_type[i+1] == Op_RegF &amp;&amp;
+ 743           is_save_on_entry(i+1) ) {
+ 744         // Add other bit for double
+ 745         ret_rms      [      ret_edge_cnt].Insert(OptoReg::Name(i+1));
+ 746         reth_rms     [     reth_edge_cnt].Insert(OptoReg::Name(i+1));
+ 747         tail_call_rms[tail_call_edge_cnt].Insert(OptoReg::Name(i+1));
+ 748         tail_jump_rms[tail_jump_edge_cnt].Insert(OptoReg::Name(i+1));
+ 749         halt_rms     [     halt_edge_cnt].Insert(OptoReg::Name(i+1));
+ 750         mproj = new MachProjNode( start, proj_cnt, ret_rms[ret_edge_cnt], Op_RegD );
+ 751         proj_cnt += 2;          // Skip 2 for doubles
+ 752       }
+ 753       else if( (i&amp;1) == 1 &amp;&amp;    // Else check for high half of double
+ 754                _register_save_type[i-1] == Op_RegF &amp;&amp;
+ 755                _register_save_type[i  ] == Op_RegF &amp;&amp;
+ 756                is_save_on_entry(i-1) ) {
+ 757         ret_rms      [      ret_edge_cnt] = RegMask::Empty;
+ 758         reth_rms     [     reth_edge_cnt] = RegMask::Empty;
+ 759         tail_call_rms[tail_call_edge_cnt] = RegMask::Empty;
+ 760         tail_jump_rms[tail_jump_edge_cnt] = RegMask::Empty;
+ 761         halt_rms     [     halt_edge_cnt] = RegMask::Empty;
+ 762         mproj = C-&gt;top();
+ 763       }
+ 764       // Is this a RegI low half of a RegL?  Double up 2 adjacent RegI's
+ 765       // into a single RegL.
+ 766       else if( (i&amp;1) == 0 &amp;&amp;
+ 767           _register_save_type[i  ] == Op_RegI &amp;&amp;
+ 768           _register_save_type[i+1] == Op_RegI &amp;&amp;
+ 769         is_save_on_entry(i+1) ) {
+ 770         // Add other bit for long
+ 771         ret_rms      [      ret_edge_cnt].Insert(OptoReg::Name(i+1));
+ 772         reth_rms     [     reth_edge_cnt].Insert(OptoReg::Name(i+1));
+ 773         tail_call_rms[tail_call_edge_cnt].Insert(OptoReg::Name(i+1));
+ 774         tail_jump_rms[tail_jump_edge_cnt].Insert(OptoReg::Name(i+1));
+ 775         halt_rms     [     halt_edge_cnt].Insert(OptoReg::Name(i+1));
+ 776         mproj = new MachProjNode( start, proj_cnt, ret_rms[ret_edge_cnt], Op_RegL );
+ 777         proj_cnt += 2;          // Skip 2 for longs
+ 778       }
+ 779       else if( (i&amp;1) == 1 &amp;&amp;    // Else check for high half of long
+ 780                _register_save_type[i-1] == Op_RegI &amp;&amp;
+ 781                _register_save_type[i  ] == Op_RegI &amp;&amp;
+ 782                is_save_on_entry(i-1) ) {
+ 783         ret_rms      [      ret_edge_cnt] = RegMask::Empty;
+ 784         reth_rms     [     reth_edge_cnt] = RegMask::Empty;
+ 785         tail_call_rms[tail_call_edge_cnt] = RegMask::Empty;
+ 786         tail_jump_rms[tail_jump_edge_cnt] = RegMask::Empty;
+ 787         halt_rms     [     halt_edge_cnt] = RegMask::Empty;
+ 788         mproj = C-&gt;top();
+ 789       } else {
+ 790         // Make a projection for it off the Start
+ 791         mproj = new MachProjNode( start, proj_cnt++, ret_rms[ret_edge_cnt], _register_save_type[i] );
+ 792       }
+ 793 
+ 794       ret_edge_cnt ++;
+ 795       reth_edge_cnt ++;
+ 796       tail_call_edge_cnt ++;
+ 797       tail_jump_edge_cnt ++;
+ 798       halt_edge_cnt ++;
+ 799 
+ 800       // Add a use of the SOE register to all exit paths
+ 801       for( uint j=1; j &lt; root-&gt;req(); j++ )
+ 802         root-&gt;in(j)-&gt;add_req(mproj);
+ 803     } // End of if a save-on-entry register
+ 804   } // End of for all machine registers
+ 805 }
+ 806 
+ 807 //------------------------------init_spill_mask--------------------------------
+ 808 void Matcher::init_spill_mask( Node *ret ) {
+ 809   if( idealreg2regmask[Op_RegI] ) return; // One time only init
+ 810 
+ 811   OptoReg::c_frame_pointer = c_frame_pointer();
+ 812   c_frame_ptr_mask = c_frame_pointer();
+ 813 #ifdef _LP64
+ 814   // pointers are twice as big
+ 815   c_frame_ptr_mask.Insert(OptoReg::add(c_frame_pointer(),1));
+ 816 #endif
+ 817 
+ 818   // Start at OptoReg::stack0()
+ 819   STACK_ONLY_mask.Clear();
+ 820   OptoReg::Name init = OptoReg::stack2reg(0);
+ 821   // STACK_ONLY_mask is all stack bits
+ 822   OptoReg::Name i;
+ 823   for (i = init; RegMask::can_represent(i); i = OptoReg::add(i,1))
+ 824     STACK_ONLY_mask.Insert(i);
+ 825   // Also set the "infinite stack" bit.
+ 826   STACK_ONLY_mask.set_AllStack();
+ 827 
+ 828   // Copy the register names over into the shared world
+ 829   for( i=OptoReg::Name(0); i&lt;OptoReg::Name(_last_Mach_Reg); i = OptoReg::add(i,1) ) {
+ 830     // SharedInfo::regName[i] = regName[i];
+ 831     // Handy RegMasks per machine register
+ 832     mreg2regmask[i].Insert(i);
+ 833   }
+ 834 
+ 835   // Grab the Frame Pointer
+ 836   Node *fp  = ret-&gt;in(TypeFunc::FramePtr);
+ 837   Node *mem = ret-&gt;in(TypeFunc::Memory);
+ 838   const TypePtr* atp = TypePtr::BOTTOM;
+ 839   // Share frame pointer while making spill ops
+ 840   set_shared(fp);
+ 841 
+ 842   // Compute generic short-offset Loads
+ 843 #ifdef _LP64
+ 844   MachNode *spillCP = match_tree(new LoadNNode(NULL,mem,fp,atp,TypeInstPtr::BOTTOM,MemNode::unordered));
+ 845 #endif
+ 846   MachNode *spillI  = match_tree(new LoadINode(NULL,mem,fp,atp,TypeInt::INT,MemNode::unordered));
+ 847   MachNode *spillL  = match_tree(new LoadLNode(NULL,mem,fp,atp,TypeLong::LONG,MemNode::unordered, LoadNode::DependsOnlyOnTest, false));
+ 848   MachNode *spillF  = match_tree(new LoadFNode(NULL,mem,fp,atp,Type::FLOAT,MemNode::unordered));
+ 849   MachNode *spillD  = match_tree(new LoadDNode(NULL,mem,fp,atp,Type::DOUBLE,MemNode::unordered));
+ 850   MachNode *spillP  = match_tree(new LoadPNode(NULL,mem,fp,atp,TypeInstPtr::BOTTOM,MemNode::unordered));
+ 851   assert(spillI != NULL &amp;&amp; spillL != NULL &amp;&amp; spillF != NULL &amp;&amp;
+ 852          spillD != NULL &amp;&amp; spillP != NULL, "");
+ 853   // Get the ADLC notion of the right regmask, for each basic type.
+ 854 #ifdef _LP64
+ 855   idealreg2regmask[Op_RegN] = &amp;spillCP-&gt;out_RegMask();
+ 856 #endif
+ 857   idealreg2regmask[Op_RegI] = &amp;spillI-&gt;out_RegMask();
+ 858   idealreg2regmask[Op_RegL] = &amp;spillL-&gt;out_RegMask();
+ 859   idealreg2regmask[Op_RegF] = &amp;spillF-&gt;out_RegMask();
+ 860   idealreg2regmask[Op_RegD] = &amp;spillD-&gt;out_RegMask();
+ 861   idealreg2regmask[Op_RegP] = &amp;spillP-&gt;out_RegMask();
+ 862 
+ 863   // Vector regmasks.
+ 864   if (Matcher::vector_size_supported(T_BYTE,4)) {
+ 865     TypeVect::VECTS = TypeVect::make(T_BYTE, 4);
+ 866     MachNode *spillVectS = match_tree(new LoadVectorNode(NULL,mem,fp,atp,TypeVect::VECTS));
+ 867     idealreg2regmask[Op_VecS] = &amp;spillVectS-&gt;out_RegMask();
+ 868   }
+ 869   if (Matcher::vector_size_supported(T_FLOAT,2)) {
+ 870     MachNode *spillVectD = match_tree(new LoadVectorNode(NULL,mem,fp,atp,TypeVect::VECTD));
+ 871     idealreg2regmask[Op_VecD] = &amp;spillVectD-&gt;out_RegMask();
+ 872   }
+ 873   if (Matcher::vector_size_supported(T_FLOAT,4)) {
+ 874     MachNode *spillVectX = match_tree(new LoadVectorNode(NULL,mem,fp,atp,TypeVect::VECTX));
+ 875     idealreg2regmask[Op_VecX] = &amp;spillVectX-&gt;out_RegMask();
+ 876   }
+ 877   if (Matcher::vector_size_supported(T_FLOAT,8)) {
+ 878     MachNode *spillVectY = match_tree(new LoadVectorNode(NULL,mem,fp,atp,TypeVect::VECTY));
+ 879     idealreg2regmask[Op_VecY] = &amp;spillVectY-&gt;out_RegMask();
+ 880   }
+ 881   if (Matcher::vector_size_supported(T_FLOAT,16)) {
+ 882     MachNode *spillVectZ = match_tree(new LoadVectorNode(NULL,mem,fp,atp,TypeVect::VECTZ));
+ 883     idealreg2regmask[Op_VecZ] = &amp;spillVectZ-&gt;out_RegMask();
+ 884   }
+ 885 }
+ 886 
+ 887 #ifdef ASSERT
+ 888 static void match_alias_type(Compile* C, Node* n, Node* m) {
+ 889   if (!VerifyAliases)  return;  // do not go looking for trouble by default
+ 890   const TypePtr* nat = n-&gt;adr_type();
+ 891   const TypePtr* mat = m-&gt;adr_type();
+ 892   int nidx = C-&gt;get_alias_index(nat);
+ 893   int midx = C-&gt;get_alias_index(mat);
+ 894   // Detune the assert for cases like (AndI 0xFF (LoadB p)).
+ 895   if (nidx == Compile::AliasIdxTop &amp;&amp; midx &gt;= Compile::AliasIdxRaw) {
+ 896     for (uint i = 1; i &lt; n-&gt;req(); i++) {
+ 897       Node* n1 = n-&gt;in(i);
+ 898       const TypePtr* n1at = n1-&gt;adr_type();
+ 899       if (n1at != NULL) {
+ 900         nat = n1at;
+ 901         nidx = C-&gt;get_alias_index(n1at);
+ 902       }
+ 903     }
+ 904   }
+ 905   // %%% Kludgery.  Instead, fix ideal adr_type methods for all these cases:
+ 906   if (nidx == Compile::AliasIdxTop &amp;&amp; midx == Compile::AliasIdxRaw) {
+ 907     switch (n-&gt;Opcode()) {
+ 908     case Op_PrefetchAllocation:
+ 909       nidx = Compile::AliasIdxRaw;
+ 910       nat = TypeRawPtr::BOTTOM;
+ 911       break;
+ 912     }
+ 913   }
+ 914   if (nidx == Compile::AliasIdxRaw &amp;&amp; midx == Compile::AliasIdxTop) {
+ 915     switch (n-&gt;Opcode()) {
+ 916     case Op_ClearArray:
+ 917       midx = Compile::AliasIdxRaw;
+ 918       mat = TypeRawPtr::BOTTOM;
+ 919       break;
+ 920     }
+ 921   }
+ 922   if (nidx == Compile::AliasIdxTop &amp;&amp; midx == Compile::AliasIdxBot) {
+ 923     switch (n-&gt;Opcode()) {
+ 924     case Op_Return:
+ 925     case Op_Rethrow:
+ 926     case Op_Halt:
+ 927     case Op_TailCall:
+ 928     case Op_TailJump:
+ 929       nidx = Compile::AliasIdxBot;
+ 930       nat = TypePtr::BOTTOM;
+ 931       break;
+ 932     }
+ 933   }
+ 934   if (nidx == Compile::AliasIdxBot &amp;&amp; midx == Compile::AliasIdxTop) {
+ 935     switch (n-&gt;Opcode()) {
+ 936     case Op_StrComp:
+ 937     case Op_StrEquals:
+ 938     case Op_StrIndexOf:
+ 939     case Op_AryEq:
+ 940     case Op_MemBarVolatile:
+ 941     case Op_MemBarCPUOrder: // %%% these ideals should have narrower adr_type?
+ 942     case Op_EncodeISOArray:
+ 943       nidx = Compile::AliasIdxTop;
+ 944       nat = NULL;
+ 945       break;
+ 946     }
+ 947   }
+ 948   if (nidx != midx) {
+ 949     if (PrintOpto || (PrintMiscellaneous &amp;&amp; (WizardMode || Verbose))) {
+ 950       tty-&gt;print_cr("==== Matcher alias shift %d =&gt; %d", nidx, midx);
+ 951       n-&gt;dump();
+ 952       m-&gt;dump();
+ 953     }
+ 954     assert(C-&gt;subsume_loads() &amp;&amp; C-&gt;must_alias(nat, midx),
+ 955            "must not lose alias info when matching");
+ 956   }
+ 957 }
+ 958 #endif
+ 959 
+ 960 
+ 961 //------------------------------MStack-----------------------------------------
+ 962 // State and MStack class used in xform() and find_shared() iterative methods.
+ 963 enum Node_State { Pre_Visit,  // node has to be pre-visited
+ 964                       Visit,  // visit node
+ 965                  Post_Visit,  // post-visit node
+ 966              Alt_Post_Visit   // alternative post-visit path
+ 967                 };
+ 968 
+ 969 class MStack: public Node_Stack {
+ 970   public:
+ 971     MStack(int size) : Node_Stack(size) { }
+ 972 
+ 973     void push(Node *n, Node_State ns) {
+ 974       Node_Stack::push(n, (uint)ns);
+ 975     }
+ 976     void push(Node *n, Node_State ns, Node *parent, int indx) {
+ 977       ++_inode_top;
+ 978       if ((_inode_top + 1) &gt;= _inode_max) grow();
+ 979       _inode_top-&gt;node = parent;
+ 980       _inode_top-&gt;indx = (uint)indx;
+ 981       ++_inode_top;
+ 982       _inode_top-&gt;node = n;
+ 983       _inode_top-&gt;indx = (uint)ns;
+ 984     }
+ 985     Node *parent() {
+ 986       pop();
+ 987       return node();
+ 988     }
+ 989     Node_State state() const {
+ 990       return (Node_State)index();
+ 991     }
+ 992     void set_state(Node_State ns) {
+ 993       set_index((uint)ns);
+ 994     }
+ 995 };
+ 996 
+ 997 
+ 998 //------------------------------xform------------------------------------------
+ 999 // Given a Node in old-space, Match him (Label/Reduce) to produce a machine
+1000 // Node in new-space.  Given a new-space Node, recursively walk his children.
+1001 Node *Matcher::transform( Node *n ) { ShouldNotCallThis(); return n; }
+1002 Node *Matcher::xform( Node *n, int max_stack ) {
+1003   // Use one stack to keep both: child's node/state and parent's node/index
+1004   MStack mstack(max_stack * 2 * 2); // C-&gt;unique() * 2 * 2
+1005   mstack.push(n, Visit, NULL, -1);  // set NULL as parent to indicate root
+1006 
+1007   while (mstack.is_nonempty()) {
+1008     C-&gt;check_node_count(NodeLimitFudgeFactor, "too many nodes matching instructions");
+1009     if (C-&gt;failing()) return NULL;
+1010     n = mstack.node();          // Leave node on stack
+1011     Node_State nstate = mstack.state();
+1012     if (nstate == Visit) {
+1013       mstack.set_state(Post_Visit);
+1014       Node *oldn = n;
+1015       // Old-space or new-space check
+1016       if (!C-&gt;node_arena()-&gt;contains(n)) {
+1017         // Old space!
+1018         Node* m;
+1019         if (has_new_node(n)) {  // Not yet Label/Reduced
+1020           m = new_node(n);
+1021         } else {
+1022           if (!is_dontcare(n)) { // Matcher can match this guy
+1023             // Calls match special.  They match alone with no children.
+1024             // Their children, the incoming arguments, match normally.
+1025             m = n-&gt;is_SafePoint() ? match_sfpt(n-&gt;as_SafePoint()):match_tree(n);
+1026             if (C-&gt;failing())  return NULL;
+1027             if (m == NULL) { Matcher::soft_match_failure(); return NULL; }
+1028           } else {                  // Nothing the matcher cares about
+1029             if( n-&gt;is_Proj() &amp;&amp; n-&gt;in(0)-&gt;is_Multi()) {       // Projections?
+1030               // Convert to machine-dependent projection
+1031               m = n-&gt;in(0)-&gt;as_Multi()-&gt;match( n-&gt;as_Proj(), this );
+1032 #ifdef ASSERT
+1033               _new2old_map.map(m-&gt;_idx, n);
+1034 #endif
+1035               if (m-&gt;in(0) != NULL) // m might be top
+1036                 collect_null_checks(m, n);
+1037             } else {                // Else just a regular 'ol guy
+1038               m = n-&gt;clone();       // So just clone into new-space
+1039 #ifdef ASSERT
+1040               _new2old_map.map(m-&gt;_idx, n);
+1041 #endif
+1042               // Def-Use edges will be added incrementally as Uses
+1043               // of this node are matched.
+1044               assert(m-&gt;outcnt() == 0, "no Uses of this clone yet");
+1045             }
+1046           }
+1047 
+1048           set_new_node(n, m);       // Map old to new
+1049           if (_old_node_note_array != NULL) {
+1050             Node_Notes* nn = C-&gt;locate_node_notes(_old_node_note_array,
+1051                                                   n-&gt;_idx);
+1052             C-&gt;set_node_notes_at(m-&gt;_idx, nn);
+1053           }
+1054           debug_only(match_alias_type(C, n, m));
+1055         }
+1056         n = m;    // n is now a new-space node
+1057         mstack.set_node(n);
+1058       }
+1059 
+1060       // New space!
+1061       if (_visited.test_set(n-&gt;_idx)) continue; // while(mstack.is_nonempty())
+1062 
+1063       int i;
+1064       // Put precedence edges on stack first (match them last).
+1065       for (i = oldn-&gt;req(); (uint)i &lt; oldn-&gt;len(); i++) {
+1066         Node *m = oldn-&gt;in(i);
+1067         if (m == NULL) break;
+1068         // set -1 to call add_prec() instead of set_req() during Step1
+1069         mstack.push(m, Visit, n, -1);
+1070       }
+1071 
+1072       // Handle precedence edges for interior nodes
+1073       for (i = n-&gt;len()-1; (uint)i &gt;= n-&gt;req(); i--) {
+1074         Node *m = n-&gt;in(i);
+1075         if (m == NULL || C-&gt;node_arena()-&gt;contains(m)) continue;
+1076         n-&gt;rm_prec(i);
+1077         // set -1 to call add_prec() instead of set_req() during Step1
+1078         mstack.push(m, Visit, n, -1);
+1079       }
+1080 
+1081       // For constant debug info, I'd rather have unmatched constants.
+1082       int cnt = n-&gt;req();
+1083       JVMState* jvms = n-&gt;jvms();
+1084       int debug_cnt = jvms ? jvms-&gt;debug_start() : cnt;
+1085 
+1086       // Now do only debug info.  Clone constants rather than matching.
+1087       // Constants are represented directly in the debug info without
+1088       // the need for executable machine instructions.
+1089       // Monitor boxes are also represented directly.
+1090       for (i = cnt - 1; i &gt;= debug_cnt; --i) { // For all debug inputs do
+1091         Node *m = n-&gt;in(i);          // Get input
+1092         int op = m-&gt;Opcode();
+1093         assert((op == Op_BoxLock) == jvms-&gt;is_monitor_use(i), "boxes only at monitor sites");
+1094         if( op == Op_ConI || op == Op_ConP || op == Op_ConN || op == Op_ConNKlass ||
+1095             op == Op_ConF || op == Op_ConD || op == Op_ConL
+1096             // || op == Op_BoxLock  // %%%% enable this and remove (+++) in chaitin.cpp
+1097             ) {
+1098           m = m-&gt;clone();
+1099 #ifdef ASSERT
+1100           _new2old_map.map(m-&gt;_idx, n);
+1101 #endif
+1102           mstack.push(m, Post_Visit, n, i); // Don't need to visit
+1103           mstack.push(m-&gt;in(0), Visit, m, 0);
+1104         } else {
+1105           mstack.push(m, Visit, n, i);
+1106         }
+1107       }
+1108 
+1109       // And now walk his children, and convert his inputs to new-space.
+1110       for( ; i &gt;= 0; --i ) { // For all normal inputs do
+1111         Node *m = n-&gt;in(i);  // Get input
+1112         if(m != NULL)
+1113           mstack.push(m, Visit, n, i);
+1114       }
+1115 
+1116     }
+1117     else if (nstate == Post_Visit) {
+1118       // Set xformed input
+1119       Node *p = mstack.parent();
+1120       if (p != NULL) { // root doesn't have parent
+1121         int i = (int)mstack.index();
+1122         if (i &gt;= 0)
+1123           p-&gt;set_req(i, n); // required input
+1124         else if (i == -1)
+1125           p-&gt;add_prec(n);   // precedence input
+1126         else
+1127           ShouldNotReachHere();
+1128       }
+1129       mstack.pop(); // remove processed node from stack
+1130     }
+1131     else {
+1132       ShouldNotReachHere();
+1133     }
+1134   } // while (mstack.is_nonempty())
+1135   return n; // Return new-space Node
+1136 }
+1137 
+1138 //------------------------------warp_outgoing_stk_arg------------------------
+1139 OptoReg::Name Matcher::warp_outgoing_stk_arg( VMReg reg, OptoReg::Name begin_out_arg_area, OptoReg::Name &amp;out_arg_limit_per_call ) {
+1140   // Convert outgoing argument location to a pre-biased stack offset
+1141   if (reg-&gt;is_stack()) {
+1142     OptoReg::Name warped = reg-&gt;reg2stack();
+1143     // Adjust the stack slot offset to be the register number used
+1144     // by the allocator.
+1145     warped = OptoReg::add(begin_out_arg_area, warped);
+1146     // Keep track of the largest numbered stack slot used for an arg.
+1147     // Largest used slot per call-site indicates the amount of stack
+1148     // that is killed by the call.
+1149     if( warped &gt;= out_arg_limit_per_call )
+1150       out_arg_limit_per_call = OptoReg::add(warped,1);
+1151     if (!RegMask::can_represent_arg(warped)) {
+1152       C-&gt;record_method_not_compilable_all_tiers("unsupported calling sequence");
+1153       return OptoReg::Bad;
+1154     }
+1155     return warped;
+1156   }
+1157   return OptoReg::as_OptoReg(reg);
+1158 }
+1159 
+1160 
+1161 //------------------------------match_sfpt-------------------------------------
+1162 // Helper function to match call instructions.  Calls match special.
+1163 // They match alone with no children.  Their children, the incoming
+1164 // arguments, match normally.
+1165 MachNode *Matcher::match_sfpt( SafePointNode *sfpt ) {
+1166   MachSafePointNode *msfpt = NULL;
+1167   MachCallNode      *mcall = NULL;
+1168   uint               cnt;
+1169   // Split out case for SafePoint vs Call
+1170   CallNode *call;
+1171   const TypeTuple *domain;
+1172   ciMethod*        method = NULL;
+1173   bool             is_method_handle_invoke = false;  // for special kill effects
+1174   if( sfpt-&gt;is_Call() ) {
+1175     call = sfpt-&gt;as_Call();
+1176     domain = call-&gt;tf()-&gt;domain();
+1177     cnt = domain-&gt;cnt();
+1178 
+1179     // Match just the call, nothing else
+1180     MachNode *m = match_tree(call);
+1181     if (C-&gt;failing())  return NULL;
+1182     if( m == NULL ) { Matcher::soft_match_failure(); return NULL; }
+1183 
+1184     // Copy data from the Ideal SafePoint to the machine version
+1185     mcall = m-&gt;as_MachCall();
+1186 
+1187     mcall-&gt;set_tf(         call-&gt;tf());
+1188     mcall-&gt;set_entry_point(call-&gt;entry_point());
+1189     mcall-&gt;set_cnt(        call-&gt;cnt());
+1190 
+1191     if( mcall-&gt;is_MachCallJava() ) {
+1192       MachCallJavaNode *mcall_java  = mcall-&gt;as_MachCallJava();
+1193       const CallJavaNode *call_java =  call-&gt;as_CallJava();
+1194       method = call_java-&gt;method();
+1195       mcall_java-&gt;_method = method;
+1196       mcall_java-&gt;_bci = call_java-&gt;_bci;
+1197       mcall_java-&gt;_optimized_virtual = call_java-&gt;is_optimized_virtual();
+1198       is_method_handle_invoke = call_java-&gt;is_method_handle_invoke();
+1199       mcall_java-&gt;_method_handle_invoke = is_method_handle_invoke;
+1200       if (is_method_handle_invoke) {
+1201         C-&gt;set_has_method_handle_invokes(true);
+1202       }
+1203       if( mcall_java-&gt;is_MachCallStaticJava() )
+1204         mcall_java-&gt;as_MachCallStaticJava()-&gt;_name =
+1205          call_java-&gt;as_CallStaticJava()-&gt;_name;
+1206       if( mcall_java-&gt;is_MachCallDynamicJava() )
+1207         mcall_java-&gt;as_MachCallDynamicJava()-&gt;_vtable_index =
+1208          call_java-&gt;as_CallDynamicJava()-&gt;_vtable_index;
+1209     }
+1210     else if( mcall-&gt;is_MachCallRuntime() ) {
+1211       mcall-&gt;as_MachCallRuntime()-&gt;_name = call-&gt;as_CallRuntime()-&gt;_name;
+1212     }
+1213     msfpt = mcall;
+1214   }
+1215   // This is a non-call safepoint
+1216   else {
+1217     call = NULL;
+1218     domain = NULL;
+1219     MachNode *mn = match_tree(sfpt);
+1220     if (C-&gt;failing())  return NULL;
+1221     msfpt = mn-&gt;as_MachSafePoint();
+1222     cnt = TypeFunc::Parms;
+1223   }
+1224 
+1225   // Advertise the correct memory effects (for anti-dependence computation).
+1226   msfpt-&gt;set_adr_type(sfpt-&gt;adr_type());
+1227 
+1228   // Allocate a private array of RegMasks.  These RegMasks are not shared.
+1229   msfpt-&gt;_in_rms = NEW_RESOURCE_ARRAY( RegMask, cnt );
+1230   // Empty them all.
+1231   memset( msfpt-&gt;_in_rms, 0, sizeof(RegMask)*cnt );
+1232 
+1233   // Do all the pre-defined non-Empty register masks
+1234   msfpt-&gt;_in_rms[TypeFunc::ReturnAdr] = _return_addr_mask;
+1235   msfpt-&gt;_in_rms[TypeFunc::FramePtr ] = c_frame_ptr_mask;
+1236 
+1237   // Place first outgoing argument can possibly be put.
+1238   OptoReg::Name begin_out_arg_area = OptoReg::add(_new_SP, C-&gt;out_preserve_stack_slots());
+1239   assert( is_even(begin_out_arg_area), "" );
+1240   // Compute max outgoing register number per call site.
+1241   OptoReg::Name out_arg_limit_per_call = begin_out_arg_area;
+1242   // Calls to C may hammer extra stack slots above and beyond any arguments.
+1243   // These are usually backing store for register arguments for varargs.
+1244   if( call != NULL &amp;&amp; call-&gt;is_CallRuntime() )
+1245     out_arg_limit_per_call = OptoReg::add(out_arg_limit_per_call,C-&gt;varargs_C_out_slots_killed());
+1246 
+1247 
+1248   // Do the normal argument list (parameters) register masks
+1249   int argcnt = cnt - TypeFunc::Parms;
+1250   if( argcnt &gt; 0 ) {          // Skip it all if we have no args
+1251     BasicType *sig_bt  = NEW_RESOURCE_ARRAY( BasicType, argcnt );
+1252     VMRegPair *parm_regs = NEW_RESOURCE_ARRAY( VMRegPair, argcnt );
+1253     int i;
+1254     for( i = 0; i &lt; argcnt; i++ ) {
+1255       sig_bt[i] = domain-&gt;field_at(i+TypeFunc::Parms)-&gt;basic_type();
+1256     }
+1257     // V-call to pick proper calling convention
+1258     call-&gt;calling_convention( sig_bt, parm_regs, argcnt );
+1259 
+1260 #ifdef ASSERT
+1261     // Sanity check users' calling convention.  Really handy during
+1262     // the initial porting effort.  Fairly expensive otherwise.
+1263     { for (int i = 0; i&lt;argcnt; i++) {
+1264       if( !parm_regs[i].first()-&gt;is_valid() &amp;&amp;
+1265           !parm_regs[i].second()-&gt;is_valid() ) continue;
+1266       VMReg reg1 = parm_regs[i].first();
+1267       VMReg reg2 = parm_regs[i].second();
+1268       for (int j = 0; j &lt; i; j++) {
+1269         if( !parm_regs[j].first()-&gt;is_valid() &amp;&amp;
+1270             !parm_regs[j].second()-&gt;is_valid() ) continue;
+1271         VMReg reg3 = parm_regs[j].first();
+1272         VMReg reg4 = parm_regs[j].second();
+1273         if( !reg1-&gt;is_valid() ) {
+1274           assert( !reg2-&gt;is_valid(), "valid halvsies" );
+1275         } else if( !reg3-&gt;is_valid() ) {
+1276           assert( !reg4-&gt;is_valid(), "valid halvsies" );
+1277         } else {
+1278           assert( reg1 != reg2, "calling conv. must produce distinct regs");
+1279           assert( reg1 != reg3, "calling conv. must produce distinct regs");
+1280           assert( reg1 != reg4, "calling conv. must produce distinct regs");
+1281           assert( reg2 != reg3, "calling conv. must produce distinct regs");
+1282           assert( reg2 != reg4 || !reg2-&gt;is_valid(), "calling conv. must produce distinct regs");
+1283           assert( reg3 != reg4, "calling conv. must produce distinct regs");
+1284         }
+1285       }
+1286     }
+1287     }
+1288 #endif
+1289 
+1290     // Visit each argument.  Compute its outgoing register mask.
+1291     // Return results now can have 2 bits returned.
+1292     // Compute max over all outgoing arguments both per call-site
+1293     // and over the entire method.
+1294     for( i = 0; i &lt; argcnt; i++ ) {
+1295       // Address of incoming argument mask to fill in
+1296       RegMask *rm = &amp;mcall-&gt;_in_rms[i+TypeFunc::Parms];
+1297       if( !parm_regs[i].first()-&gt;is_valid() &amp;&amp;
+1298           !parm_regs[i].second()-&gt;is_valid() ) {
+1299         continue;               // Avoid Halves
+1300       }
+1301       // Grab first register, adjust stack slots and insert in mask.
+1302       OptoReg::Name reg1 = warp_outgoing_stk_arg(parm_regs[i].first(), begin_out_arg_area, out_arg_limit_per_call );
+1303       if (OptoReg::is_valid(reg1))
+1304         rm-&gt;Insert( reg1 );
+1305       // Grab second register (if any), adjust stack slots and insert in mask.
+1306       OptoReg::Name reg2 = warp_outgoing_stk_arg(parm_regs[i].second(), begin_out_arg_area, out_arg_limit_per_call );
+1307       if (OptoReg::is_valid(reg2))
+1308         rm-&gt;Insert( reg2 );
+1309     } // End of for all arguments
+1310 
+1311     // Compute number of stack slots needed to restore stack in case of
+1312     // Pascal-style argument popping.
+1313     mcall-&gt;_argsize = out_arg_limit_per_call - begin_out_arg_area;
+1314   }
+1315 
+1316   // Compute the max stack slot killed by any call.  These will not be
+1317   // available for debug info, and will be used to adjust FIRST_STACK_mask
+1318   // after all call sites have been visited.
+1319   if( _out_arg_limit &lt; out_arg_limit_per_call)
+1320     _out_arg_limit = out_arg_limit_per_call;
+1321 
+1322   if (mcall) {
+1323     // Kill the outgoing argument area, including any non-argument holes and
+1324     // any legacy C-killed slots.  Use Fat-Projections to do the killing.
+1325     // Since the max-per-method covers the max-per-call-site and debug info
+1326     // is excluded on the max-per-method basis, debug info cannot land in
+1327     // this killed area.
+1328     uint r_cnt = mcall-&gt;tf()-&gt;range()-&gt;cnt();
+1329     MachProjNode *proj = new MachProjNode( mcall, r_cnt+10000, RegMask::Empty, MachProjNode::fat_proj );
+1330     if (!RegMask::can_represent_arg(OptoReg::Name(out_arg_limit_per_call-1))) {
+1331       C-&gt;record_method_not_compilable_all_tiers("unsupported outgoing calling sequence");
+1332     } else {
+1333       for (int i = begin_out_arg_area; i &lt; out_arg_limit_per_call; i++)
+1334         proj-&gt;_rout.Insert(OptoReg::Name(i));
+1335     }
+1336     if (proj-&gt;_rout.is_NotEmpty()) {
+1337       push_projection(proj);
+1338     }
+1339   }
+1340   // Transfer the safepoint information from the call to the mcall
+1341   // Move the JVMState list
+1342   msfpt-&gt;set_jvms(sfpt-&gt;jvms());
+1343   for (JVMState* jvms = msfpt-&gt;jvms(); jvms; jvms = jvms-&gt;caller()) {
+1344     jvms-&gt;set_map(sfpt);
+1345   }
+1346 
+1347   // Debug inputs begin just after the last incoming parameter
+1348   assert((mcall == NULL) || (mcall-&gt;jvms() == NULL) ||
+1349          (mcall-&gt;jvms()-&gt;debug_start() + mcall-&gt;_jvmadj == mcall-&gt;tf()-&gt;domain()-&gt;cnt()), "");
+1350 
+1351   // Move the OopMap
+1352   msfpt-&gt;_oop_map = sfpt-&gt;_oop_map;
+1353 
+1354   // Add additional edges.
+1355   if (msfpt-&gt;mach_constant_base_node_input() != (uint)-1 &amp;&amp; !msfpt-&gt;is_MachCallLeaf()) {
+1356     // For these calls we can not add MachConstantBase in expand(), as the
+1357     // ins are not complete then.
+1358     msfpt-&gt;ins_req(msfpt-&gt;mach_constant_base_node_input(), C-&gt;mach_constant_base_node());
+1359     if (msfpt-&gt;jvms() &amp;&amp;
+1360         msfpt-&gt;mach_constant_base_node_input() &lt;= msfpt-&gt;jvms()-&gt;debug_start() + msfpt-&gt;_jvmadj) {
+1361       // We added an edge before jvms, so we must adapt the position of the ins.
+1362       msfpt-&gt;jvms()-&gt;adapt_position(+1);
+1363     }
+1364   }
+1365 
+1366   // Registers killed by the call are set in the local scheduling pass
+1367   // of Global Code Motion.
+1368   return msfpt;
+1369 }
+1370 
+1371 //---------------------------match_tree----------------------------------------
+1372 // Match a Ideal Node DAG - turn it into a tree; Label &amp; Reduce.  Used as part
+1373 // of the whole-sale conversion from Ideal to Mach Nodes.  Also used for
+1374 // making GotoNodes while building the CFG and in init_spill_mask() to identify
+1375 // a Load's result RegMask for memoization in idealreg2regmask[]
+1376 MachNode *Matcher::match_tree( const Node *n ) {
+1377   assert( n-&gt;Opcode() != Op_Phi, "cannot match" );
+1378   assert( !n-&gt;is_block_start(), "cannot match" );
+1379   // Set the mark for all locally allocated State objects.
+1380   // When this call returns, the _states_arena arena will be reset
+1381   // freeing all State objects.
+1382   ResourceMark rm( &amp;_states_arena );
+1383 
+1384   LabelRootDepth = 0;
+1385 
+1386   // StoreNodes require their Memory input to match any LoadNodes
+1387   Node *mem = n-&gt;is_Store() ? n-&gt;in(MemNode::Memory) : (Node*)1 ;
+1388 #ifdef ASSERT
+1389   Node* save_mem_node = _mem_node;
+1390   _mem_node = n-&gt;is_Store() ? (Node*)n : NULL;
+1391 #endif
+1392   // State object for root node of match tree
+1393   // Allocate it on _states_arena - stack allocation can cause stack overflow.
+1394   State *s = new (&amp;_states_arena) State;
+1395   s-&gt;_kids[0] = NULL;
+1396   s-&gt;_kids[1] = NULL;
+1397   s-&gt;_leaf = (Node*)n;
+1398   // Label the input tree, allocating labels from top-level arena
+1399   Label_Root( n, s, n-&gt;in(0), mem );
+1400   if (C-&gt;failing())  return NULL;
+1401 
+1402   // The minimum cost match for the whole tree is found at the root State
+1403   uint mincost = max_juint;
+1404   uint cost = max_juint;
+1405   uint i;
+1406   for( i = 0; i &lt; NUM_OPERANDS; i++ ) {
+1407     if( s-&gt;valid(i) &amp;&amp;                // valid entry and
+1408         s-&gt;_cost[i] &lt; cost &amp;&amp;         // low cost and
+1409         s-&gt;_rule[i] &gt;= NUM_OPERANDS ) // not an operand
+1410       cost = s-&gt;_cost[mincost=i];
+1411   }
+1412   if (mincost == max_juint) {
+1413 #ifndef PRODUCT
+1414     tty-&gt;print("No matching rule for:");
+1415     s-&gt;dump();
+1416 #endif
+1417     Matcher::soft_match_failure();
+1418     return NULL;
+1419   }
+1420   // Reduce input tree based upon the state labels to machine Nodes
+1421   MachNode *m = ReduceInst( s, s-&gt;_rule[mincost], mem );
+1422 #ifdef ASSERT
+1423   _old2new_map.map(n-&gt;_idx, m);
+1424   _new2old_map.map(m-&gt;_idx, (Node*)n);
+1425 #endif
+1426 
+1427   // Add any Matcher-ignored edges
+1428   uint cnt = n-&gt;req();
+1429   uint start = 1;
+1430   if( mem != (Node*)1 ) start = MemNode::Memory+1;
+1431   if( n-&gt;is_AddP() ) {
+1432     assert( mem == (Node*)1, "" );
+1433     start = AddPNode::Base+1;
+1434   }
+1435   for( i = start; i &lt; cnt; i++ ) {
+1436     if( !n-&gt;match_edge(i) ) {
+1437       if( i &lt; m-&gt;req() )
+1438         m-&gt;ins_req( i, n-&gt;in(i) );
+1439       else
+1440         m-&gt;add_req( n-&gt;in(i) );
+1441     }
+1442   }
+1443 
+1444   debug_only( _mem_node = save_mem_node; )
+1445   return m;
+1446 }
+1447 
+1448 
+1449 //------------------------------match_into_reg---------------------------------
+1450 // Choose to either match this Node in a register or part of the current
+1451 // match tree.  Return true for requiring a register and false for matching
+1452 // as part of the current match tree.
+1453 static bool match_into_reg( const Node *n, Node *m, Node *control, int i, bool shared ) {
+1454 
+1455   const Type *t = m-&gt;bottom_type();
+1456 
+1457   if (t-&gt;singleton()) {
+1458     // Never force constants into registers.  Allow them to match as
+1459     // constants or registers.  Copies of the same value will share
+1460     // the same register.  See find_shared_node.
+1461     return false;
+1462   } else {                      // Not a constant
+1463     // Stop recursion if they have different Controls.
+1464     Node* m_control = m-&gt;in(0);
+1465     // Control of load's memory can post-dominates load's control.
+1466     // So use it since load can't float above its memory.
+1467     Node* mem_control = (m-&gt;is_Load()) ? m-&gt;in(MemNode::Memory)-&gt;in(0) : NULL;
+1468     if (control &amp;&amp; m_control &amp;&amp; control != m_control &amp;&amp; control != mem_control) {
+1469 
+1470       // Actually, we can live with the most conservative control we
+1471       // find, if it post-dominates the others.  This allows us to
+1472       // pick up load/op/store trees where the load can float a little
+1473       // above the store.
+1474       Node *x = control;
+1475       const uint max_scan = 6;  // Arbitrary scan cutoff
+1476       uint j;
+1477       for (j=0; j&lt;max_scan; j++) {
+1478         if (x-&gt;is_Region())     // Bail out at merge points
+1479           return true;
+1480         x = x-&gt;in(0);
+1481         if (x == m_control)     // Does 'control' post-dominate
+1482           break;                // m-&gt;in(0)?  If so, we can use it
+1483         if (x == mem_control)   // Does 'control' post-dominate
+1484           break;                // mem_control?  If so, we can use it
+1485       }
+1486       if (j == max_scan)        // No post-domination before scan end?
+1487         return true;            // Then break the match tree up
+1488     }
+1489     if ((m-&gt;is_DecodeN() &amp;&amp; Matcher::narrow_oop_use_complex_address()) ||
+1490         (m-&gt;is_DecodeNKlass() &amp;&amp; Matcher::narrow_klass_use_complex_address())) {
+1491       // These are commonly used in address expressions and can
+1492       // efficiently fold into them on X64 in some cases.
+1493       return false;
+1494     }
+1495   }
+1496 
+1497   // Not forceable cloning.  If shared, put it into a register.
+1498   return shared;
+1499 }
+1500 
+1501 
+1502 //------------------------------Instruction Selection--------------------------
+1503 // Label method walks a "tree" of nodes, using the ADLC generated DFA to match
+1504 // ideal nodes to machine instructions.  Trees are delimited by shared Nodes,
+1505 // things the Matcher does not match (e.g., Memory), and things with different
+1506 // Controls (hence forced into different blocks).  We pass in the Control
+1507 // selected for this entire State tree.
+1508 
+1509 // The Matcher works on Trees, but an Intel add-to-memory requires a DAG: the
+1510 // Store and the Load must have identical Memories (as well as identical
+1511 // pointers).  Since the Matcher does not have anything for Memory (and
+1512 // does not handle DAGs), I have to match the Memory input myself.  If the
+1513 // Tree root is a Store, I require all Loads to have the identical memory.
+1514 Node *Matcher::Label_Root( const Node *n, State *svec, Node *control, const Node *mem){
+1515   // Since Label_Root is a recursive function, its possible that we might run
+1516   // out of stack space.  See bugs 6272980 &amp; 6227033 for more info.
+1517   LabelRootDepth++;
+1518   if (LabelRootDepth &gt; MaxLabelRootDepth) {
+1519     C-&gt;record_method_not_compilable_all_tiers("Out of stack space, increase MaxLabelRootDepth");
+1520     return NULL;
+1521   }
+1522   uint care = 0;                // Edges matcher cares about
+1523   uint cnt = n-&gt;req();
+1524   uint i = 0;
+1525 
+1526   // Examine children for memory state
+1527   // Can only subsume a child into your match-tree if that child's memory state
+1528   // is not modified along the path to another input.
+1529   // It is unsafe even if the other inputs are separate roots.
+1530   Node *input_mem = NULL;
+1531   for( i = 1; i &lt; cnt; i++ ) {
+1532     if( !n-&gt;match_edge(i) ) continue;
+1533     Node *m = n-&gt;in(i);         // Get ith input
+1534     assert( m, "expect non-null children" );
+1535     if( m-&gt;is_Load() ) {
+1536       if( input_mem == NULL ) {
+1537         input_mem = m-&gt;in(MemNode::Memory);
+1538       } else if( input_mem != m-&gt;in(MemNode::Memory) ) {
+1539         input_mem = NodeSentinel;
+1540       }
+1541     }
+1542   }
+1543 
+1544   for( i = 1; i &lt; cnt; i++ ){// For my children
+1545     if( !n-&gt;match_edge(i) ) continue;
+1546     Node *m = n-&gt;in(i);         // Get ith input
+1547     // Allocate states out of a private arena
+1548     State *s = new (&amp;_states_arena) State;
+1549     svec-&gt;_kids[care++] = s;
+1550     assert( care &lt;= 2, "binary only for now" );
+1551 
+1552     // Recursively label the State tree.
+1553     s-&gt;_kids[0] = NULL;
+1554     s-&gt;_kids[1] = NULL;
+1555     s-&gt;_leaf = m;
+1556 
+1557     // Check for leaves of the State Tree; things that cannot be a part of
+1558     // the current tree.  If it finds any, that value is matched as a
+1559     // register operand.  If not, then the normal matching is used.
+1560     if( match_into_reg(n, m, control, i, is_shared(m)) ||
+1561         //
+1562         // Stop recursion if this is LoadNode and the root of this tree is a
+1563         // StoreNode and the load &amp; store have different memories.
+1564         ((mem!=(Node*)1) &amp;&amp; m-&gt;is_Load() &amp;&amp; m-&gt;in(MemNode::Memory) != mem) ||
+1565         // Can NOT include the match of a subtree when its memory state
+1566         // is used by any of the other subtrees
+1567         (input_mem == NodeSentinel) ) {
+1568 #ifndef PRODUCT
+1569       // Print when we exclude matching due to different memory states at input-loads
+1570       if( PrintOpto &amp;&amp; (Verbose &amp;&amp; WizardMode) &amp;&amp; (input_mem == NodeSentinel)
+1571         &amp;&amp; !((mem!=(Node*)1) &amp;&amp; m-&gt;is_Load() &amp;&amp; m-&gt;in(MemNode::Memory) != mem) ) {
+1572         tty-&gt;print_cr("invalid input_mem");
+1573       }
+1574 #endif
+1575       // Switch to a register-only opcode; this value must be in a register
+1576       // and cannot be subsumed as part of a larger instruction.
+1577       s-&gt;DFA( m-&gt;ideal_reg(), m );
+1578 
+1579     } else {
+1580       // If match tree has no control and we do, adopt it for entire tree
+1581       if( control == NULL &amp;&amp; m-&gt;in(0) != NULL &amp;&amp; m-&gt;req() &gt; 1 )
+1582         control = m-&gt;in(0);         // Pick up control
+1583       // Else match as a normal part of the match tree.
+1584       control = Label_Root(m,s,control,mem);
+1585       if (C-&gt;failing()) return NULL;
+1586     }
+1587   }
+1588 
+1589 
+1590   // Call DFA to match this node, and return
+1591   svec-&gt;DFA( n-&gt;Opcode(), n );
+1592 
+1593 #ifdef ASSERT
+1594   uint x;
+1595   for( x = 0; x &lt; _LAST_MACH_OPER; x++ )
+1596     if( svec-&gt;valid(x) )
+1597       break;
+1598 
+1599   if (x &gt;= _LAST_MACH_OPER) {
+1600     n-&gt;dump();
+1601     svec-&gt;dump();
+1602     assert( false, "bad AD file" );
+1603   }
+1604 #endif
+1605   return control;
+1606 }
+1607 
+1608 
+1609 // Con nodes reduced using the same rule can share their MachNode
+1610 // which reduces the number of copies of a constant in the final
+1611 // program.  The register allocator is free to split uses later to
+1612 // split live ranges.
+1613 MachNode* Matcher::find_shared_node(Node* leaf, uint rule) {
+1614   if (!leaf-&gt;is_Con() &amp;&amp; !leaf-&gt;is_DecodeNarrowPtr()) return NULL;
+1615 
+1616   // See if this Con has already been reduced using this rule.
+1617   if (_shared_nodes.Size() &lt;= leaf-&gt;_idx) return NULL;
+1618   MachNode* last = (MachNode*)_shared_nodes.at(leaf-&gt;_idx);
+1619   if (last != NULL &amp;&amp; rule == last-&gt;rule()) {
+1620     // Don't expect control change for DecodeN
+1621     if (leaf-&gt;is_DecodeNarrowPtr())
+1622       return last;
+1623     // Get the new space root.
+1624     Node* xroot = new_node(C-&gt;root());
+1625     if (xroot == NULL) {
+1626       // This shouldn't happen give the order of matching.
+1627       return NULL;
+1628     }
+1629 
+1630     // Shared constants need to have their control be root so they
+1631     // can be scheduled properly.
+1632     Node* control = last-&gt;in(0);
+1633     if (control != xroot) {
+1634       if (control == NULL || control == C-&gt;root()) {
+1635         last-&gt;set_req(0, xroot);
+1636       } else {
+1637         assert(false, "unexpected control");
+1638         return NULL;
+1639       }
+1640     }
+1641     return last;
+1642   }
+1643   return NULL;
+1644 }
+1645 
+1646 
+1647 //------------------------------ReduceInst-------------------------------------
+1648 // Reduce a State tree (with given Control) into a tree of MachNodes.
+1649 // This routine (and it's cohort ReduceOper) convert Ideal Nodes into
+1650 // complicated machine Nodes.  Each MachNode covers some tree of Ideal Nodes.
+1651 // Each MachNode has a number of complicated MachOper operands; each
+1652 // MachOper also covers a further tree of Ideal Nodes.
+1653 
+1654 // The root of the Ideal match tree is always an instruction, so we enter
+1655 // the recursion here.  After building the MachNode, we need to recurse
+1656 // the tree checking for these cases:
+1657 // (1) Child is an instruction -
+1658 //     Build the instruction (recursively), add it as an edge.
+1659 //     Build a simple operand (register) to hold the result of the instruction.
+1660 // (2) Child is an interior part of an instruction -
+1661 //     Skip over it (do nothing)
+1662 // (3) Child is the start of a operand -
+1663 //     Build the operand, place it inside the instruction
+1664 //     Call ReduceOper.
+1665 MachNode *Matcher::ReduceInst( State *s, int rule, Node *&amp;mem ) {
+1666   assert( rule &gt;= NUM_OPERANDS, "called with operand rule" );
+1667 
+1668   MachNode* shared_node = find_shared_node(s-&gt;_leaf, rule);
+1669   if (shared_node != NULL) {
+1670     return shared_node;
+1671   }
+1672 
+1673   // Build the object to represent this state &amp; prepare for recursive calls
+1674   MachNode *mach = s-&gt;MachNodeGenerator(rule);
+1675   mach-&gt;_opnds[0] = s-&gt;MachOperGenerator(_reduceOp[rule]);
+1676   assert( mach-&gt;_opnds[0] != NULL, "Missing result operand" );
+1677   Node *leaf = s-&gt;_leaf;
+1678   // Check for instruction or instruction chain rule
+1679   if( rule &gt;= _END_INST_CHAIN_RULE || rule &lt; _BEGIN_INST_CHAIN_RULE ) {
+1680     assert(C-&gt;node_arena()-&gt;contains(s-&gt;_leaf) || !has_new_node(s-&gt;_leaf),
+1681            "duplicating node that's already been matched");
+1682     // Instruction
+1683     mach-&gt;add_req( leaf-&gt;in(0) ); // Set initial control
+1684     // Reduce interior of complex instruction
+1685     ReduceInst_Interior( s, rule, mem, mach, 1 );
+1686   } else {
+1687     // Instruction chain rules are data-dependent on their inputs
+1688     mach-&gt;add_req(0);             // Set initial control to none
+1689     ReduceInst_Chain_Rule( s, rule, mem, mach );
+1690   }
+1691 
+1692   // If a Memory was used, insert a Memory edge
+1693   if( mem != (Node*)1 ) {
+1694     mach-&gt;ins_req(MemNode::Memory,mem);
+1695 #ifdef ASSERT
+1696     // Verify adr type after matching memory operation
+1697     const MachOper* oper = mach-&gt;memory_operand();
+1698     if (oper != NULL &amp;&amp; oper != (MachOper*)-1) {
+1699       // It has a unique memory operand.  Find corresponding ideal mem node.
+1700       Node* m = NULL;
+1701       if (leaf-&gt;is_Mem()) {
+1702         m = leaf;
+1703       } else {
+1704         m = _mem_node;
+1705         assert(m != NULL &amp;&amp; m-&gt;is_Mem(), "expecting memory node");
+1706       }
+1707       const Type* mach_at = mach-&gt;adr_type();
+1708       // DecodeN node consumed by an address may have different type
+1709       // then its input. Don't compare types for such case.
+1710       if (m-&gt;adr_type() != mach_at &amp;&amp;
+1711           (m-&gt;in(MemNode::Address)-&gt;is_DecodeNarrowPtr() ||
+1712            m-&gt;in(MemNode::Address)-&gt;is_AddP() &amp;&amp;
+1713            m-&gt;in(MemNode::Address)-&gt;in(AddPNode::Address)-&gt;is_DecodeNarrowPtr() ||
+1714            m-&gt;in(MemNode::Address)-&gt;is_AddP() &amp;&amp;
+1715            m-&gt;in(MemNode::Address)-&gt;in(AddPNode::Address)-&gt;is_AddP() &amp;&amp;
+1716            m-&gt;in(MemNode::Address)-&gt;in(AddPNode::Address)-&gt;in(AddPNode::Address)-&gt;is_DecodeNarrowPtr())) {
+1717         mach_at = m-&gt;adr_type();
+1718       }
+1719       if (m-&gt;adr_type() != mach_at) {
+1720         m-&gt;dump();
+1721         tty-&gt;print_cr("mach:");
+1722         mach-&gt;dump(1);
+1723       }
+1724       assert(m-&gt;adr_type() == mach_at, "matcher should not change adr type");
+1725     }
+1726 #endif
+1727   }
+1728 
+1729   // If the _leaf is an AddP, insert the base edge
+1730   if (leaf-&gt;is_AddP()) {
+1731     mach-&gt;ins_req(AddPNode::Base,leaf-&gt;in(AddPNode::Base));
+1732   }
+1733 
+1734   uint number_of_projections_prior = number_of_projections();
+1735 
+1736   // Perform any 1-to-many expansions required
+1737   MachNode *ex = mach-&gt;Expand(s, _projection_list, mem);
+1738   if (ex != mach) {
+1739     assert(ex-&gt;ideal_reg() == mach-&gt;ideal_reg(), "ideal types should match");
+1740     if( ex-&gt;in(1)-&gt;is_Con() )
+1741       ex-&gt;in(1)-&gt;set_req(0, C-&gt;root());
+1742     // Remove old node from the graph
+1743     for( uint i=0; i&lt;mach-&gt;req(); i++ ) {
+1744       mach-&gt;set_req(i,NULL);
+1745     }
+1746 #ifdef ASSERT
+1747     _new2old_map.map(ex-&gt;_idx, s-&gt;_leaf);
+1748 #endif
+1749   }
+1750 
+1751   // PhaseChaitin::fixup_spills will sometimes generate spill code
+1752   // via the matcher.  By the time, nodes have been wired into the CFG,
+1753   // and any further nodes generated by expand rules will be left hanging
+1754   // in space, and will not get emitted as output code.  Catch this.
+1755   // Also, catch any new register allocation constraints ("projections")
+1756   // generated belatedly during spill code generation.
+1757   if (_allocation_started) {
+1758     guarantee(ex == mach, "no expand rules during spill generation");
+1759     guarantee(number_of_projections_prior == number_of_projections(), "no allocation during spill generation");
+1760   }
+1761 
+1762   if (leaf-&gt;is_Con() || leaf-&gt;is_DecodeNarrowPtr()) {
+1763     // Record the con for sharing
+1764     _shared_nodes.map(leaf-&gt;_idx, ex);
+1765   }
+1766 
+1767   return ex;
+1768 }
+1769 
+1770 void Matcher::handle_precedence_edges(Node* n, MachNode *mach) {
+1771   for (uint i = n-&gt;req(); i &lt; n-&gt;len(); i++) {
+1772     if (n-&gt;in(i) != NULL) {
+1773       mach-&gt;add_prec(n-&gt;in(i));
+1774     }
+1775   }
+1776 }
+1777 
+1778 void Matcher::ReduceInst_Chain_Rule( State *s, int rule, Node *&amp;mem, MachNode *mach ) {
+1779   // 'op' is what I am expecting to receive
+1780   int op = _leftOp[rule];
+1781   // Operand type to catch childs result
+1782   // This is what my child will give me.
+1783   int opnd_class_instance = s-&gt;_rule[op];
+1784   // Choose between operand class or not.
+1785   // This is what I will receive.
+1786   int catch_op = (FIRST_OPERAND_CLASS &lt;= op &amp;&amp; op &lt; NUM_OPERANDS) ? opnd_class_instance : op;
+1787   // New rule for child.  Chase operand classes to get the actual rule.
+1788   int newrule = s-&gt;_rule[catch_op];
+1789 
+1790   if( newrule &lt; NUM_OPERANDS ) {
+1791     // Chain from operand or operand class, may be output of shared node
+1792     assert( 0 &lt;= opnd_class_instance &amp;&amp; opnd_class_instance &lt; NUM_OPERANDS,
+1793             "Bad AD file: Instruction chain rule must chain from operand");
+1794     // Insert operand into array of operands for this instruction
+1795     mach-&gt;_opnds[1] = s-&gt;MachOperGenerator(opnd_class_instance);
+1796 
+1797     ReduceOper( s, newrule, mem, mach );
+1798   } else {
+1799     // Chain from the result of an instruction
+1800     assert( newrule &gt;= _LAST_MACH_OPER, "Do NOT chain from internal operand");
+1801     mach-&gt;_opnds[1] = s-&gt;MachOperGenerator(_reduceOp[catch_op]);
+1802     Node *mem1 = (Node*)1;
+1803     debug_only(Node *save_mem_node = _mem_node;)
+1804     mach-&gt;add_req( ReduceInst(s, newrule, mem1) );
+1805     debug_only(_mem_node = save_mem_node;)
+1806   }
+1807   return;
+1808 }
+1809 
+1810 
+1811 uint Matcher::ReduceInst_Interior( State *s, int rule, Node *&amp;mem, MachNode *mach, uint num_opnds ) {
+1812   handle_precedence_edges(s-&gt;_leaf, mach);
+1813 
+1814   if( s-&gt;_leaf-&gt;is_Load() ) {
+1815     Node *mem2 = s-&gt;_leaf-&gt;in(MemNode::Memory);
+1816     assert( mem == (Node*)1 || mem == mem2, "multiple Memories being matched at once?" );
+1817     debug_only( if( mem == (Node*)1 ) _mem_node = s-&gt;_leaf;)
+1818     mem = mem2;
+1819   }
+1820   if( s-&gt;_leaf-&gt;in(0) != NULL &amp;&amp; s-&gt;_leaf-&gt;req() &gt; 1) {
+1821     if( mach-&gt;in(0) == NULL )
+1822       mach-&gt;set_req(0, s-&gt;_leaf-&gt;in(0));
+1823   }
+1824 
+1825   // Now recursively walk the state tree &amp; add operand list.
+1826   for( uint i=0; i&lt;2; i++ ) {   // binary tree
+1827     State *newstate = s-&gt;_kids[i];
+1828     if( newstate == NULL ) break;      // Might only have 1 child
+1829     // 'op' is what I am expecting to receive
+1830     int op;
+1831     if( i == 0 ) {
+1832       op = _leftOp[rule];
+1833     } else {
+1834       op = _rightOp[rule];
+1835     }
+1836     // Operand type to catch childs result
+1837     // This is what my child will give me.
+1838     int opnd_class_instance = newstate-&gt;_rule[op];
+1839     // Choose between operand class or not.
+1840     // This is what I will receive.
+1841     int catch_op = (op &gt;= FIRST_OPERAND_CLASS &amp;&amp; op &lt; NUM_OPERANDS) ? opnd_class_instance : op;
+1842     // New rule for child.  Chase operand classes to get the actual rule.
+1843     int newrule = newstate-&gt;_rule[catch_op];
+1844 
+1845     if( newrule &lt; NUM_OPERANDS ) { // Operand/operandClass or internalOp/instruction?
+1846       // Operand/operandClass
+1847       // Insert operand into array of operands for this instruction
+1848       mach-&gt;_opnds[num_opnds++] = newstate-&gt;MachOperGenerator(opnd_class_instance);
+1849       ReduceOper( newstate, newrule, mem, mach );
+1850 
+1851     } else {                    // Child is internal operand or new instruction
+1852       if( newrule &lt; _LAST_MACH_OPER ) { // internal operand or instruction?
+1853         // internal operand --&gt; call ReduceInst_Interior
+1854         // Interior of complex instruction.  Do nothing but recurse.
+1855         num_opnds = ReduceInst_Interior( newstate, newrule, mem, mach, num_opnds );
+1856       } else {
+1857         // instruction --&gt; call build operand(  ) to catch result
+1858         //             --&gt; ReduceInst( newrule )
+1859         mach-&gt;_opnds[num_opnds++] = s-&gt;MachOperGenerator(_reduceOp[catch_op]);
+1860         Node *mem1 = (Node*)1;
+1861         debug_only(Node *save_mem_node = _mem_node;)
+1862         mach-&gt;add_req( ReduceInst( newstate, newrule, mem1 ) );
+1863         debug_only(_mem_node = save_mem_node;)
+1864       }
+1865     }
+1866     assert( mach-&gt;_opnds[num_opnds-1], "" );
+1867   }
+1868   return num_opnds;
+1869 }
+1870 
+1871 // This routine walks the interior of possible complex operands.
+1872 // At each point we check our children in the match tree:
+1873 // (1) No children -
+1874 //     We are a leaf; add _leaf field as an input to the MachNode
+1875 // (2) Child is an internal operand -
+1876 //     Skip over it ( do nothing )
+1877 // (3) Child is an instruction -
+1878 //     Call ReduceInst recursively and
+1879 //     and instruction as an input to the MachNode
+1880 void Matcher::ReduceOper( State *s, int rule, Node *&amp;mem, MachNode *mach ) {
+1881   assert( rule &lt; _LAST_MACH_OPER, "called with operand rule" );
+1882   State *kid = s-&gt;_kids[0];
+1883   assert( kid == NULL || s-&gt;_leaf-&gt;in(0) == NULL, "internal operands have no control" );
+1884 
+1885   // Leaf?  And not subsumed?
+1886   if( kid == NULL &amp;&amp; !_swallowed[rule] ) {
+1887     mach-&gt;add_req( s-&gt;_leaf );  // Add leaf pointer
+1888     return;                     // Bail out
+1889   }
+1890 
+1891   if( s-&gt;_leaf-&gt;is_Load() ) {
+1892     assert( mem == (Node*)1, "multiple Memories being matched at once?" );
+1893     mem = s-&gt;_leaf-&gt;in(MemNode::Memory);
+1894     debug_only(_mem_node = s-&gt;_leaf;)
+1895   }
+1896 
+1897   handle_precedence_edges(s-&gt;_leaf, mach);
+1898 
+1899   if( s-&gt;_leaf-&gt;in(0) &amp;&amp; s-&gt;_leaf-&gt;req() &gt; 1) {
+1900     if( !mach-&gt;in(0) )
+1901       mach-&gt;set_req(0,s-&gt;_leaf-&gt;in(0));
+1902     else {
+1903       assert( s-&gt;_leaf-&gt;in(0) == mach-&gt;in(0), "same instruction, differing controls?" );
+1904     }
+1905   }
+1906 
+1907   for( uint i=0; kid != NULL &amp;&amp; i&lt;2; kid = s-&gt;_kids[1], i++ ) {   // binary tree
+1908     int newrule;
+1909     if( i == 0)
+1910       newrule = kid-&gt;_rule[_leftOp[rule]];
+1911     else
+1912       newrule = kid-&gt;_rule[_rightOp[rule]];
+1913 
+1914     if( newrule &lt; _LAST_MACH_OPER ) { // Operand or instruction?
+1915       // Internal operand; recurse but do nothing else
+1916       ReduceOper( kid, newrule, mem, mach );
+1917 
+1918     } else {                    // Child is a new instruction
+1919       // Reduce the instruction, and add a direct pointer from this
+1920       // machine instruction to the newly reduced one.
+1921       Node *mem1 = (Node*)1;
+1922       debug_only(Node *save_mem_node = _mem_node;)
+1923       mach-&gt;add_req( ReduceInst( kid, newrule, mem1 ) );
+1924       debug_only(_mem_node = save_mem_node;)
+1925     }
+1926   }
+1927 }
+1928 
+1929 
+1930 // -------------------------------------------------------------------------
+1931 // Java-Java calling convention
+1932 // (what you use when Java calls Java)
+1933 
+1934 //------------------------------find_receiver----------------------------------
+1935 // For a given signature, return the OptoReg for parameter 0.
+1936 OptoReg::Name Matcher::find_receiver( bool is_outgoing ) {
+1937   VMRegPair regs;
+1938   BasicType sig_bt = T_OBJECT;
+1939   calling_convention(&amp;sig_bt, &amp;regs, 1, is_outgoing);
+1940   // Return argument 0 register.  In the LP64 build pointers
+1941   // take 2 registers, but the VM wants only the 'main' name.
+1942   return OptoReg::as_OptoReg(regs.first());
+1943 }
+1944 
+1945 // This function identifies sub-graphs in which a 'load' node is
+1946 // input to two different nodes, and such that it can be matched
+1947 // with BMI instructions like blsi, blsr, etc.
+1948 // Example : for b = -a[i] &amp; a[i] can be matched to blsi r32, m32.
+1949 // The graph is (AndL (SubL Con0 LoadL*) LoadL*), where LoadL*
+1950 // refers to the same node.
+1951 #ifdef X86
+1952 // Match the generic fused operations pattern (op1 (op2 Con{ConType} mop) mop)
+1953 // This is a temporary solution until we make DAGs expressible in ADL.
+1954 template&lt;typename ConType&gt;
+1955 class FusedPatternMatcher {
+1956   Node* _op1_node;
+1957   Node* _mop_node;
+1958   int _con_op;
+1959 
+1960   static int match_next(Node* n, int next_op, int next_op_idx) {
+1961     if (n-&gt;in(1) == NULL || n-&gt;in(2) == NULL) {
+1962       return -1;
+1963     }
+1964 
+1965     if (next_op_idx == -1) { // n is commutative, try rotations
+1966       if (n-&gt;in(1)-&gt;Opcode() == next_op) {
+1967         return 1;
+1968       } else if (n-&gt;in(2)-&gt;Opcode() == next_op) {
+1969         return 2;
+1970       }
+1971     } else {
+1972       assert(next_op_idx &gt; 0 &amp;&amp; next_op_idx &lt;= 2, "Bad argument index");
+1973       if (n-&gt;in(next_op_idx)-&gt;Opcode() == next_op) {
+1974         return next_op_idx;
+1975       }
+1976     }
+1977     return -1;
+1978   }
+1979 public:
+1980   FusedPatternMatcher(Node* op1_node, Node *mop_node, int con_op) :
+1981     _op1_node(op1_node), _mop_node(mop_node), _con_op(con_op) { }
+1982 
+1983   bool match(int op1, int op1_op2_idx,  // op1 and the index of the op1-&gt;op2 edge, -1 if op1 is commutative
+1984              int op2, int op2_con_idx,  // op2 and the index of the op2-&gt;con edge, -1 if op2 is commutative
+1985              typename ConType::NativeType con_value) {
+1986     if (_op1_node-&gt;Opcode() != op1) {
+1987       return false;
+1988     }
+1989     if (_mop_node-&gt;outcnt() &gt; 2) {
+1990       return false;
+1991     }
+1992     op1_op2_idx = match_next(_op1_node, op2, op1_op2_idx);
+1993     if (op1_op2_idx == -1) {
+1994       return false;
+1995     }
+1996     // Memory operation must be the other edge
+1997     int op1_mop_idx = (op1_op2_idx &amp; 1) + 1;
+1998 
+1999     // Check that the mop node is really what we want
+2000     if (_op1_node-&gt;in(op1_mop_idx) == _mop_node) {
+2001       Node *op2_node = _op1_node-&gt;in(op1_op2_idx);
+2002       if (op2_node-&gt;outcnt() &gt; 1) {
+2003         return false;
+2004       }
+2005       assert(op2_node-&gt;Opcode() == op2, "Should be");
+2006       op2_con_idx = match_next(op2_node, _con_op, op2_con_idx);
+2007       if (op2_con_idx == -1) {
+2008         return false;
+2009       }
+2010       // Memory operation must be the other edge
+2011       int op2_mop_idx = (op2_con_idx &amp; 1) + 1;
+2012       // Check that the memory operation is the same node
+2013       if (op2_node-&gt;in(op2_mop_idx) == _mop_node) {
+2014         // Now check the constant
+2015         const Type* con_type = op2_node-&gt;in(op2_con_idx)-&gt;bottom_type();
+2016         if (con_type != Type::TOP &amp;&amp; ConType::as_self(con_type)-&gt;get_con() == con_value) {
+2017           return true;
+2018         }
+2019       }
+2020     }
+2021     return false;
+2022   }
+2023 };
+2024 
+2025 
+2026 bool Matcher::is_bmi_pattern(Node *n, Node *m) {
+2027   if (n != NULL &amp;&amp; m != NULL) {
+2028     if (m-&gt;Opcode() == Op_LoadI) {
+2029       FusedPatternMatcher&lt;TypeInt&gt; bmii(n, m, Op_ConI);
+2030       return bmii.match(Op_AndI, -1, Op_SubI,  1,  0)  ||
+2031              bmii.match(Op_AndI, -1, Op_AddI, -1, -1)  ||
+2032              bmii.match(Op_XorI, -1, Op_AddI, -1, -1);
+2033     } else if (m-&gt;Opcode() == Op_LoadL) {
+2034       FusedPatternMatcher&lt;TypeLong&gt; bmil(n, m, Op_ConL);
+2035       return bmil.match(Op_AndL, -1, Op_SubL,  1,  0) ||
+2036              bmil.match(Op_AndL, -1, Op_AddL, -1, -1) ||
+2037              bmil.match(Op_XorL, -1, Op_AddL, -1, -1);
+2038     }
+2039   }
+2040   return false;
+2041 }
+2042 #endif // X86
+2043 
+2044 // A method-klass-holder may be passed in the inline_cache_reg
+2045 // and then expanded into the inline_cache_reg and a method_oop register
+2046 //   defined in ad_&lt;arch&gt;.cpp
+2047 
+2048 
+2049 //------------------------------find_shared------------------------------------
+2050 // Set bits if Node is shared or otherwise a root
+2051 void Matcher::find_shared( Node *n ) {
+2052   // Allocate stack of size C-&gt;unique() * 2 to avoid frequent realloc
+2053   MStack mstack(C-&gt;unique() * 2);
+2054   // Mark nodes as address_visited if they are inputs to an address expression
+2055   VectorSet address_visited(Thread::current()-&gt;resource_area());
+2056   mstack.push(n, Visit);     // Don't need to pre-visit root node
+2057   while (mstack.is_nonempty()) {
+2058     n = mstack.node();       // Leave node on stack
+2059     Node_State nstate = mstack.state();
+2060     uint nop = n-&gt;Opcode();
+2061     if (nstate == Pre_Visit) {
+2062       if (address_visited.test(n-&gt;_idx)) { // Visited in address already?
+2063         // Flag as visited and shared now.
+2064         set_visited(n);
+2065       }
+2066       if (is_visited(n)) {   // Visited already?
+2067         // Node is shared and has no reason to clone.  Flag it as shared.
+2068         // This causes it to match into a register for the sharing.
+2069         set_shared(n);       // Flag as shared and
+2070         mstack.pop();        // remove node from stack
+2071         continue;
+2072       }
+2073       nstate = Visit; // Not already visited; so visit now
+2074     }
+2075     if (nstate == Visit) {
+2076       mstack.set_state(Post_Visit);
+2077       set_visited(n);   // Flag as visited now
+2078       bool mem_op = false;
+2079 
+2080       switch( nop ) {  // Handle some opcodes special
+2081       case Op_Phi:             // Treat Phis as shared roots
+2082       case Op_Parm:
+2083       case Op_Proj:            // All handled specially during matching
+2084       case Op_SafePointScalarObject:
+2085         set_shared(n);
+2086         set_dontcare(n);
+2087         break;
+2088       case Op_If:
+2089       case Op_CountedLoopEnd:
+2090         mstack.set_state(Alt_Post_Visit); // Alternative way
+2091         // Convert (If (Bool (CmpX A B))) into (If (Bool) (CmpX A B)).  Helps
+2092         // with matching cmp/branch in 1 instruction.  The Matcher needs the
+2093         // Bool and CmpX side-by-side, because it can only get at constants
+2094         // that are at the leaves of Match trees, and the Bool's condition acts
+2095         // as a constant here.
+2096         mstack.push(n-&gt;in(1), Visit);         // Clone the Bool
+2097         mstack.push(n-&gt;in(0), Pre_Visit);     // Visit control input
+2098         continue; // while (mstack.is_nonempty())
+2099       case Op_ConvI2D:         // These forms efficiently match with a prior
+2100       case Op_ConvI2F:         //   Load but not a following Store
+2101         if( n-&gt;in(1)-&gt;is_Load() &amp;&amp;        // Prior load
+2102             n-&gt;outcnt() == 1 &amp;&amp;           // Not already shared
+2103             n-&gt;unique_out()-&gt;is_Store() ) // Following store
+2104           set_shared(n);       // Force it to be a root
+2105         break;
+2106       case Op_ReverseBytesI:
+2107       case Op_ReverseBytesL:
+2108         if( n-&gt;in(1)-&gt;is_Load() &amp;&amp;        // Prior load
+2109             n-&gt;outcnt() == 1 )            // Not already shared
+2110           set_shared(n);                  // Force it to be a root
+2111         break;
+2112       case Op_BoxLock:         // Cant match until we get stack-regs in ADLC
+2113       case Op_IfFalse:
+2114       case Op_IfTrue:
+2115       case Op_MachProj:
+2116       case Op_MergeMem:
+2117       case Op_Catch:
+2118       case Op_CatchProj:
+2119       case Op_CProj:
+2120       case Op_JumpProj:
+2121       case Op_JProj:
+2122       case Op_NeverBranch:
+2123         set_dontcare(n);
+2124         break;
+2125       case Op_Jump:
+2126         mstack.push(n-&gt;in(1), Pre_Visit);     // Switch Value (could be shared)
+2127         mstack.push(n-&gt;in(0), Pre_Visit);     // Visit Control input
+2128         continue;                             // while (mstack.is_nonempty())
+2129       case Op_StrComp:
+2130       case Op_StrEquals:
+2131       case Op_StrIndexOf:
+2132       case Op_AryEq:
+2133       case Op_EncodeISOArray:
+2134         set_shared(n); // Force result into register (it will be anyways)
+2135         break;
+2136       case Op_ConP: {  // Convert pointers above the centerline to NUL
+2137         TypeNode *tn = n-&gt;as_Type(); // Constants derive from type nodes
+2138         const TypePtr* tp = tn-&gt;type()-&gt;is_ptr();
+2139         if (tp-&gt;_ptr == TypePtr::AnyNull) {
+2140           tn-&gt;set_type(TypePtr::NULL_PTR);
+2141         }
+2142         break;
+2143       }
+2144       case Op_ConN: {  // Convert narrow pointers above the centerline to NUL
+2145         TypeNode *tn = n-&gt;as_Type(); // Constants derive from type nodes
+2146         const TypePtr* tp = tn-&gt;type()-&gt;make_ptr();
+2147         if (tp &amp;&amp; tp-&gt;_ptr == TypePtr::AnyNull) {
+2148           tn-&gt;set_type(TypeNarrowOop::NULL_PTR);
+2149         }
+2150         break;
+2151       }
+2152       case Op_Binary:         // These are introduced in the Post_Visit state.
+2153         ShouldNotReachHere();
+2154         break;
+2155       case Op_ClearArray:
+2156       case Op_SafePoint:
+2157         mem_op = true;
+2158         break;
+2159       default:
+2160         if( n-&gt;is_Store() ) {
+2161           // Do match stores, despite no ideal reg
+2162           mem_op = true;
+2163           break;
+2164         }
+2165         if( n-&gt;is_Mem() ) { // Loads and LoadStores
+2166           mem_op = true;
+2167           // Loads must be root of match tree due to prior load conflict
+2168           if( C-&gt;subsume_loads() == false )
+2169             set_shared(n);
+2170         }
+2171         // Fall into default case
+2172         if( !n-&gt;ideal_reg() )
+2173           set_dontcare(n);  // Unmatchable Nodes
+2174       } // end_switch
+2175 
+2176       for(int i = n-&gt;req() - 1; i &gt;= 0; --i) { // For my children
+2177         Node *m = n-&gt;in(i); // Get ith input
+2178         if (m == NULL) continue;  // Ignore NULLs
+2179         uint mop = m-&gt;Opcode();
+2180 
+2181         // Must clone all producers of flags, or we will not match correctly.
+2182         // Suppose a compare setting int-flags is shared (e.g., a switch-tree)
+2183         // then it will match into an ideal Op_RegFlags.  Alas, the fp-flags
+2184         // are also there, so we may match a float-branch to int-flags and
+2185         // expect the allocator to haul the flags from the int-side to the
+2186         // fp-side.  No can do.
+2187         if( _must_clone[mop] ) {
+2188           mstack.push(m, Visit);
+2189           continue; // for(int i = ...)
+2190         }
+2191 
+2192         if( mop == Op_AddP &amp;&amp; m-&gt;in(AddPNode::Base)-&gt;is_DecodeNarrowPtr()) {
+2193           // Bases used in addresses must be shared but since
+2194           // they are shared through a DecodeN they may appear
+2195           // to have a single use so force sharing here.
+2196           set_shared(m-&gt;in(AddPNode::Base)-&gt;in(1));
+2197         }
+2198 
+2199         // if 'n' and 'm' are part of a graph for BMI instruction, clone this node.
+2200 #ifdef X86
+2201         if (UseBMI1Instructions &amp;&amp; is_bmi_pattern(n, m)) {
+2202           mstack.push(m, Visit);
+2203           continue;
+2204         }
+2205 #endif
+2206 
+2207         // Clone addressing expressions as they are "free" in memory access instructions
+2208         if( mem_op &amp;&amp; i == MemNode::Address &amp;&amp; mop == Op_AddP ) {
+2209           // Some inputs for address expression are not put on stack
+2210           // to avoid marking them as shared and forcing them into register
+2211           // if they are used only in address expressions.
+2212           // But they should be marked as shared if there are other uses
+2213           // besides address expressions.
+2214 
+2215           Node *off = m-&gt;in(AddPNode::Offset);
+2216           if( off-&gt;is_Con() &amp;&amp;
+2217               // When there are other uses besides address expressions
+2218               // put it on stack and mark as shared.
+2219               !is_visited(m) ) {
+2220             address_visited.test_set(m-&gt;_idx); // Flag as address_visited
+2221             Node *adr = m-&gt;in(AddPNode::Address);
+2222 
+2223             // Intel, ARM and friends can handle 2 adds in addressing mode
+2224             if( clone_shift_expressions &amp;&amp; adr-&gt;is_AddP() &amp;&amp;
+2225                 // AtomicAdd is not an addressing expression.
+2226                 // Cheap to find it by looking for screwy base.
+2227                 !adr-&gt;in(AddPNode::Base)-&gt;is_top() &amp;&amp;
+2228                 // Are there other uses besides address expressions?
+2229                 !is_visited(adr) ) {
+2230               address_visited.set(adr-&gt;_idx); // Flag as address_visited
+2231               Node *shift = adr-&gt;in(AddPNode::Offset);
+2232               // Check for shift by small constant as well
+2233               if( shift-&gt;Opcode() == Op_LShiftX &amp;&amp; shift-&gt;in(2)-&gt;is_Con() &amp;&amp;
+2234                   shift-&gt;in(2)-&gt;get_int() &lt;= 3 &amp;&amp;
+2235                   // Are there other uses besides address expressions?
+2236                   !is_visited(shift) ) {
+2237                 address_visited.set(shift-&gt;_idx); // Flag as address_visited
+2238                 mstack.push(shift-&gt;in(2), Visit);
+2239                 Node *conv = shift-&gt;in(1);
+2240 #ifdef _LP64
+2241                 // Allow Matcher to match the rule which bypass
+2242                 // ConvI2L operation for an array index on LP64
+2243                 // if the index value is positive.
+2244                 if( conv-&gt;Opcode() == Op_ConvI2L &amp;&amp;
+2245                     conv-&gt;as_Type()-&gt;type()-&gt;is_long()-&gt;_lo &gt;= 0 &amp;&amp;
+2246                     // Are there other uses besides address expressions?
+2247                     !is_visited(conv) ) {
+2248                   address_visited.set(conv-&gt;_idx); // Flag as address_visited
+2249                   mstack.push(conv-&gt;in(1), Pre_Visit);
+2250                 } else
+2251 #endif
+2252                 mstack.push(conv, Pre_Visit);
+2253               } else {
+2254                 mstack.push(shift, Pre_Visit);
+2255               }
+2256               mstack.push(adr-&gt;in(AddPNode::Address), Pre_Visit);
+2257               mstack.push(adr-&gt;in(AddPNode::Base), Pre_Visit);
+2258             } else {  // Sparc, Alpha, PPC and friends
+2259               mstack.push(adr, Pre_Visit);
+2260             }
+2261 
+2262             // Clone X+offset as it also folds into most addressing expressions
+2263             mstack.push(off, Visit);
+2264             mstack.push(m-&gt;in(AddPNode::Base), Pre_Visit);
+2265             continue; // for(int i = ...)
+2266           } // if( off-&gt;is_Con() )
+2267         }   // if( mem_op &amp;&amp;
+2268         mstack.push(m, Pre_Visit);
+2269       }     // for(int i = ...)
+2270     }
+2271     else if (nstate == Alt_Post_Visit) {
+2272       mstack.pop(); // Remove node from stack
+2273       // We cannot remove the Cmp input from the Bool here, as the Bool may be
+2274       // shared and all users of the Bool need to move the Cmp in parallel.
+2275       // This leaves both the Bool and the If pointing at the Cmp.  To
+2276       // prevent the Matcher from trying to Match the Cmp along both paths
+2277       // BoolNode::match_edge always returns a zero.
+2278 
+2279       // We reorder the Op_If in a pre-order manner, so we can visit without
+2280       // accidentally sharing the Cmp (the Bool and the If make 2 users).
+2281       n-&gt;add_req( n-&gt;in(1)-&gt;in(1) ); // Add the Cmp next to the Bool
+2282     }
+2283     else if (nstate == Post_Visit) {
+2284       mstack.pop(); // Remove node from stack
+2285 
+2286       // Now hack a few special opcodes
+2287       switch( n-&gt;Opcode() ) {       // Handle some opcodes special
+2288       case Op_StorePConditional:
+2289       case Op_StoreIConditional:
+2290       case Op_StoreLConditional:
+2291       case Op_CompareAndSwapI:
+2292       case Op_CompareAndSwapL:
+2293       case Op_CompareAndSwapP:
+2294       case Op_CompareAndSwapN: {   // Convert trinary to binary-tree
+2295         Node *newval = n-&gt;in(MemNode::ValueIn );
+2296         Node *oldval  = n-&gt;in(LoadStoreConditionalNode::ExpectedIn);
+2297         Node *pair = new BinaryNode( oldval, newval );
+2298         n-&gt;set_req(MemNode::ValueIn,pair);
+2299         n-&gt;del_req(LoadStoreConditionalNode::ExpectedIn);
+2300         break;
+2301       }
+2302       case Op_CMoveD:              // Convert trinary to binary-tree
+2303       case Op_CMoveF:
+2304       case Op_CMoveI:
+2305       case Op_CMoveL:
+2306       case Op_CMoveN:
+2307       case Op_CMoveP: {
+2308         // Restructure into a binary tree for Matching.  It's possible that
+2309         // we could move this code up next to the graph reshaping for IfNodes
+2310         // or vice-versa, but I do not want to debug this for Ladybird.
+2311         // 10/2/2000 CNC.
+2312         Node *pair1 = new BinaryNode(n-&gt;in(1),n-&gt;in(1)-&gt;in(1));
+2313         n-&gt;set_req(1,pair1);
+2314         Node *pair2 = new BinaryNode(n-&gt;in(2),n-&gt;in(3));
+2315         n-&gt;set_req(2,pair2);
+2316         n-&gt;del_req(3);
+2317         break;
+2318       }
+2319       case Op_LoopLimit: {
+2320         Node *pair1 = new BinaryNode(n-&gt;in(1),n-&gt;in(2));
+2321         n-&gt;set_req(1,pair1);
+2322         n-&gt;set_req(2,n-&gt;in(3));
+2323         n-&gt;del_req(3);
+2324         break;
+2325       }
+2326       case Op_StrEquals: {
+2327         Node *pair1 = new BinaryNode(n-&gt;in(2),n-&gt;in(3));
+2328         n-&gt;set_req(2,pair1);
+2329         n-&gt;set_req(3,n-&gt;in(4));
+2330         n-&gt;del_req(4);
+2331         break;
+2332       }
+2333       case Op_StrComp:
+2334       case Op_StrIndexOf: {
+2335         Node *pair1 = new BinaryNode(n-&gt;in(2),n-&gt;in(3));
+2336         n-&gt;set_req(2,pair1);
+2337         Node *pair2 = new BinaryNode(n-&gt;in(4),n-&gt;in(5));
+2338         n-&gt;set_req(3,pair2);
+2339         n-&gt;del_req(5);
+2340         n-&gt;del_req(4);
+2341         break;
+2342       }
+2343       case Op_EncodeISOArray: {
+2344         // Restructure into a binary tree for Matching.
+2345         Node* pair = new BinaryNode(n-&gt;in(3), n-&gt;in(4));
+2346         n-&gt;set_req(3, pair);
+2347         n-&gt;del_req(4);
+2348         break;
+2349       }
+2350       default:
+2351         break;
+2352       }
+2353     }
+2354     else {
+2355       ShouldNotReachHere();
+2356     }
+2357   } // end of while (mstack.is_nonempty())
+2358 }
+2359 
+2360 #ifdef ASSERT
+2361 // machine-independent root to machine-dependent root
+2362 void Matcher::dump_old2new_map() {
+2363   _old2new_map.dump();
+2364 }
+2365 #endif
+2366 
+2367 //---------------------------collect_null_checks-------------------------------
+2368 // Find null checks in the ideal graph; write a machine-specific node for
+2369 // it.  Used by later implicit-null-check handling.  Actually collects
+2370 // either an IfTrue or IfFalse for the common NOT-null path, AND the ideal
+2371 // value being tested.
+2372 void Matcher::collect_null_checks( Node *proj, Node *orig_proj ) {
+2373   Node *iff = proj-&gt;in(0);
+2374   if( iff-&gt;Opcode() == Op_If ) {
+2375     // During matching If's have Bool &amp; Cmp side-by-side
+2376     BoolNode *b = iff-&gt;in(1)-&gt;as_Bool();
+2377     Node *cmp = iff-&gt;in(2);
+2378     int opc = cmp-&gt;Opcode();
+2379     if (opc != Op_CmpP &amp;&amp; opc != Op_CmpN) return;
+2380 
+2381     const Type* ct = cmp-&gt;in(2)-&gt;bottom_type();
+2382     if (ct == TypePtr::NULL_PTR ||
+2383         (opc == Op_CmpN &amp;&amp; ct == TypeNarrowOop::NULL_PTR)) {
+2384 
+2385       bool push_it = false;
+2386       if( proj-&gt;Opcode() == Op_IfTrue ) {
+2387         extern int all_null_checks_found;
+2388         all_null_checks_found++;
+2389         if( b-&gt;_test._test == BoolTest::ne ) {
+2390           push_it = true;
+2391         }
+2392       } else {
+2393         assert( proj-&gt;Opcode() == Op_IfFalse, "" );
+2394         if( b-&gt;_test._test == BoolTest::eq ) {
+2395           push_it = true;
+2396         }
+2397       }
+2398       if( push_it ) {
+2399         _null_check_tests.push(proj);
+2400         Node* val = cmp-&gt;in(1);
+2401 #ifdef _LP64
+2402         if (val-&gt;bottom_type()-&gt;isa_narrowoop() &amp;&amp;
+2403             !Matcher::narrow_oop_use_complex_address()) {
+2404           //
+2405           // Look for DecodeN node which should be pinned to orig_proj.
+2406           // On platforms (Sparc) which can not handle 2 adds
+2407           // in addressing mode we have to keep a DecodeN node and
+2408           // use it to do implicit NULL check in address.
+2409           //
+2410           // DecodeN node was pinned to non-null path (orig_proj) during
+2411           // CastPP transformation in final_graph_reshaping_impl().
+2412           //
+2413           uint cnt = orig_proj-&gt;outcnt();
+2414           for (uint i = 0; i &lt; orig_proj-&gt;outcnt(); i++) {
+2415             Node* d = orig_proj-&gt;raw_out(i);
+2416             if (d-&gt;is_DecodeN() &amp;&amp; d-&gt;in(1) == val) {
+2417               val = d;
+2418               val-&gt;set_req(0, NULL); // Unpin now.
+2419               // Mark this as special case to distinguish from
+2420               // a regular case: CmpP(DecodeN, NULL).
+2421               val = (Node*)(((intptr_t)val) | 1);
+2422               break;
+2423             }
+2424           }
+2425         }
+2426 #endif
+2427         _null_check_tests.push(val);
+2428       }
+2429     }
+2430   }
+2431 }
+2432 
+2433 //---------------------------validate_null_checks------------------------------
+2434 // Its possible that the value being NULL checked is not the root of a match
+2435 // tree.  If so, I cannot use the value in an implicit null check.
+2436 void Matcher::validate_null_checks( ) {
+2437   uint cnt = _null_check_tests.size();
+2438   for( uint i=0; i &lt; cnt; i+=2 ) {
+2439     Node *test = _null_check_tests[i];
+2440     Node *val = _null_check_tests[i+1];
+2441     bool is_decoden = ((intptr_t)val) &amp; 1;
+2442     val = (Node*)(((intptr_t)val) &amp; ~1);
+2443     if (has_new_node(val)) {
+2444       Node* new_val = new_node(val);
+2445       if (is_decoden) {
+2446         assert(val-&gt;is_DecodeNarrowPtr() &amp;&amp; val-&gt;in(0) == NULL, "sanity");
+2447         // Note: new_val may have a control edge if
+2448         // the original ideal node DecodeN was matched before
+2449         // it was unpinned in Matcher::collect_null_checks().
+2450         // Unpin the mach node and mark it.
+2451         new_val-&gt;set_req(0, NULL);
+2452         new_val = (Node*)(((intptr_t)new_val) | 1);
+2453       }
+2454       // Is a match-tree root, so replace with the matched value
+2455       _null_check_tests.map(i+1, new_val);
+2456     } else {
+2457       // Yank from candidate list
+2458       _null_check_tests.map(i+1,_null_check_tests[--cnt]);
+2459       _null_check_tests.map(i,_null_check_tests[--cnt]);
+2460       _null_check_tests.pop();
+2461       _null_check_tests.pop();
+2462       i-=2;
+2463     }
+2464   }
+2465 }
+2466 
+2467 // Used by the DFA in dfa_xxx.cpp.  Check for a following barrier or
+2468 // atomic instruction acting as a store_load barrier without any
+2469 // intervening volatile load, and thus we don't need a barrier here.
+2470 // We retain the Node to act as a compiler ordering barrier.
+2471 bool Matcher::post_store_load_barrier(const Node* vmb) {
+2472   Compile* C = Compile::current();
+2473   assert(vmb-&gt;is_MemBar(), "");
+2474   assert(vmb-&gt;Opcode() != Op_MemBarAcquire &amp;&amp; vmb-&gt;Opcode() != Op_LoadFence, "");
+2475   const MemBarNode* membar = vmb-&gt;as_MemBar();
+2476 
+2477   // Get the Ideal Proj node, ctrl, that can be used to iterate forward
+2478   Node* ctrl = NULL;
+2479   for (DUIterator_Fast imax, i = membar-&gt;fast_outs(imax); i &lt; imax; i++) {
+2480     Node* p = membar-&gt;fast_out(i);
+2481     assert(p-&gt;is_Proj(), "only projections here");
+2482     if ((p-&gt;as_Proj()-&gt;_con == TypeFunc::Control) &amp;&amp;
+2483         !C-&gt;node_arena()-&gt;contains(p)) { // Unmatched old-space only
+2484       ctrl = p;
+2485       break;
+2486     }
+2487   }
+2488   assert((ctrl != NULL), "missing control projection");
+2489 
+2490   for (DUIterator_Fast jmax, j = ctrl-&gt;fast_outs(jmax); j &lt; jmax; j++) {
+2491     Node *x = ctrl-&gt;fast_out(j);
+2492     int xop = x-&gt;Opcode();
+2493 
+2494     // We don't need current barrier if we see another or a lock
+2495     // before seeing volatile load.
+2496     //
+2497     // Op_Fastunlock previously appeared in the Op_* list below.
+2498     // With the advent of 1-0 lock operations we're no longer guaranteed
+2499     // that a monitor exit operation contains a serializing instruction.
+2500 
+2501     if (xop == Op_MemBarVolatile ||
+2502         xop == Op_CompareAndSwapL ||
+2503         xop == Op_CompareAndSwapP ||
+2504         xop == Op_CompareAndSwapN ||
+2505         xop == Op_CompareAndSwapI) {
+2506       return true;
+2507     }
+2508 
+2509     // Op_FastLock previously appeared in the Op_* list above.
+2510     // With biased locking we're no longer guaranteed that a monitor
+2511     // enter operation contains a serializing instruction.
+2512     if ((xop == Op_FastLock) &amp;&amp; !UseBiasedLocking) {
+2513       return true;
+2514     }
+2515 
+2516     if (x-&gt;is_MemBar()) {
+2517       // We must retain this membar if there is an upcoming volatile
+2518       // load, which will be followed by acquire membar.
+2519       if (xop == Op_MemBarAcquire || xop == Op_LoadFence) {
+2520         return false;
+2521       } else {
+2522         // For other kinds of barriers, check by pretending we
+2523         // are them, and seeing if we can be removed.
+2524         return post_store_load_barrier(x-&gt;as_MemBar());
+2525       }
+2526     }
+2527 
+2528     // probably not necessary to check for these
+2529     if (x-&gt;is_Call() || x-&gt;is_SafePoint() || x-&gt;is_block_proj()) {
+2530       return false;
+2531     }
+2532   }
+2533   return false;
+2534 }
+2535 
+2536 // Check whether node n is a branch to an uncommon trap that we could
+2537 // optimize as test with very high branch costs in case of going to
+2538 // the uncommon trap. The code must be able to be recompiled to use
+2539 // a cheaper test.
+2540 bool Matcher::branches_to_uncommon_trap(const Node *n) {
+2541   // Don't do it for natives, adapters, or runtime stubs
+2542   Compile *C = Compile::current();
+2543   if (!C-&gt;is_method_compilation()) return false;
+2544 
+2545   assert(n-&gt;is_If(), "You should only call this on if nodes.");
+2546   IfNode *ifn = n-&gt;as_If();
+2547 
+2548   Node *ifFalse = NULL;
+2549   for (DUIterator_Fast imax, i = ifn-&gt;fast_outs(imax); i &lt; imax; i++) {
+2550     if (ifn-&gt;fast_out(i)-&gt;is_IfFalse()) {
+2551       ifFalse = ifn-&gt;fast_out(i);
+2552       break;
+2553     }
+2554   }
+2555   assert(ifFalse, "An If should have an ifFalse. Graph is broken.");
+2556 
+2557   Node *reg = ifFalse;
+2558   int cnt = 4; // We must protect against cycles.  Limit to 4 iterations.
+2559                // Alternatively use visited set?  Seems too expensive.
+2560   while (reg != NULL &amp;&amp; cnt &gt; 0) {
+2561     CallNode *call = NULL;
+2562     RegionNode *nxt_reg = NULL;
+2563     for (DUIterator_Fast imax, i = reg-&gt;fast_outs(imax); i &lt; imax; i++) {
+2564       Node *o = reg-&gt;fast_out(i);
+2565       if (o-&gt;is_Call()) {
+2566         call = o-&gt;as_Call();
+2567       }
+2568       if (o-&gt;is_Region()) {
+2569         nxt_reg = o-&gt;as_Region();
+2570       }
+2571     }
+2572 
+2573     if (call &amp;&amp;
+2574         call-&gt;entry_point() == SharedRuntime::uncommon_trap_blob()-&gt;entry_point()) {
+2575       const Type* trtype = call-&gt;in(TypeFunc::Parms)-&gt;bottom_type();
+2576       if (trtype-&gt;isa_int() &amp;&amp; trtype-&gt;is_int()-&gt;is_con()) {
+2577         jint tr_con = trtype-&gt;is_int()-&gt;get_con();
+2578         Deoptimization::DeoptReason reason = Deoptimization::trap_request_reason(tr_con);
+2579         Deoptimization::DeoptAction action = Deoptimization::trap_request_action(tr_con);
+2580         assert((int)reason &lt; (int)BitsPerInt, "recode bit map");
+2581 
+2582         if (is_set_nth_bit(C-&gt;allowed_deopt_reasons(), (int)reason)
+2583             &amp;&amp; action != Deoptimization::Action_none) {
+2584           // This uncommon trap is sure to recompile, eventually.
+2585           // When that happens, C-&gt;too_many_traps will prevent
+2586           // this transformation from happening again.
+2587           return true;
+2588         }
+2589       }
+2590     }
+2591 
+2592     reg = nxt_reg;
+2593     cnt--;
+2594   }
+2595 
+2596   return false;
+2597 }
+2598 
+2599 //=============================================================================
+2600 //---------------------------State---------------------------------------------
+2601 State::State(void) {
+2602 #ifdef ASSERT
+2603   _id = 0;
+2604   _kids[0] = _kids[1] = (State*)(intptr_t) CONST64(0xcafebabecafebabe);
+2605   _leaf = (Node*)(intptr_t) CONST64(0xbaadf00dbaadf00d);
+2606   //memset(_cost, -1, sizeof(_cost));
+2607   //memset(_rule, -1, sizeof(_rule));
+2608 #endif
+2609   memset(_valid, 0, sizeof(_valid));
+2610 }
+2611 
+2612 #ifdef ASSERT
+2613 State::~State() {
+2614   _id = 99;
+2615   _kids[0] = _kids[1] = (State*)(intptr_t) CONST64(0xcafebabecafebabe);
+2616   _leaf = (Node*)(intptr_t) CONST64(0xbaadf00dbaadf00d);
+2617   memset(_cost, -3, sizeof(_cost));
+2618   memset(_rule, -3, sizeof(_rule));
+2619 }
+2620 #endif
+2621 
+2622 #ifndef PRODUCT
+2623 //---------------------------dump----------------------------------------------
+2624 void State::dump() {
+2625   tty-&gt;print("\n");
+2626   dump(0);
+2627 }
+2628 
+2629 void State::dump(int depth) {
+2630   for( int j = 0; j &lt; depth; j++ )
+2631     tty-&gt;print("   ");
+2632   tty-&gt;print("--N: ");
+2633   _leaf-&gt;dump();
+2634   uint i;
+2635   for( i = 0; i &lt; _LAST_MACH_OPER; i++ )
+2636     // Check for valid entry
+2637     if( valid(i) ) {
+2638       for( int j = 0; j &lt; depth; j++ )
+2639         tty-&gt;print("   ");
+2640         assert(_cost[i] != max_juint, "cost must be a valid value");
+2641         assert(_rule[i] &lt; _last_Mach_Node, "rule[i] must be valid rule");
+2642         tty-&gt;print_cr("%s  %d  %s",
+2643                       ruleName[i], _cost[i], ruleName[_rule[i]] );
+2644       }
+2645   tty-&gt;cr();
+2646 
+2647   for( i=0; i&lt;2; i++ )
+2648     if( _kids[i] )
+2649       _kids[i]-&gt;dump(depth+1);
+2650 }
+2651 #endif
+</pre></body></html>

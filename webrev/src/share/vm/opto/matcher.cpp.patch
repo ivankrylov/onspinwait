@@ -1,0 +1,10 @@
+--- old/src/share/vm/opto/matcher.cpp	2015-07-20 21:11:21.590605100 +0300
++++ new/src/share/vm/opto/matcher.cpp	2015-07-20 21:11:21.363887500 +0300
+@@ -939,6 +939,7 @@
+     case Op_AryEq:
+     case Op_MemBarVolatile:
+     case Op_MemBarCPUOrder: // %%% these ideals should have narrower adr_type?
++    case Op_SpinLoopHint:
+     case Op_EncodeISOArray:
+       nidx = Compile::AliasIdxTop;
+       nat = NULL;

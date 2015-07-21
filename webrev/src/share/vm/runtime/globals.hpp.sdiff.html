@@ -1,0 +1,185 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta charset="utf-8">
+<meta http-equiv="cache-control" content="no-cache" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="-1" />
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+a.print { font-size: x-small; }
+
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>hotspot Sdiff src/share/vm/runtime </title>
+</head><body id="SUNWwebrev">
+<h2>src/share/vm/runtime/globals.hpp</h2>
+<a class="print" href="javascript:print()">Print this page</a>
+<pre></pre>
+
+<table><tr valign="top">
+<td><pre>
+
+</pre><hr></hr><pre>
+ 834           "SSE4.2 versions of intrinsics")                                  \
+ 835                                                                             \
+ 836   product(bool, UseAESIntrinsics, false,                                    \
+ 837           "Use intrinsics for AES versions of crypto")                      \
+ 838                                                                             \
+ 839   product(bool, UseSHA1Intrinsics, false,                                   \
+ 840           "Use intrinsics for SHA-1 crypto hash function")                  \
+ 841                                                                             \
+ 842   product(bool, UseSHA256Intrinsics, false,                                 \
+ 843           "Use intrinsics for SHA-224 and SHA-256 crypto hash functions")   \
+ 844                                                                             \
+ 845   product(bool, UseSHA512Intrinsics, false,                                 \
+ 846           "Use intrinsics for SHA-384 and SHA-512 crypto hash functions")   \
+ 847                                                                             \
+ 848   product(bool, UseCRC32Intrinsics, false,                                  \
+ 849           "use intrinsics for java.util.zip.CRC32")                         \
+ 850                                                                             \
+ 851   product(bool, UseCRC32CIntrinsics, false,                                 \
+ 852           "use intrinsics for java.util.zip.CRC32C")                        \
+ 853                                                                             \
+
+
+
+ 854   develop(bool, TraceCallFixup, false,                                      \
+ 855           "Trace all call fixups")                                          \
+ 856                                                                             \
+ 857   develop(bool, DeoptimizeALot, false,                                      \
+ 858           "Deoptimize at every exit from the runtime system")               \
+ 859                                                                             \
+ 860   notproduct(ccstrlist, DeoptimizeOnlyAt, "",                               \
+ 861           "A comma separated list of bcis to deoptimize at")                \
+ 862                                                                             \
+ 863   product(bool, DeoptimizeRandom, false,                                    \
+ 864           "Deoptimize random frames on random exit from the runtime system")\
+ 865                                                                             \
+ 866   notproduct(bool, ZombieALot, false,                                       \
+ 867           "Create zombies (non-entrant) at exit from the runtime system")   \
+ 868                                                                             \
+ 869   product(bool, UnlinkSymbolsALot, false,                                   \
+ 870           "Unlink unreferenced symbols from the symbol table at safepoints")\
+ 871                                                                             \
+ 872   notproduct(bool, WalkStackALot, false,                                    \
+ 873           "Trace stack (no print) at every exit from the runtime system")   \
+
+</pre><hr></hr>
+</pre></td><td><pre>
+
+</pre><hr></hr><pre>
+ 834           "SSE4.2 versions of intrinsics")                                  \
+ 835                                                                             \
+ 836   product(bool, UseAESIntrinsics, false,                                    \
+ 837           "Use intrinsics for AES versions of crypto")                      \
+ 838                                                                             \
+ 839   product(bool, UseSHA1Intrinsics, false,                                   \
+ 840           "Use intrinsics for SHA-1 crypto hash function")                  \
+ 841                                                                             \
+ 842   product(bool, UseSHA256Intrinsics, false,                                 \
+ 843           "Use intrinsics for SHA-224 and SHA-256 crypto hash functions")   \
+ 844                                                                             \
+ 845   product(bool, UseSHA512Intrinsics, false,                                 \
+ 846           "Use intrinsics for SHA-384 and SHA-512 crypto hash functions")   \
+ 847                                                                             \
+ 848   product(bool, UseCRC32Intrinsics, false,                                  \
+ 849           "use intrinsics for java.util.zip.CRC32")                         \
+ 850                                                                             \
+ 851   product(bool, UseCRC32CIntrinsics, false,                                 \
+ 852           "use intrinsics for java.util.zip.CRC32C")                        \
+ 853                                                                             \
+<span class="new"> 854   product(bool, UseSpinLoopHintIntrinsic, false,                            \</span>
+<span class="new"> 855           "Use intrinsics for spinLoopHint")                                \</span>
+<span class="new"> 856                                                                             \</span>
+ 857   develop(bool, TraceCallFixup, false,                                      \
+ 858           "Trace all call fixups")                                          \
+ 859                                                                             \
+ 860   develop(bool, DeoptimizeALot, false,                                      \
+ 861           "Deoptimize at every exit from the runtime system")               \
+ 862                                                                             \
+ 863   notproduct(ccstrlist, DeoptimizeOnlyAt, "",                               \
+ 864           "A comma separated list of bcis to deoptimize at")                \
+ 865                                                                             \
+ 866   product(bool, DeoptimizeRandom, false,                                    \
+ 867           "Deoptimize random frames on random exit from the runtime system")\
+ 868                                                                             \
+ 869   notproduct(bool, ZombieALot, false,                                       \
+ 870           "Create zombies (non-entrant) at exit from the runtime system")   \
+ 871                                                                             \
+ 872   product(bool, UnlinkSymbolsALot, false,                                   \
+ 873           "Unlink unreferenced symbols from the symbol table at safepoints")\
+ 874                                                                             \
+ 875   notproduct(bool, WalkStackALot, false,                                    \
+ 876           "Trace stack (no print) at every exit from the runtime system")   \
+
+</pre><hr></hr>
+</pre></td>
+</tr></table>
+</body></html>

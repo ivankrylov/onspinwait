@@ -1,0 +1,12 @@
+--- old/src/share/vm/runtime/globals.hpp	2015-07-20 21:11:26.146165300 +0300
++++ new/src/share/vm/runtime/globals.hpp	2015-07-20 21:11:25.895991900 +0300
+@@ -851,6 +851,9 @@
+   product(bool, UseCRC32CIntrinsics, false,                                 \
+           "use intrinsics for java.util.zip.CRC32C")                        \
+                                                                             \
++  product(bool, UseSpinLoopHintIntrinsic, false,                            \
++          "Use intrinsics for spinLoopHint")                                \
++                                                                            \
+   develop(bool, TraceCallFixup, false,                                      \
+           "Trace all call fixups")                                          \
+                                                                             \

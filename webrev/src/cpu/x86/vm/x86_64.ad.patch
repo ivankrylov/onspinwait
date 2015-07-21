@@ -1,0 +1,28 @@
+--- old/src/cpu/x86/vm/x86_64.ad	2015-07-20 21:11:15.011150600 +0300
++++ new/src/cpu/x86/vm/x86_64.ad	2015-07-20 21:11:14.783453200 +0300
+@@ -6304,6 +6304,25 @@
+   ins_pipe(empty);
+ %}
+ 
++instruct spinloophint()
++%{
++  match(SpinLoopHint);
++  ins_cost(200);
++
++  format %{
++    $$template
++    if (os::is_MP()) {
++      $$emit$$"pause\t! membar_spinloophint"
++    } else {
++      $$emit$$"MEMBAR-spinloophint ! (empty encoding)"
++    }
++  %}
++  ins_encode %{
++    __ pause();
++  %}
++  ins_pipe(pipe_slow);
++%}
++
+ instruct membar_volatile(rFlagsReg cr) %{
+   match(MemBarVolatile);
+   effect(KILL cr);
