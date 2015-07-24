@@ -1,0 +1,468 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="-1" />
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+a.print { font-size: x-small; }
+
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+    <script type="text/javascript" src="../../ancnav.js"></script>
+    </head>
+    <body id="SUNWwebrev" onkeypress="keypress(event);">
+    <a name="0"></a>
+    <pre></pre><hr></hr>
+<pre>
+   1 #
+   2 # Copyright (c) 2001, 2011, Oracle and/or its affiliates. All rights reserved.
+   3 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4 #
+   5 # This code is free software; you can redistribute it and/or modify it
+   6 # under the terms of the GNU General Public License version 2 only, as
+   7 # published by the Free Software Foundation.  Oracle designates this
+   8 # particular file as subject to the "Classpath" exception as provided
+   9 # by Oracle in the LICENSE file that accompanied this code.
+  10 #
+  11 # This code is distributed in the hope that it will be useful, but WITHOUT
+  12 # ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13 # FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14 # version 2 for more details (a copy is included in the LICENSE file that
+  15 # accompanied this code).
+  16 #
+  17 # You should have received a copy of the GNU General Public License version
+  18 # 2 along with this work; if not, write to the Free Software Foundation,
+  19 # Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20 #
+  21 # Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22 # or visit www.oracle.com if you need additional information or have any
+  23 # questions.
+  24 #
+  25 
+  26 # EXCLUDE_PKGS is the list of packages to exclude from the
+  27 # Java API Specification. Do not add these to CORE_PKGS.
+  28 # The concatenation of EXCLUDE_PKGS and CORE_PKGS
+  29 # should make up the list of all packages under the
+  30 # src/shared/classes directory of the JDK source tree.
+  31 #
+  32 EXCLUDE_PKGS = \
+  33     java.awt.peer \
+  34     java.awt.dnd.peer \
+  35     sun.* \
+  36     com.sun.* \
+  37     org.apache.* \
+  38     org.jcp.* \
+  39     org.w3c.dom.css \
+  40     org.w3c.dom.html \
+  41     org.w3c.dom.stylesheets \
+<a name="1" id="anc1"></a><span class="changed">  42     org.omg.stub.javax.management.remote.rmi</span>
+
+  43 
+  44 #
+  45 # ACTIVE_JSR_PKGS are packages that are part of an active JSR process--
+  46 # one that is doing its own review. These packages are not included when
+  47 # creating diff pages for the platform's JCP process.
+  48 #
+  49 # (see /java/pubs/apisrc/jdk/6.0/beta/make/docs/active_jsr_pkgs)
+  50 # Note:
+  51 # This is a list of regular expressions. So foo.* matches "foo" and "foo.bar".
+  52 #
+  53 ACTIVE_JSR_PKGS= \
+  54     java.lang.invoke \
+  55     java.sql \
+  56     javax.activation \
+  57     javax.annotation.* \
+  58     javax.jws.* \
+  59     javax.lang.* \
+  60     javax.management.* \
+  61     javax.script \
+  62     javax.sql.* \
+  63     javax.tools.* \
+  64     javax.xml.* \
+  65     org.w3c.* \
+  66     org.xml.sax
+  67 
+  68 #
+  69 # CORE_PKGS is the list of packages that form the
+  70 # Java API Specification.
+  71 #
+  72 ### ***IMPORTANT NOTE***
+  73 ### There is also a "REGEXP" variable in the docs/makefile that
+  74 ### determines which table the packages go in on the main page.
+  75 ### Currently, there is only table ("Platform Packages") and
+  76 ### everything goes in it, so REGEXP is "*". But if that policy
+  77 ### changes, packages added will need to be reflected in that
+  78 ### list of wildcard expressions, as well.
+  79 ###
+  80 CORE_PKGS = \
+  81     java.applet \
+  82     java.awt \
+  83     java.awt.color \
+  84     java.awt.datatransfer \
+  85     java.awt.dnd \
+  86     java.awt.event \
+  87     java.awt.font \
+  88     java.awt.geom \
+  89     java.awt.im \
+  90     java.awt.im.spi \
+  91     java.awt.image \
+  92     java.awt.image.renderable \
+  93     java.awt.print \
+  94     java.beans \
+  95     java.beans.beancontext \
+  96     java.io \
+  97     java.lang \
+  98     java.lang.annotation \
+  99     java.lang.instrument \
+ 100     java.lang.invoke \
+ 101     java.lang.management \
+ 102     java.lang.ref \
+ 103     java.lang.reflect \
+ 104     java.math \
+ 105     java.net \
+ 106     java.net.spi \
+ 107     java.nio \
+ 108     java.nio.channels \
+ 109     java.nio.channels.spi \
+ 110     java.nio.charset \
+ 111     java.nio.charset.spi \
+ 112     java.nio.file \
+ 113     java.nio.file.attribute \
+ 114     java.nio.file.spi \
+ 115     java.rmi \
+ 116     java.rmi.activation \
+ 117     java.rmi.dgc \
+ 118     java.rmi.registry \
+ 119     java.rmi.server \
+ 120     java.security \
+ 121     java.security.acl \
+ 122     java.security.cert \
+ 123     java.security.interfaces \
+ 124     java.security.spec \
+ 125     java.sql \
+ 126     java.text \
+ 127     java.text.spi \
+ 128     java.time \
+ 129     java.time.chrono \
+ 130     java.time.format \
+ 131     java.time.temporal \
+ 132     java.time.zone \
+ 133     java.util \
+ 134     java.util.concurrent \
+ 135     java.util.concurrent.atomic \
+ 136     java.util.concurrent.locks \
+ 137     java.util.function \
+ 138     java.util.jar \
+ 139     java.util.logging \
+ 140     java.util.prefs \
+ 141     java.util.regex \
+ 142     java.util.spi \
+ 143     java.util.stream \
+ 144     java.util.zip \
+ 145     javax.accessibility \
+ 146     javax.activation \
+ 147     javax.activity \
+ 148     javax.annotation \
+ 149     javax.annotation.processing \
+ 150     javax.crypto \
+ 151     javax.crypto.interfaces \
+ 152     javax.crypto.spec \
+ 153     javax.imageio \
+ 154     javax.imageio.event \
+ 155     javax.imageio.metadata \
+ 156     javax.imageio.plugins.jpeg \
+ 157     javax.imageio.plugins.bmp \
+ 158     javax.imageio.spi \
+ 159     javax.imageio.stream \
+ 160     javax.jws \
+ 161     javax.jws.soap \
+ 162     javax.lang.model \
+ 163     javax.lang.model.element \
+ 164     javax.lang.model.type \
+ 165     javax.lang.model.util \
+ 166     javax.management \
+ 167     javax.management.loading \
+ 168     javax.management.monitor \
+ 169     javax.management.relation \
+ 170     javax.management.openmbean \
+ 171     javax.management.timer \
+ 172     javax.management.modelmbean \
+ 173     javax.management.remote \
+ 174     javax.management.remote.rmi \
+ 175     javax.naming \
+ 176     javax.naming.directory \
+ 177     javax.naming.event \
+ 178     javax.naming.ldap \
+ 179     javax.naming.spi \
+ 180     javax.net \
+ 181     javax.net.ssl \
+ 182     javax.print \
+ 183     javax.print.attribute \
+ 184     javax.print.attribute.standard \
+ 185     javax.print.event \
+ 186     javax.rmi \
+ 187     javax.rmi.CORBA \
+ 188     javax.rmi.ssl \
+ 189     javax.script \
+ 190     javax.security.auth \
+ 191     javax.security.auth.callback \
+ 192     javax.security.auth.kerberos \
+ 193     javax.security.auth.login \
+ 194     javax.security.auth.spi \
+ 195     javax.security.auth.x500 \
+ 196     javax.security.cert \
+ 197     javax.security.sasl \
+ 198     javax.sound.sampled \
+ 199     javax.sound.sampled.spi \
+ 200     javax.sound.midi \
+ 201     javax.sound.midi.spi \
+ 202     javax.sql \
+ 203     javax.sql.rowset \
+ 204     javax.sql.rowset.serial \
+ 205     javax.sql.rowset.spi \
+ 206     javax.swing \
+ 207     javax.swing.border \
+ 208     javax.swing.colorchooser \
+ 209     javax.swing.filechooser \
+ 210     javax.swing.event \
+ 211     javax.swing.table \
+ 212     javax.swing.text \
+ 213     javax.swing.text.html \
+ 214     javax.swing.text.html.parser \
+ 215     javax.swing.text.rtf \
+ 216     javax.swing.tree \
+ 217     javax.swing.undo \
+ 218     javax.swing.plaf \
+ 219     javax.swing.plaf.basic \
+ 220     javax.swing.plaf.metal \
+ 221     javax.swing.plaf.multi \
+ 222     javax.swing.plaf.nimbus \
+ 223     javax.swing.plaf.synth \
+ 224     javax.tools \
+ 225     javax.transaction \
+ 226     javax.transaction.xa \
+ 227     javax.xml.parsers \
+ 228     javax.xml.bind \
+ 229     javax.xml.bind.annotation \
+ 230     javax.xml.bind.annotation.adapters \
+ 231     javax.xml.bind.attachment \
+ 232     javax.xml.bind.helpers \
+ 233     javax.xml.bind.util \
+ 234     javax.xml.soap \
+ 235     javax.xml.ws \
+ 236     javax.xml.ws.handler \
+ 237     javax.xml.ws.handler.soap \
+ 238     javax.xml.ws.http \
+ 239     javax.xml.ws.soap \
+ 240     javax.xml.ws.spi \
+ 241     javax.xml.ws.spi.http \
+ 242     javax.xml.ws.wsaddressing \
+ 243     javax.xml.transform \
+ 244     javax.xml.transform.sax \
+ 245     javax.xml.transform.dom \
+ 246     javax.xml.transform.stax \
+ 247     javax.xml.transform.stream \
+ 248     javax.xml \
+ 249     javax.xml.crypto \
+ 250     javax.xml.crypto.dom \
+ 251     javax.xml.crypto.dsig \
+ 252     javax.xml.crypto.dsig.dom \
+ 253     javax.xml.crypto.dsig.keyinfo \
+ 254     javax.xml.crypto.dsig.spec \
+ 255     javax.xml.datatype \
+ 256     javax.xml.validation \
+ 257     javax.xml.namespace \
+ 258     javax.xml.xpath \
+ 259     javax.xml.stream \
+ 260     javax.xml.stream.events \
+ 261     javax.xml.stream.util \
+ 262     org.ietf.jgss \
+ 263     org.omg.CORBA \
+ 264     org.omg.CORBA.DynAnyPackage \
+ 265     org.omg.CORBA.ORBPackage \
+ 266     org.omg.CORBA.TypeCodePackage \
+ 267     org.omg.stub.java.rmi \
+ 268     org.omg.CORBA.portable \
+ 269     org.omg.CORBA_2_3 \
+ 270     org.omg.CORBA_2_3.portable \
+ 271     org.omg.CosNaming \
+ 272     org.omg.CosNaming.NamingContextExtPackage \
+ 273     org.omg.CosNaming.NamingContextPackage \
+ 274     org.omg.SendingContext \
+ 275     org.omg.PortableServer \
+ 276     org.omg.PortableServer.CurrentPackage \
+ 277     org.omg.PortableServer.POAPackage \
+ 278     org.omg.PortableServer.POAManagerPackage \
+ 279     org.omg.PortableServer.ServantLocatorPackage \
+ 280     org.omg.PortableServer.portable \
+ 281     org.omg.PortableInterceptor \
+ 282     org.omg.PortableInterceptor.ORBInitInfoPackage \
+ 283     org.omg.Messaging \
+ 284     org.omg.IOP \
+ 285     org.omg.IOP.CodecFactoryPackage \
+ 286     org.omg.IOP.CodecPackage \
+ 287     org.omg.Dynamic \
+ 288     org.omg.DynamicAny \
+ 289     org.omg.DynamicAny.DynAnyPackage \
+ 290     org.omg.DynamicAny.DynAnyFactoryPackage \
+ 291     org.w3c.dom \
+ 292     org.w3c.dom.events \
+ 293     org.w3c.dom.bootstrap \
+ 294     org.w3c.dom.ls \
+ 295     org.w3c.dom.ranges \
+ 296     org.w3c.dom.traversal \
+ 297     org.w3c.dom.views \
+ 298     org.xml.sax \
+ 299     org.xml.sax.ext \
+<a name="2" id="anc2"></a><span class="changed"> 300     org.xml.sax.helpers</span>
+
+
+<a name="3" id="anc3"></a><b style="font-size: large; color: red">--- EOF ---</b>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</pre><form name="eof"><input name="value" value="3" type="hidden" /></form></body></html>

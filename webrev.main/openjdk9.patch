@@ -1,0 +1,30 @@
+--- old/common/bin/unshuffle_list.txt	2015-07-24 12:27:33.000000000 +0300
++++ new/common/bin/unshuffle_list.txt	2015-07-24 12:27:33.000000000 +0300
+@@ -1480,6 +1480,7 @@
+ jdk/src/jdk.zipfs/share/classes/jdk/nio/zipfs : jdk/src/share/classes/jdk/nio/zipfs
+ jdk/src/jdk.zipfs/share/classes/META-INF : jdk/src/share/classes/jdk/nio/zipfs/META-INF
+ jdk/src/sample/share : jdk/src/share/sample
++jdk/src/jdk.performancehints/classes/jdk/performancehints : jdk/src/share/classes/jdk/performancehints
+ langtools/src/java.base/share/classes/jdk/Exported.java : langtools/src/share/classes/jdk/Exported.java
+ langtools/src/java.compiler/share/classes/javax/annotation/processing : langtools/src/share/classes/javax/annotation/processing
+ langtools/src/java.compiler/share/classes/javax/lang/model : langtools/src/share/classes/javax/lang/model
+--- old/make/common/CORE_PKGS.gmk	2015-07-24 12:27:33.000000000 +0300
++++ new/make/common/CORE_PKGS.gmk	2015-07-24 12:27:33.000000000 +0300
+@@ -39,7 +39,8 @@
+     org.w3c.dom.css \
+     org.w3c.dom.html \
+     org.w3c.dom.stylesheets \
+-    org.omg.stub.javax.management.remote.rmi
++    org.omg.stub.javax.management.remote.rmi \
++    jdk.performancehints
+ 
+ #
+ # ACTIVE_JSR_PKGS are packages that are part of an active JSR process--
+@@ -297,4 +298,6 @@
+     org.w3c.dom.views \
+     org.xml.sax \
+     org.xml.sax.ext \
+-    org.xml.sax.helpers
++    org.xml.sax.helpers \
++    org.performancehints  
++
