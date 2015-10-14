@@ -84,11 +84,11 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
         <a class="print" href="javascript:print()">Print this page</a>
 <pre></pre>
         <pre>
-<hr /><span class="oldmarker">*** 379,388 ****</span>
-<span class="newmarker">--- 379,394 ----</span>
-    } else if (UseCRC32CIntrinsics) {
-      warning("CRC32C instruction is not available on this CPU");
-      FLAG_SET_DEFAULT(UseCRC32CIntrinsics, false);
+<hr /><span class="oldmarker">*** 363,372 ****</span>
+<span class="newmarker">--- 363,378 ----</span>
+    } else if (UseAdler32Intrinsics) {
+      warning("SPARC Adler32 intrinsics require VIS3 instruction support. Intrinsics will be disabled.");
+      FLAG_SET_DEFAULT(UseAdler32Intrinsics, false);
     }
   
 <span class="new">+   if (UseSpinLoopHintIntrinsic) {</span>

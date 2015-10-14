@@ -93,11 +93,11 @@ span.new {
 <pre></pre>
         <pre>
 </pre><hr /><pre>
-<span class="newmarker">@@ -849,10 +849,13 @@</span>
-           "use intrinsics for java.util.zip.CRC32")                         \
+<span class="newmarker">@@ -836,10 +836,13 @@</span>
+           "use intrinsics for java.util.zip.Adler32")                       \
                                                                              \
-   product(bool, UseCRC32CIntrinsics, false,                                 \
-           "use intrinsics for java.util.zip.CRC32C")                        \
+   diagnostic(ccstrlist, DisableIntrinsic, "",                               \
+          "do not expand intrinsics whose (internal) names appear here")     \
                                                                              \
 <span class="new">+  product(bool, UseSpinLoopHintIntrinsic, false,                            \</span>
 <span class="new">+          "Use intrinsics for spinLoopHint")                                \</span>

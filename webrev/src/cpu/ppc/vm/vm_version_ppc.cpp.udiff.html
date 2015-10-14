@@ -93,10 +93,10 @@ span.new {
 <pre></pre>
         <pre>
 </pre><hr /><pre>
-<span class="newmarker">@@ -163,10 +163,16 @@</span>
-     if (!FLAG_IS_DEFAULT(UseCRC32Intrinsics))
-       warning("CRC32 intrinsics  are not available on this CPU");
-     FLAG_SET_DEFAULT(UseCRC32Intrinsics, false);
+<span class="newmarker">@@ -171,10 +171,16 @@</span>
+     if (!FLAG_IS_DEFAULT(UseCRC32CIntrinsics))
+       warning("CRC32C intrinsics are not available on this CPU");
+     FLAG_SET_DEFAULT(UseCRC32CIntrinsics, false);
    }
  
 <span class="new">+  if (UseSpinLoopHintIntrinsic) {</span>

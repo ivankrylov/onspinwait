@@ -372,19 +372,7 @@ struct Flag {
   void print_kind(outputStream* st);
   void print_as_flag(outputStream* st);
 
-  static const char* flag_error_str(Flag::Error error) {
-    switch (error) {
-      case Flag::MISSING_NAME: return "MISSING_NAME";
-      case Flag::MISSING_VALUE: return "MISSING_VALUE";
-      case Flag::NON_WRITABLE: return "NON_WRITABLE";
-      case Flag::OUT_OF_BOUNDS: return "OUT_OF_BOUNDS";
-      case Flag::VIOLATES_CONSTRAINT: return "VIOLATES_CONSTRAINT";
-      case Flag::INVALID_FLAG: return "INVALID_FLAG";
-      case Flag::ERR_OTHER: return "ERR_OTHER";
-      case Flag::SUCCESS: return "SUCCESS";
-      default: return "NULL";
-    }
-  }
+  static const char* flag_error_str(Flag::Error error);
 };
 
 // debug flags control various aspects of the VM and are global accessible
@@ -450,7 +438,6 @@ class SizeTFlagSetting {
 
 
 class CommandLineFlags {
-  static bool _finished_initializing;
 public:
   static Flag::Error boolAt(const char* name, size_t len, bool* value, bool allow_locked = false, bool return_flag = false);
   static Flag::Error boolAt(const char* name, bool* value, bool allow_locked = false, bool return_flag = false)      { return boolAt(name, strlen(name), value, allow_locked, return_flag); }
@@ -505,12 +492,6 @@ public:
 
   // printRanges will print out flags type, name and range values as expected by -XX:+PrintFlagsRanges
   static void printFlags(outputStream* out, bool withComments, bool printRanges = false);
-
-  // Returns true if all flags have their final values set (ready for ranges and constraint check)
-  static bool finishedInitializing() { return _finished_initializing; }
-
-  // Check the final values of all flags for ranges and constraints
-  static bool check_all_ranges_and_constraints();
 
   static void verify() PRODUCT_RETURN;
 };
@@ -640,7 +621,7 @@ public:
   lp64_product(intx, ObjectAlignmentInBytes, 8,                             \
           "Default object alignment in bytes, 8 is minimum")                \
           range(8, 256)                                                     \
-          constraint(ObjectAlignmentInBytesConstraintFunc)                  \
+          constraint(ObjectAlignmentInBytesConstraintFunc,AtParse)          \
                                                                             \
   product(bool, AssumeMP, false,                                            \
           "Instruct the VM to assume multiple processors are available")    \
@@ -656,10 +637,6 @@ public:
                                                                             \
   experimental(bool, AlwaysSafeConstructors, false,                         \
           "Force safe construction, as if all fields are final.")           \
-                                                                            \
-  /* Temporary: See 6948537 */                                              \
-  experimental(bool, UseMemSetInBOT, true,                                  \
-          "(Unstable) uses memset in BOT updates in GC code")               \
                                                                             \
   diagnostic(bool, UnlockDiagnosticVMOptions, trueInDebug,                  \
           "Enable normal processing of flags relating to field diagnostics")\
@@ -728,7 +705,8 @@ public:
           "Control whether AES instructions can be used on x86/x64")        \
                                                                             \
   product(bool, UseSHA, false,                                              \
-          "Control whether SHA instructions can be used on SPARC")          \
+          "Control whether SHA instructions can be used "                   \
+          "on SPARC and on ARM")                                            \
                                                                             \
   product(bool, UseGHASHIntrinsics, false,                                  \
           "Use intrinsics for GHASH versions of crypto")                    \
@@ -837,19 +815,28 @@ public:
           "Use intrinsics for AES versions of crypto")                      \
                                                                             \
   product(bool, UseSHA1Intrinsics, false,                                   \
-          "Use intrinsics for SHA-1 crypto hash function")                  \
+          "Use intrinsics for SHA-1 crypto hash function. "                 \
+          "Requires that UseSHA is enabled.")                               \
                                                                             \
   product(bool, UseSHA256Intrinsics, false,                                 \
-          "Use intrinsics for SHA-224 and SHA-256 crypto hash functions")   \
+          "Use intrinsics for SHA-224 and SHA-256 crypto hash functions. "  \
+          "Requires that UseSHA is enabled.")                               \
                                                                             \
   product(bool, UseSHA512Intrinsics, false,                                 \
-          "Use intrinsics for SHA-384 and SHA-512 crypto hash functions")   \
+          "Use intrinsics for SHA-384 and SHA-512 crypto hash functions. "  \
+          "Requires that UseSHA is enabled.")                               \
                                                                             \
   product(bool, UseCRC32Intrinsics, false,                                  \
           "use intrinsics for java.util.zip.CRC32")                         \
                                                                             \
   product(bool, UseCRC32CIntrinsics, false,                                 \
           "use intrinsics for java.util.zip.CRC32C")                        \
+                                                                            \
+  product(bool, UseAdler32Intrinsics, false,                                \
+          "use intrinsics for java.util.zip.Adler32")                       \
+                                                                            \
+  diagnostic(ccstrlist, DisableIntrinsic, "",                               \
+         "do not expand intrinsics whose (internal) names appear here")     \
                                                                             \
   develop(bool, TraceCallFixup, false,                                      \
           "Trace all call fixups")                                          \
@@ -1031,6 +1018,10 @@ public:
                                                                             \
   product(bool, CreateCoredumpOnCrash, true,                                \
           "Create core/mini dump on VM fatal error")                        \
+                                                                            \
+  product(uintx, ErrorLogTimeout, 2 * 60,                                   \
+          "Timeout, in seconds, to limit the time spent on writing an "     \
+          "error log in case of a crash.")                                  \
                                                                             \
   product_pd(bool, UseOSErrorReporting,                                     \
           "Let VM fatal error propagate to the OS (ie. WER on Windows)")    \
@@ -1275,12 +1266,14 @@ public:
                                                                             \
   experimental(intx, SyncVerbose, 0, "(Unstable)")                          \
                                                                             \
+  diagnostic(bool, InlineNotify, true, "intrinsify subset of notify")       \
+                                                                            \
   experimental(intx, ClearFPUAtPark, 0, "(Unsafe, Unstable)")               \
                                                                             \
   experimental(intx, hashCode, 5,                                           \
                "(Unstable) select hashCode generation algorithm")           \
                                                                             \
-  experimental(intx, WorkAroundNPTLTimedWaitHang, 1,                        \
+  experimental(intx, WorkAroundNPTLTimedWaitHang, 0,                        \
                "(Unstable, Linux-specific) "                                \
                "avoid NPTL-FUTEX hang pthread_cond_timedwait")              \
                                                                             \
@@ -1361,9 +1354,6 @@ public:
   develop(uintx, PreallocatedOutOfMemoryErrorCount, 4,                      \
           "Number of OutOfMemoryErrors preallocated with backtrace")        \
                                                                             \
-  product(bool, LazyBootClassLoader, true,                                  \
-          "Enable/disable lazy opening of boot class path entries")         \
-                                                                            \
   product(bool, UseXMMForArrayCopy, false,                                  \
           "Use SSE2 MOVQ instruction for Arraycopy")                        \
                                                                             \
@@ -1386,7 +1376,7 @@ public:
   product(intx, ContendedPaddingWidth, 128,                                 \
           "How many bytes to pad the fields/classes marked @Contended with")\
           range(0, 8192)                                                    \
-          constraint(ContendedPaddingWidthConstraintFunc)                   \
+          constraint(ContendedPaddingWidthConstraintFunc,AtParse)           \
                                                                             \
   product(bool, EnableContended, true,                                      \
           "Enable @Contended annotation support")                           \
@@ -1558,6 +1548,10 @@ public:
   product(uint, ParallelGCThreads, 0,                                       \
           "Number of parallel threads parallel gc will use")                \
                                                                             \
+  diagnostic(bool, UseSemaphoreGCThreadsSynchronization, true,              \
+            "Use semaphore synchronization for the GC Threads, "            \
+            "instead of synchronization based on mutexes")                  \
+                                                                            \
   product(bool, UseDynamicNumberOfGCThreads, false,                         \
           "Dynamically choose the number of parallel threads "              \
           "parallel gc will use")                                           \
@@ -1569,7 +1563,7 @@ public:
   product(size_t, HeapSizePerGCThread, ScaleForWordSize(64*M),              \
           "Size of heap (bytes) per GC thread used in calculating the "     \
           "number of GC threads")                                           \
-          range((uintx)os::vm_page_size(), max_uintx)                       \
+          range((size_t)os::vm_page_size(), (size_t)max_uintx)              \
                                                                             \
   product(bool, TraceDynamicGCThreads, false,                               \
           "Trace the dynamic GC thread usage")                              \
@@ -1587,6 +1581,7 @@ public:
                                                                             \
   product(size_t, YoungPLABSize, 4096,                                      \
           "Size of young gen promotion LAB's (in HeapWords)")               \
+          constraint(YoungPLABSizeConstraintFunc,AfterMemoryInit)           \
                                                                             \
   product(size_t, OldPLABSize, 1024,                                        \
           "Size of old gen promotion LAB's (in HeapWords), or Number        \
@@ -1725,7 +1720,7 @@ public:
           "Minimum size of CMS gen promotion LAB caches per worker "        \
           "per block size")                                                 \
           range(1, max_uintx)                                               \
-          constraint(CMSOldPLABMinConstraintFunc)                           \
+          constraint(CMSOldPLABMinConstraintFunc,AfterErgo)                 \
                                                                             \
   product(uintx, CMSOldPLABNumRefills, 4,                                   \
           "Nominal number of refills of CMS gen promotion LAB cache "       \
@@ -1849,6 +1844,7 @@ public:
   product(size_t, MarkStackSize, NOT_LP64(32*K) LP64_ONLY(4*M),             \
           "Size of marking stack")                                          \
                                                                             \
+  /* where does the range max value of (max_jint - 1) come from? */         \
   product(size_t, MarkStackSizeMax, NOT_LP64(4*M) LP64_ONLY(512*M),         \
           "Maximum size of marking stack")                                  \
           range(1, (max_jint - 1))                                          \
@@ -1921,13 +1917,13 @@ public:
           "CMSPrecleanNumerator:CMSPrecleanDenominator yields convergence " \
           "ratio")                                                          \
           range(1, max_uintx)                                               \
-          constraint(CMSPrecleanDenominatorConstraintFunc)                  \
+          constraint(CMSPrecleanDenominatorConstraintFunc,AfterErgo)        \
                                                                             \
   product(uintx, CMSPrecleanNumerator, 2,                                   \
           "CMSPrecleanNumerator:CMSPrecleanDenominator yields convergence " \
           "ratio")                                                          \
           range(0, max_uintx-1)                                             \
-          constraint(CMSPrecleanNumeratorConstraintFunc)                    \
+          constraint(CMSPrecleanNumeratorConstraintFunc,AfterErgo)          \
                                                                             \
   product(bool, CMSPrecleanRefLists1, true,                                 \
           "Preclean ref lists during (initial) preclean phase")             \
@@ -2105,7 +2101,7 @@ public:
           "collection")                                                     \
                                                                             \
   develop(uintx, PromotionFailureALotCount, 1000,                           \
-          "Number of promotion failures occurring at PLAB "     \
+          "Number of promotion failures occurring at PLAB "                 \
           "refill attempts (ParNew) or promotion attempts "                 \
           "(other young collectors)")                                       \
                                                                             \
@@ -2185,11 +2181,6 @@ public:
   product(uintx, MaxRAMFraction, 4,                                         \
           "Maximum fraction (1/n) of real memory used for maximum heap "    \
           "size")                                                           \
-          range(1, max_uintx)                                               \
-                                                                            \
-  product(uintx, DefaultMaxRAMFraction, 4,                                  \
-          "Maximum fraction (1/n) of real memory used for maximum heap "    \
-          "size; deprecated: to be renamed to MaxRAMFraction")              \
           range(1, max_uintx)                                               \
                                                                             \
   product(uintx, MinRAMFraction, 2,                                         \
@@ -2639,8 +2630,8 @@ public:
   /* because of overflow issue                                   */         \
   product(intx, CICompilerCount, CI_COMPILER_COUNT,                         \
           "Number of compiler threads to run")                              \
-          range((intx)Arguments::get_min_number_of_compiler_threads(),      \
-                max_jint)                                                   \
+          range(0, max_jint)                                                \
+          constraint(CICompilerCountConstraintFunc, AtParse)                \
                                                                             \
   product(intx, CompilationPolicyChoice, 0,                                 \
           "which compilation policy (0-3)")                                 \
@@ -2708,6 +2699,12 @@ public:
                                                                             \
   develop(bool, EagerInitialization, false,                                 \
           "Eagerly initialize classes if possible")                         \
+                                                                            \
+  diagnostic(bool, LogTouchedMethods, false,                                \
+          "Log methods which have been ever touched in runtime")            \
+                                                                            \
+  diagnostic(bool, PrintTouchedMethodsAtExit, false,                        \
+          "Print all methods that have been ever touched in runtime")       \
                                                                             \
   develop(bool, TraceMethodReplacement, false,                              \
           "Print when methods are replaced do to recompilation")            \
@@ -2906,12 +2903,6 @@ public:
                                                                             \
   notproduct(bool, ICMissHistogram, false,                                  \
           "Produce histogram of IC misses")                                 \
-                                                                            \
-  notproduct(bool, PrintClassStatistics, false,                             \
-          "Print class statistics at end of run")                           \
-                                                                            \
-  notproduct(bool, PrintMethodStatistics, false,                            \
-          "Print method statistics at end of run")                          \
                                                                             \
   /* interpreter */                                                         \
   develop(bool, ClearInterpreterLocals, false,                              \
@@ -3274,9 +3265,6 @@ public:
   develop(intx, ProfilerNodeSize,  1024,                                    \
           "Size in K to allocate for the Profile Nodes of each thread")     \
                                                                             \
-  product_pd(intx, PreInflateSpin,                                          \
-          "Number of times to spin wait before inflation")                  \
-                                                                            \
   /* gc parameters */                                                       \
   product(size_t, InitialHeapSize, 0,                                       \
           "Initial heap size (in bytes); zero means use ergonomics")        \
@@ -3348,14 +3336,14 @@ public:
           " For most GCs this applies to the old generation. In G1 and"     \
           " ParallelGC it applies to the whole heap.")                      \
           range(0, 100)                                                     \
-          constraint(MinHeapFreeRatioConstraintFunc)                        \
+          constraint(MinHeapFreeRatioConstraintFunc,AfterErgo)              \
                                                                             \
   manageable(uintx, MaxHeapFreeRatio, 70,                                   \
           "The maximum percentage of heap free after GC to avoid shrinking."\
           " For most GCs this applies to the old generation. In G1 and"     \
           " ParallelGC it applies to the whole heap.")                      \
           range(0, 100)                                                     \
-          constraint(MaxHeapFreeRatioConstraintFunc)                        \
+          constraint(MaxHeapFreeRatioConstraintFunc,AfterErgo)              \
                                                                             \
   product(intx, SoftRefLRUPolicyMSPerMB, 1000,                              \
           "Number of milliseconds per MB of free space in the heap")        \
@@ -3370,13 +3358,13 @@ public:
           "The maximum percentage of Metaspace free after GC to avoid "     \
           "shrinking")                                                      \
           range(0, 100)                                                     \
-          constraint(MaxMetaspaceFreeRatioConstraintFunc)                   \
+          constraint(MaxMetaspaceFreeRatioConstraintFunc,AfterErgo)         \
                                                                             \
   product(uintx, MinMetaspaceFreeRatio,    40,                              \
           "The minimum percentage of Metaspace free after GC to avoid "     \
           "expansion")                                                      \
           range(0, 99)                                                      \
-          constraint(MinMetaspaceFreeRatioConstraintFunc)                   \
+          constraint(MinMetaspaceFreeRatioConstraintFunc,AfterErgo)         \
                                                                             \
   product(size_t, MaxMetaspaceExpansion, ScaleForWordSize(4*M),             \
           "The maximum expansion of Metaspace without full GC (in bytes)")  \
@@ -3394,12 +3382,12 @@ public:
   product(uintx, MaxTenuringThreshold,    15,                               \
           "Maximum value for tenuring threshold")                           \
           range(0, markOopDesc::max_age + 1)                                \
-          constraint(MaxTenuringThresholdConstraintFunc)                    \
+          constraint(MaxTenuringThresholdConstraintFunc,AfterErgo)          \
                                                                             \
   product(uintx, InitialTenuringThreshold,    7,                            \
           "Initial value for tenuring threshold")                           \
           range(0, markOopDesc::max_age + 1)                                \
-          constraint(InitialTenuringThresholdConstraintFunc)                \
+          constraint(InitialTenuringThresholdConstraintFunc,AfterErgo)      \
                                                                             \
   product(uintx, TargetSurvivorRatio,    50,                                \
           "Desired percentage of survivor space used after scavenge")       \
@@ -3717,9 +3705,6 @@ public:
   develop(intx, LongCompileThreshold,     50,                               \
           "Used with +TraceLongCompiles")                                   \
                                                                             \
-  product(intx, StarvationMonitorInterval,    200,                          \
-          "Pause between each check (in milliseconds)")                     \
-                                                                            \
   /* recompilation */                                                       \
   product_pd(intx, CompileThreshold,                                        \
           "number of interpreted method invocations before (re-)compiling") \
@@ -3909,7 +3894,7 @@ public:
   product(bool, PerfDisableSharedMem, false,                                \
           "Store performance data in standard memory")                      \
                                                                             \
-  product(intx, PerfDataMemorySize, 32*K,                                   \
+  product(intx, PerfDataMemorySize, 64*K,                                   \
           "Size of performance data memory region. Will be rounded "        \
           "up to a multiple of the native os page size.")                   \
                                                                             \
@@ -4072,9 +4057,6 @@ public:
   develop(bool, TraceDefaultMethods, false,                                 \
           "Trace the default method processing steps")                      \
                                                                             \
-  develop(bool, VerifyGenericSignatures, false,                             \
-          "Abort VM on erroneous or inconsistent generic signatures")       \
-                                                                            \
   diagnostic(bool, WhiteBoxAPI, false,                                      \
           "Enable internal testing APIs")                                   \
                                                                             \
@@ -4083,7 +4065,7 @@ public:
                                                                             \
   experimental(intx, SurvivorAlignmentInBytes, 0,                           \
            "Default survivor space alignment in bytes")                     \
-           constraint(SurvivorAlignmentInBytesConstraintFunc)               \
+           constraint(SurvivorAlignmentInBytesConstraintFunc,AfterErgo)     \
                                                                             \
   product(bool , AllowNonVirtualCalls, false,                               \
           "Obey the ACC_SUPER flag and allow invokenonvirtual calls")       \
@@ -4120,7 +4102,20 @@ public:
                                                                             \
   product_pd(bool, PreserveFramePointer,                                    \
              "Use the FP register for holding the frame pointer "           \
-             "and not as a general purpose register.")
+             "and not as a general purpose register.")                      \
+                                                                            \
+  diagnostic(bool, CheckIntrinsics, true,                                   \
+             "When a class C is loaded, check that "                        \
+             "(1) all intrinsics defined by the VM for class C are present "\
+             "in the loaded class file and are marked with the "            \
+             "@HotSpotIntrinsicCandidate annotation, that "                 \
+             "(2) there is an intrinsic registered for all loaded methods " \
+             "that are annotated with the @HotSpotIntrinsicCandidate "      \
+             "annotation, and that "                                        \
+             "(3) no orphan methods exist for class C (i.e., methods for "  \
+             "which the VM declares an intrinsic but that are not declared "\
+             "in the loaded class C. "                                      \
+             "Check (3) is available only in debug builds.")
 
 /*
  *  Macros for factoring of globals
@@ -4174,7 +4169,7 @@ public:
 // Only materialize src code for range checking when required, ignore otherwise
 #define IGNORE_RANGE(a, b)
 // Only materialize src code for contraint checking when required, ignore otherwise
-#define IGNORE_CONSTRAINT(func)
+#define IGNORE_CONSTRAINT(func,type)
 
 RUNTIME_FLAGS(DECLARE_DEVELOPER_FLAG, \
               DECLARE_PD_DEVELOPER_FLAG, \

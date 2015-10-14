@@ -1,0 +1,12 @@
+--- old/src/share/vm/classfile/vmSymbols.cpp	2015-10-14 14:23:23.000000000 +0300
++++ new/src/share/vm/classfile/vmSymbols.cpp	2015-10-14 14:23:23.000000000 +0300
+@@ -678,6 +678,9 @@
+   case vmIntrinsics::_montgomerySquare:
+     if (!UseMontgomerySquareIntrinsic) return true;
+     break;
++  case vmIntrinsics::_spinLoopHint:
++    if (!UseSpinLoopHintIntrinsic) return true;
++    break;
+   case vmIntrinsics::_addExactI:
+   case vmIntrinsics::_addExactL:
+   case vmIntrinsics::_decrementExactI:

@@ -87,97 +87,97 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
 <td><pre>
 
 </pre><hr></hr><pre>
- 834           "SSE4.2 versions of intrinsics")                                  \
- 835                                                                             \
- 836   product(bool, UseAESIntrinsics, false,                                    \
- 837           "Use intrinsics for AES versions of crypto")                      \
- 838                                                                             \
- 839   product(bool, UseSHA1Intrinsics, false,                                   \
- 840           "Use intrinsics for SHA-1 crypto hash function")                  \
- 841                                                                             \
- 842   product(bool, UseSHA256Intrinsics, false,                                 \
- 843           "Use intrinsics for SHA-224 and SHA-256 crypto hash functions")   \
- 844                                                                             \
- 845   product(bool, UseSHA512Intrinsics, false,                                 \
- 846           "Use intrinsics for SHA-384 and SHA-512 crypto hash functions")   \
- 847                                                                             \
- 848   product(bool, UseCRC32Intrinsics, false,                                  \
- 849           "use intrinsics for java.util.zip.CRC32")                         \
- 850                                                                             \
- 851   product(bool, UseCRC32CIntrinsics, false,                                 \
- 852           "use intrinsics for java.util.zip.CRC32C")                        \
- 853                                                                             \
+ 821   product(bool, UseSHA256Intrinsics, false,                                 \
+ 822           "Use intrinsics for SHA-224 and SHA-256 crypto hash functions. "  \
+ 823           "Requires that UseSHA is enabled.")                               \
+ 824                                                                             \
+ 825   product(bool, UseSHA512Intrinsics, false,                                 \
+ 826           "Use intrinsics for SHA-384 and SHA-512 crypto hash functions. "  \
+ 827           "Requires that UseSHA is enabled.")                               \
+ 828                                                                             \
+ 829   product(bool, UseCRC32Intrinsics, false,                                  \
+ 830           "use intrinsics for java.util.zip.CRC32")                         \
+ 831                                                                             \
+ 832   product(bool, UseCRC32CIntrinsics, false,                                 \
+ 833           "use intrinsics for java.util.zip.CRC32C")                        \
+ 834                                                                             \
+ 835   product(bool, UseAdler32Intrinsics, false,                                \
+ 836           "use intrinsics for java.util.zip.Adler32")                       \
+ 837                                                                             \
+ 838   diagnostic(ccstrlist, DisableIntrinsic, "",                               \
+ 839          "do not expand intrinsics whose (internal) names appear here")     \
+ 840                                                                             \
 
 
 
- 854   develop(bool, TraceCallFixup, false,                                      \
- 855           "Trace all call fixups")                                          \
- 856                                                                             \
- 857   develop(bool, DeoptimizeALot, false,                                      \
- 858           "Deoptimize at every exit from the runtime system")               \
- 859                                                                             \
- 860   notproduct(ccstrlist, DeoptimizeOnlyAt, "",                               \
- 861           "A comma separated list of bcis to deoptimize at")                \
- 862                                                                             \
- 863   product(bool, DeoptimizeRandom, false,                                    \
- 864           "Deoptimize random frames on random exit from the runtime system")\
- 865                                                                             \
- 866   notproduct(bool, ZombieALot, false,                                       \
- 867           "Create zombies (non-entrant) at exit from the runtime system")   \
- 868                                                                             \
- 869   product(bool, UnlinkSymbolsALot, false,                                   \
- 870           "Unlink unreferenced symbols from the symbol table at safepoints")\
- 871                                                                             \
- 872   notproduct(bool, WalkStackALot, false,                                    \
- 873           "Trace stack (no print) at every exit from the runtime system")   \
+ 841   develop(bool, TraceCallFixup, false,                                      \
+ 842           "Trace all call fixups")                                          \
+ 843                                                                             \
+ 844   develop(bool, DeoptimizeALot, false,                                      \
+ 845           "Deoptimize at every exit from the runtime system")               \
+ 846                                                                             \
+ 847   notproduct(ccstrlist, DeoptimizeOnlyAt, "",                               \
+ 848           "A comma separated list of bcis to deoptimize at")                \
+ 849                                                                             \
+ 850   product(bool, DeoptimizeRandom, false,                                    \
+ 851           "Deoptimize random frames on random exit from the runtime system")\
+ 852                                                                             \
+ 853   notproduct(bool, ZombieALot, false,                                       \
+ 854           "Create zombies (non-entrant) at exit from the runtime system")   \
+ 855                                                                             \
+ 856   product(bool, UnlinkSymbolsALot, false,                                   \
+ 857           "Unlink unreferenced symbols from the symbol table at safepoints")\
+ 858                                                                             \
+ 859   notproduct(bool, WalkStackALot, false,                                    \
+ 860           "Trace stack (no print) at every exit from the runtime system")   \
 
 </pre><hr></hr>
 </pre></td><td><pre>
 
 </pre><hr></hr><pre>
- 834           "SSE4.2 versions of intrinsics")                                  \
- 835                                                                             \
- 836   product(bool, UseAESIntrinsics, false,                                    \
- 837           "Use intrinsics for AES versions of crypto")                      \
- 838                                                                             \
- 839   product(bool, UseSHA1Intrinsics, false,                                   \
- 840           "Use intrinsics for SHA-1 crypto hash function")                  \
- 841                                                                             \
- 842   product(bool, UseSHA256Intrinsics, false,                                 \
- 843           "Use intrinsics for SHA-224 and SHA-256 crypto hash functions")   \
- 844                                                                             \
- 845   product(bool, UseSHA512Intrinsics, false,                                 \
- 846           "Use intrinsics for SHA-384 and SHA-512 crypto hash functions")   \
- 847                                                                             \
- 848   product(bool, UseCRC32Intrinsics, false,                                  \
- 849           "use intrinsics for java.util.zip.CRC32")                         \
- 850                                                                             \
- 851   product(bool, UseCRC32CIntrinsics, false,                                 \
- 852           "use intrinsics for java.util.zip.CRC32C")                        \
- 853                                                                             \
-<span class="new"> 854   product(bool, UseSpinLoopHintIntrinsic, false,                            \</span>
-<span class="new"> 855           "Use intrinsics for spinLoopHint")                                \</span>
-<span class="new"> 856                                                                             \</span>
- 857   develop(bool, TraceCallFixup, false,                                      \
- 858           "Trace all call fixups")                                          \
- 859                                                                             \
- 860   develop(bool, DeoptimizeALot, false,                                      \
- 861           "Deoptimize at every exit from the runtime system")               \
- 862                                                                             \
- 863   notproduct(ccstrlist, DeoptimizeOnlyAt, "",                               \
- 864           "A comma separated list of bcis to deoptimize at")                \
- 865                                                                             \
- 866   product(bool, DeoptimizeRandom, false,                                    \
- 867           "Deoptimize random frames on random exit from the runtime system")\
- 868                                                                             \
- 869   notproduct(bool, ZombieALot, false,                                       \
- 870           "Create zombies (non-entrant) at exit from the runtime system")   \
- 871                                                                             \
- 872   product(bool, UnlinkSymbolsALot, false,                                   \
- 873           "Unlink unreferenced symbols from the symbol table at safepoints")\
- 874                                                                             \
- 875   notproduct(bool, WalkStackALot, false,                                    \
- 876           "Trace stack (no print) at every exit from the runtime system")   \
+ 821   product(bool, UseSHA256Intrinsics, false,                                 \
+ 822           "Use intrinsics for SHA-224 and SHA-256 crypto hash functions. "  \
+ 823           "Requires that UseSHA is enabled.")                               \
+ 824                                                                             \
+ 825   product(bool, UseSHA512Intrinsics, false,                                 \
+ 826           "Use intrinsics for SHA-384 and SHA-512 crypto hash functions. "  \
+ 827           "Requires that UseSHA is enabled.")                               \
+ 828                                                                             \
+ 829   product(bool, UseCRC32Intrinsics, false,                                  \
+ 830           "use intrinsics for java.util.zip.CRC32")                         \
+ 831                                                                             \
+ 832   product(bool, UseCRC32CIntrinsics, false,                                 \
+ 833           "use intrinsics for java.util.zip.CRC32C")                        \
+ 834                                                                             \
+ 835   product(bool, UseAdler32Intrinsics, false,                                \
+ 836           "use intrinsics for java.util.zip.Adler32")                       \
+ 837                                                                             \
+ 838   diagnostic(ccstrlist, DisableIntrinsic, "",                               \
+ 839          "do not expand intrinsics whose (internal) names appear here")     \
+ 840                                                                             \
+<span class="new"> 841   product(bool, UseSpinLoopHintIntrinsic, false,                            \</span>
+<span class="new"> 842           "Use intrinsics for spinLoopHint")                                \</span>
+<span class="new"> 843                                                                             \</span>
+ 844   develop(bool, TraceCallFixup, false,                                      \
+ 845           "Trace all call fixups")                                          \
+ 846                                                                             \
+ 847   develop(bool, DeoptimizeALot, false,                                      \
+ 848           "Deoptimize at every exit from the runtime system")               \
+ 849                                                                             \
+ 850   notproduct(ccstrlist, DeoptimizeOnlyAt, "",                               \
+ 851           "A comma separated list of bcis to deoptimize at")                \
+ 852                                                                             \
+ 853   product(bool, DeoptimizeRandom, false,                                    \
+ 854           "Deoptimize random frames on random exit from the runtime system")\
+ 855                                                                             \
+ 856   notproduct(bool, ZombieALot, false,                                       \
+ 857           "Create zombies (non-entrant) at exit from the runtime system")   \
+ 858                                                                             \
+ 859   product(bool, UnlinkSymbolsALot, false,                                   \
+ 860           "Unlink unreferenced symbols from the symbol table at safepoints")\
+ 861                                                                             \
+ 862   notproduct(bool, WalkStackALot, false,                                    \
+ 863           "Trace stack (no print) at every exit from the runtime system")   \
 
 </pre><hr></hr>
 </pre></td>

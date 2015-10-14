@@ -87,103 +87,103 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
 <td><pre>
 
 </pre><hr></hr><pre>
- 148     if (AllocatePrefetchDistance &lt; 0) AllocatePrefetchDistance = 3*cache_line_size; // Default is not defined?
- 149   }
- 150 
- 151   assert(AllocatePrefetchLines &gt; 0, "invalid value");
- 152   if (AllocatePrefetchLines &lt; 1) { // Set valid value in product VM.
- 153     AllocatePrefetchLines = 1; // Conservative value.
- 154   }
- 155 
  156   if (AllocatePrefetchStyle == 3 &amp;&amp; AllocatePrefetchDistance &lt; cache_line_size) {
  157     AllocatePrefetchStyle = 1; // Fall back if inappropriate.
  158   }
  159 
  160   assert(AllocatePrefetchStyle &gt;= 0, "AllocatePrefetchStyle should be positive");
  161 
- 162   if (UseCRC32Intrinsics) {
- 163     if (!FLAG_IS_DEFAULT(UseCRC32Intrinsics))
- 164       warning("CRC32 intrinsics  are not available on this CPU");
- 165     FLAG_SET_DEFAULT(UseCRC32Intrinsics, false);
- 166   }
- 167 
+ 162   // Implementation does not use any of the vector instructions
+ 163   // available with Power8. Their exploitation is still pending.
+ 164   if (!UseCRC32Intrinsics) {
+ 165     if (FLAG_IS_DEFAULT(UseCRC32Intrinsics)) {
+ 166       FLAG_SET_DEFAULT(UseCRC32Intrinsics, true);
+ 167     }
+ 168   }
+ 169 
+ 170   if (UseCRC32CIntrinsics) {
+ 171     if (!FLAG_IS_DEFAULT(UseCRC32CIntrinsics))
+ 172       warning("CRC32C intrinsics are not available on this CPU");
+ 173     FLAG_SET_DEFAULT(UseCRC32CIntrinsics, false);
+ 174   }
+ 175 
 
 
 
 
 
 
- 168   // The AES intrinsic stubs require AES instruction support.
- 169   if (UseAES) {
- 170     warning("AES instructions are not available on this CPU");
- 171     FLAG_SET_DEFAULT(UseAES, false);
- 172   }
- 173   if (UseAESIntrinsics) {
- 174     if (!FLAG_IS_DEFAULT(UseAESIntrinsics))
- 175       warning("AES intrinsics are not available on this CPU");
- 176     FLAG_SET_DEFAULT(UseAESIntrinsics, false);
- 177   }
- 178 
- 179   if (UseGHASHIntrinsics) {
- 180     warning("GHASH intrinsics are not available on this CPU");
- 181     FLAG_SET_DEFAULT(UseGHASHIntrinsics, false);
- 182   }
- 183 
- 184   if (UseSHA) {
- 185     warning("SHA instructions are not available on this CPU");
- 186     FLAG_SET_DEFAULT(UseSHA, false);
- 187   }
+ 176   // The AES intrinsic stubs require AES instruction support.
+ 177   if (UseAES) {
+ 178     warning("AES instructions are not available on this CPU");
+ 179     FLAG_SET_DEFAULT(UseAES, false);
+ 180   }
+ 181   if (UseAESIntrinsics) {
+ 182     if (!FLAG_IS_DEFAULT(UseAESIntrinsics))
+ 183       warning("AES intrinsics are not available on this CPU");
+ 184     FLAG_SET_DEFAULT(UseAESIntrinsics, false);
+ 185   }
+ 186 
+ 187   if (UseGHASHIntrinsics) {
+ 188     warning("GHASH intrinsics are not available on this CPU");
+ 189     FLAG_SET_DEFAULT(UseGHASHIntrinsics, false);
+ 190   }
+ 191 
+ 192   if (UseSHA) {
+ 193     warning("SHA instructions are not available on this CPU");
+ 194     FLAG_SET_DEFAULT(UseSHA, false);
+ 195   }
 
 </pre><hr></hr>
 </pre></td><td><pre>
 
 </pre><hr></hr><pre>
- 148     if (AllocatePrefetchDistance &lt; 0) AllocatePrefetchDistance = 3*cache_line_size; // Default is not defined?
- 149   }
- 150 
- 151   assert(AllocatePrefetchLines &gt; 0, "invalid value");
- 152   if (AllocatePrefetchLines &lt; 1) { // Set valid value in product VM.
- 153     AllocatePrefetchLines = 1; // Conservative value.
- 154   }
- 155 
  156   if (AllocatePrefetchStyle == 3 &amp;&amp; AllocatePrefetchDistance &lt; cache_line_size) {
  157     AllocatePrefetchStyle = 1; // Fall back if inappropriate.
  158   }
  159 
  160   assert(AllocatePrefetchStyle &gt;= 0, "AllocatePrefetchStyle should be positive");
  161 
- 162   if (UseCRC32Intrinsics) {
- 163     if (!FLAG_IS_DEFAULT(UseCRC32Intrinsics))
- 164       warning("CRC32 intrinsics  are not available on this CPU");
- 165     FLAG_SET_DEFAULT(UseCRC32Intrinsics, false);
- 166   }
- 167 
-<span class="new"> 168   if (UseSpinLoopHintIntrinsic) {</span>
-<span class="new"> 169     if (!FLAG_IS_DEFAULT(UseSpinLoopHintIntrinsic))</span>
-<span class="new"> 170       warning("spinLoopHint intrinsic is not available on this CPU");</span>
-<span class="new"> 171     FLAG_SET_DEFAULT(UseSpinLoopHintIntrinsic, false);</span>
-<span class="new"> 172   }</span>
-<span class="new"> 173 </span>
- 174   // The AES intrinsic stubs require AES instruction support.
- 175   if (UseAES) {
- 176     warning("AES instructions are not available on this CPU");
- 177     FLAG_SET_DEFAULT(UseAES, false);
- 178   }
- 179   if (UseAESIntrinsics) {
- 180     if (!FLAG_IS_DEFAULT(UseAESIntrinsics))
- 181       warning("AES intrinsics are not available on this CPU");
- 182     FLAG_SET_DEFAULT(UseAESIntrinsics, false);
- 183   }
- 184 
- 185   if (UseGHASHIntrinsics) {
- 186     warning("GHASH intrinsics are not available on this CPU");
- 187     FLAG_SET_DEFAULT(UseGHASHIntrinsics, false);
- 188   }
- 189 
- 190   if (UseSHA) {
- 191     warning("SHA instructions are not available on this CPU");
- 192     FLAG_SET_DEFAULT(UseSHA, false);
- 193   }
+ 162   // Implementation does not use any of the vector instructions
+ 163   // available with Power8. Their exploitation is still pending.
+ 164   if (!UseCRC32Intrinsics) {
+ 165     if (FLAG_IS_DEFAULT(UseCRC32Intrinsics)) {
+ 166       FLAG_SET_DEFAULT(UseCRC32Intrinsics, true);
+ 167     }
+ 168   }
+ 169 
+ 170   if (UseCRC32CIntrinsics) {
+ 171     if (!FLAG_IS_DEFAULT(UseCRC32CIntrinsics))
+ 172       warning("CRC32C intrinsics are not available on this CPU");
+ 173     FLAG_SET_DEFAULT(UseCRC32CIntrinsics, false);
+ 174   }
+ 175 
+<span class="new"> 176   if (UseSpinLoopHintIntrinsic) {</span>
+<span class="new"> 177     if (!FLAG_IS_DEFAULT(UseSpinLoopHintIntrinsic))</span>
+<span class="new"> 178       warning("spinLoopHint intrinsic is not available on this CPU");</span>
+<span class="new"> 179     FLAG_SET_DEFAULT(UseSpinLoopHintIntrinsic, false);</span>
+<span class="new"> 180   }</span>
+<span class="new"> 181 </span>
+ 182   // The AES intrinsic stubs require AES instruction support.
+ 183   if (UseAES) {
+ 184     warning("AES instructions are not available on this CPU");
+ 185     FLAG_SET_DEFAULT(UseAES, false);
+ 186   }
+ 187   if (UseAESIntrinsics) {
+ 188     if (!FLAG_IS_DEFAULT(UseAESIntrinsics))
+ 189       warning("AES intrinsics are not available on this CPU");
+ 190     FLAG_SET_DEFAULT(UseAESIntrinsics, false);
+ 191   }
+ 192 
+ 193   if (UseGHASHIntrinsics) {
+ 194     warning("GHASH intrinsics are not available on this CPU");
+ 195     FLAG_SET_DEFAULT(UseGHASHIntrinsics, false);
+ 196   }
+ 197 
+ 198   if (UseSHA) {
+ 199     warning("SHA instructions are not available on this CPU");
+ 200     FLAG_SET_DEFAULT(UseSHA, false);
+ 201   }
 
 </pre><hr></hr>
 </pre></td>

@@ -31,6 +31,7 @@
 #include "oops/objArrayKlass.hpp"
 #include "opto/addnode.hpp"
 #include "opto/arraycopynode.hpp"
+#include "opto/c2compiler.hpp"
 #include "opto/callGenerator.hpp"
 #include "opto/castnode.hpp"
 #include "opto/cfgnode.hpp"
@@ -225,6 +226,7 @@ class LibraryCallKit : public GraphKit {
   bool inline_pow();
   Node* finish_pow_exp(Node* result, Node* x, Node* y, const TypeFunc* call_type, address funcAddr, const char* funcName);
   bool inline_min_max(vmIntrinsics::ID id);
+  bool inline_notify(vmIntrinsics::ID id);
   Node* generate_min_max(vmIntrinsics::ID id, Node* x, Node* y);
   // This returns Type::AnyPtr, RawPtr, or OopPtr.
   int classify_unsafe_addr(Node* &base, Node* &offset);
@@ -294,331 +296,52 @@ class LibraryCallKit : public GraphKit {
   Node* get_table_from_crc32c_class(ciInstanceKlass *crc32c_class);
   bool inline_updateBytesCRC32C();
   bool inline_updateDirectByteBufferCRC32C();
+  bool inline_updateBytesAdler32();
+  bool inline_updateByteBufferAdler32();
   bool inline_multiplyToLen();
   bool inline_squareToLen();
   bool inline_mulAdd();
+  bool inline_montgomeryMultiply();
+  bool inline_montgomerySquare();
 
   bool inline_profileBoolean();
   bool inline_isCompileConstant();
 };
-
 
 //---------------------------make_vm_intrinsic----------------------------
 CallGenerator* Compile::make_vm_intrinsic(ciMethod* m, bool is_virtual) {
   vmIntrinsics::ID id = m->intrinsic_id();
   assert(id != vmIntrinsics::_none, "must be a VM intrinsic");
 
-  ccstr disable_intr = NULL;
-
-  if ((DisableIntrinsic[0] != '\0'
-       && strstr(DisableIntrinsic, vmIntrinsics::name_at(id)) != NULL) ||
-      (method_has_option_value("DisableIntrinsic", disable_intr)
-       && strstr(disable_intr, vmIntrinsics::name_at(id)) != NULL)) {
-    // disabled by a user request on the command line:
-    // example: -XX:DisableIntrinsic=_hashCode,_getClass
-    return NULL;
-  }
-
   if (!m->is_loaded()) {
-    // do not attempt to inline unloaded methods
+    // Do not attempt to inline unloaded methods.
     return NULL;
   }
 
-  // Only a few intrinsics implement a virtual dispatch.
-  // They are expensive calls which are also frequently overridden.
-  if (is_virtual) {
-    switch (id) {
-    case vmIntrinsics::_hashCode:
-    case vmIntrinsics::_clone:
-      // OK, Object.hashCode and Object.clone intrinsics come in both flavors
-      break;
-    default:
-      return NULL;
-    }
+  C2Compiler* compiler = (C2Compiler*)CompileBroker::compiler(CompLevel_full_optimization);
+  bool is_available = false;
+
+  {
+    // For calling is_intrinsic_supported and is_intrinsic_disabled_by_flag
+    // the compiler must transition to '_thread_in_vm' state because both
+    // methods access VM-internal data.
+    VM_ENTRY_MARK;
+    methodHandle mh(THREAD, m->get_Method());
+    methodHandle ct(THREAD, method()->get_Method());
+    is_available = compiler->is_intrinsic_supported(mh, is_virtual) &&
+                   !vmIntrinsics::is_disabled_by_flags(mh, ct);
   }
 
-  // -XX:-InlineNatives disables nearly all intrinsics:
-  if (!InlineNatives) {
-    switch (id) {
-    case vmIntrinsics::_indexOf:
-    case vmIntrinsics::_compareTo:
-    case vmIntrinsics::_equals:
-    case vmIntrinsics::_equalsC:
-    case vmIntrinsics::_getAndAddInt:
-    case vmIntrinsics::_getAndAddLong:
-    case vmIntrinsics::_getAndSetInt:
-    case vmIntrinsics::_getAndSetLong:
-    case vmIntrinsics::_getAndSetObject:
-    case vmIntrinsics::_loadFence:
-    case vmIntrinsics::_storeFence:
-    case vmIntrinsics::_fullFence:
-      break;  // InlineNatives does not control String.compareTo
-    case vmIntrinsics::_Reference_get:
-      break;  // InlineNatives does not control Reference.get
-    default:
-      return NULL;
-    }
-  }
-
-  int predicates = 0;
-  bool does_virtual_dispatch = false;
-
-  switch (id) {
-  case vmIntrinsics::_compareTo:
-    if (!SpecialStringCompareTo)  return NULL;
-    if (!Matcher::match_rule_supported(Op_StrComp))  return NULL;
-    break;
-  case vmIntrinsics::_indexOf:
-    if (!SpecialStringIndexOf)  return NULL;
-    break;
-  case vmIntrinsics::_equals:
-    if (!SpecialStringEquals)  return NULL;
-    if (!Matcher::match_rule_supported(Op_StrEquals))  return NULL;
-    break;
-  case vmIntrinsics::_equalsC:
-    if (!SpecialArraysEquals)  return NULL;
-    if (!Matcher::match_rule_supported(Op_AryEq))  return NULL;
-    break;
-  case vmIntrinsics::_arraycopy:
-    if (!InlineArrayCopy)  return NULL;
-    break;
-  case vmIntrinsics::_copyMemory:
-    if (StubRoutines::unsafe_arraycopy() == NULL)  return NULL;
-    if (!InlineArrayCopy)  return NULL;
-    break;
-  case vmIntrinsics::_hashCode:
-    if (!InlineObjectHash)  return NULL;
-    does_virtual_dispatch = true;
-    break;
-  case vmIntrinsics::_clone:
-    does_virtual_dispatch = true;
-  case vmIntrinsics::_copyOf:
-  case vmIntrinsics::_copyOfRange:
-    if (!InlineObjectCopy)  return NULL;
-    // These also use the arraycopy intrinsic mechanism:
-    if (!InlineArrayCopy)  return NULL;
-    break;
-  case vmIntrinsics::_encodeISOArray:
-    if (!SpecialEncodeISOArray)  return NULL;
-    if (!Matcher::match_rule_supported(Op_EncodeISOArray))  return NULL;
-    break;
-  case vmIntrinsics::_checkIndex:
-    // We do not intrinsify this.  The optimizer does fine with it.
-    return NULL;
-
-  case vmIntrinsics::_getCallerClass:
-    if (!InlineReflectionGetCallerClass)  return NULL;
-    if (SystemDictionary::reflect_CallerSensitive_klass() == NULL)  return NULL;
-    break;
-
-  case vmIntrinsics::_bitCount_i:
-    if (!Matcher::match_rule_supported(Op_PopCountI)) return NULL;
-    break;
-
-  case vmIntrinsics::_bitCount_l:
-    if (!Matcher::match_rule_supported(Op_PopCountL)) return NULL;
-    break;
-
-  case vmIntrinsics::_numberOfLeadingZeros_i:
-    if (!Matcher::match_rule_supported(Op_CountLeadingZerosI)) return NULL;
-    break;
-
-  case vmIntrinsics::_numberOfLeadingZeros_l:
-    if (!Matcher::match_rule_supported(Op_CountLeadingZerosL)) return NULL;
-    break;
-
-  case vmIntrinsics::_numberOfTrailingZeros_i:
-    if (!Matcher::match_rule_supported(Op_CountTrailingZerosI)) return NULL;
-    break;
-
-  case vmIntrinsics::_numberOfTrailingZeros_l:
-    if (!Matcher::match_rule_supported(Op_CountTrailingZerosL)) return NULL;
-    break;
-
-  case vmIntrinsics::_reverseBytes_c:
-    if (!Matcher::match_rule_supported(Op_ReverseBytesUS)) return NULL;
-    break;
-  case vmIntrinsics::_reverseBytes_s:
-    if (!Matcher::match_rule_supported(Op_ReverseBytesS))  return NULL;
-    break;
-  case vmIntrinsics::_reverseBytes_i:
-    if (!Matcher::match_rule_supported(Op_ReverseBytesI))  return NULL;
-    break;
-  case vmIntrinsics::_reverseBytes_l:
-    if (!Matcher::match_rule_supported(Op_ReverseBytesL))  return NULL;
-    break;
-
-  case vmIntrinsics::_Reference_get:
-    // Use the intrinsic version of Reference.get() so that the value in
-    // the referent field can be registered by the G1 pre-barrier code.
-    // Also add memory barrier to prevent commoning reads from this field
-    // across safepoint since GC can change it value.
-    break;
-
-  case vmIntrinsics::_compareAndSwapObject:
-#ifdef _LP64
-    if (!UseCompressedOops && !Matcher::match_rule_supported(Op_CompareAndSwapP)) return NULL;
-#endif
-    break;
-
-  case vmIntrinsics::_compareAndSwapLong:
-    if (!Matcher::match_rule_supported(Op_CompareAndSwapL)) return NULL;
-    break;
-
-  case vmIntrinsics::_getAndAddInt:
-    if (!Matcher::match_rule_supported(Op_GetAndAddI)) return NULL;
-    break;
-
-  case vmIntrinsics::_getAndAddLong:
-    if (!Matcher::match_rule_supported(Op_GetAndAddL)) return NULL;
-    break;
-
-  case vmIntrinsics::_getAndSetInt:
-    if (!Matcher::match_rule_supported(Op_GetAndSetI)) return NULL;
-    break;
-
-  case vmIntrinsics::_getAndSetLong:
-    if (!Matcher::match_rule_supported(Op_GetAndSetL)) return NULL;
-    break;
-
-  case vmIntrinsics::_getAndSetObject:
-#ifdef _LP64
-    if (!UseCompressedOops && !Matcher::match_rule_supported(Op_GetAndSetP)) return NULL;
-    if (UseCompressedOops && !Matcher::match_rule_supported(Op_GetAndSetN)) return NULL;
-    break;
-#else
-    if (!Matcher::match_rule_supported(Op_GetAndSetP)) return NULL;
-    break;
-#endif
-
-  case vmIntrinsics::_aescrypt_encryptBlock:
-  case vmIntrinsics::_aescrypt_decryptBlock:
-    if (!UseAESIntrinsics) return NULL;
-    break;
-
-  case vmIntrinsics::_multiplyToLen:
-    if (!UseMultiplyToLenIntrinsic) return NULL;
-    break;
-
-  case vmIntrinsics::_squareToLen:
-    if (!UseSquareToLenIntrinsic) return NULL;
-    break;
-
-  case vmIntrinsics::_mulAdd:
-    if (!UseMulAddIntrinsic) return NULL;
-    break;
-
-  case vmIntrinsics::_cipherBlockChaining_encryptAESCrypt:
-  case vmIntrinsics::_cipherBlockChaining_decryptAESCrypt:
-    if (!UseAESIntrinsics) return NULL;
-    // these two require the predicated logic
-    predicates = 1;
-    break;
-
-  case vmIntrinsics::_sha_implCompress:
-    if (!UseSHA1Intrinsics) return NULL;
-    break;
-
-  case vmIntrinsics::_sha2_implCompress:
-    if (!UseSHA256Intrinsics) return NULL;
-    break;
-
-  case vmIntrinsics::_sha5_implCompress:
-    if (!UseSHA512Intrinsics) return NULL;
-    break;
-
-  case vmIntrinsics::_digestBase_implCompressMB:
-    if (!(UseSHA1Intrinsics || UseSHA256Intrinsics || UseSHA512Intrinsics)) return NULL;
-    predicates = 3;
-    break;
-
-  case vmIntrinsics::_ghash_processBlocks:
-    if (!UseGHASHIntrinsics) return NULL;
-    break;
-
-  case vmIntrinsics::_updateCRC32:
-  case vmIntrinsics::_updateBytesCRC32:
-  case vmIntrinsics::_updateByteBufferCRC32:
-    if (!UseCRC32Intrinsics) return NULL;
-    break;
-
-  case vmIntrinsics::_updateBytesCRC32C:
-  case vmIntrinsics::_updateDirectByteBufferCRC32C:
-    if (!UseCRC32CIntrinsics) return NULL;
-    break;
-
-  case vmIntrinsics::_incrementExactI:
-  case vmIntrinsics::_addExactI:
-    if (!Matcher::match_rule_supported(Op_OverflowAddI) || !UseMathExactIntrinsics) return NULL;
-    break;
-  case vmIntrinsics::_incrementExactL:
-  case vmIntrinsics::_addExactL:
-    if (!Matcher::match_rule_supported(Op_OverflowAddL) || !UseMathExactIntrinsics) return NULL;
-    break;
-  case vmIntrinsics::_decrementExactI:
-  case vmIntrinsics::_subtractExactI:
-    if (!Matcher::match_rule_supported(Op_OverflowSubI) || !UseMathExactIntrinsics) return NULL;
-    break;
-  case vmIntrinsics::_decrementExactL:
-  case vmIntrinsics::_subtractExactL:
-    if (!Matcher::match_rule_supported(Op_OverflowSubL) || !UseMathExactIntrinsics) return NULL;
-    break;
-  case vmIntrinsics::_negateExactI:
-    if (!Matcher::match_rule_supported(Op_OverflowSubI) || !UseMathExactIntrinsics) return NULL;
-    break;
-  case vmIntrinsics::_negateExactL:
-    if (!Matcher::match_rule_supported(Op_OverflowSubL) || !UseMathExactIntrinsics) return NULL;
-    break;
-  case vmIntrinsics::_multiplyExactI:
-    if (!Matcher::match_rule_supported(Op_OverflowMulI) || !UseMathExactIntrinsics) return NULL;
-    break;
-  case vmIntrinsics::_multiplyExactL:
-    if (!Matcher::match_rule_supported(Op_OverflowMulL) || !UseMathExactIntrinsics) return NULL;
-    break;
-
-  case vmIntrinsics::_getShortUnaligned:
-  case vmIntrinsics::_getCharUnaligned:
-  case vmIntrinsics::_getIntUnaligned:
-  case vmIntrinsics::_getLongUnaligned:
-  case vmIntrinsics::_putShortUnaligned:
-  case vmIntrinsics::_putCharUnaligned:
-  case vmIntrinsics::_putIntUnaligned:
-  case vmIntrinsics::_putLongUnaligned:
-    if (!UseUnalignedAccesses) return NULL;
-    break;
-
- default:
+  if (is_available) {
     assert(id <= vmIntrinsics::LAST_COMPILER_INLINE, "caller responsibility");
     assert(id != vmIntrinsics::_Object_init && id != vmIntrinsics::_invoke, "enum out of order?");
-    break;
+    return new LibraryIntrinsic(m, is_virtual,
+                                vmIntrinsics::predicates_needed(id),
+                                vmIntrinsics::does_virtual_dispatch(id),
+                                (vmIntrinsics::ID) id);
+  } else {
+    return NULL;
   }
-
-  // -XX:-InlineClassNatives disables natives from the Class class.
-  // The flag applies to all reflective calls, notably Array.newArray
-  // (visible to Java programmers as Array.newInstance).
-  if (m->holder()->name() == ciSymbol::java_lang_Class() ||
-      m->holder()->name() == ciSymbol::java_lang_reflect_Array()) {
-    if (!InlineClassNatives)  return NULL;
-  }
-
-  // -XX:-InlineThreadNatives disables natives from the Thread class.
-  if (m->holder()->name() == ciSymbol::java_lang_Thread()) {
-    if (!InlineThreadNatives)  return NULL;
-  }
-
-  // -XX:-InlineMathNatives disables natives from the Math,Float and Double classes.
-  if (m->holder()->name() == ciSymbol::java_lang_Math() ||
-      m->holder()->name() == ciSymbol::java_lang_Float() ||
-      m->holder()->name() == ciSymbol::java_lang_Double()) {
-    if (!InlineMathNatives)  return NULL;
-  }
-
-  // -XX:-InlineUnsafeOps disables natives from the Unsafe class.
-  if (m->holder()->name() == ciSymbol::sun_misc_Unsafe()) {
-    if (!InlineUnsafeOps)  return NULL;
-  }
-
-  return new LibraryIntrinsic(m, is_virtual, predicates, does_virtual_dispatch, (vmIntrinsics::ID) id);
 }
 
 //----------------------register_library_intrinsics-----------------------
@@ -642,7 +365,8 @@ JVMState* LibraryIntrinsic::generate(JVMState* jvms) {
   const int bci    = kit.bci();
 
   // Try to inline the intrinsic.
-  if (kit.try_to_inline(_last_predicate)) {
+  if ((CheckIntrinsics ? callee->intrinsic_candidate() : true) &&
+      kit.try_to_inline(_last_predicate)) {
     if (C->print_intrinsics() || C->print_inlining()) {
       C->print_inlining(callee, jvms->depth() - 1, bci, is_virtual() ? "(intrinsic, virtual)" : "(intrinsic)");
     }
@@ -663,7 +387,13 @@ JVMState* LibraryIntrinsic::generate(JVMState* jvms) {
   if (C->print_intrinsics() || C->print_inlining()) {
     if (jvms->has_method()) {
       // Not a root compile.
-      const char* msg = is_virtual() ? "failed to inline (intrinsic, virtual)" : "failed to inline (intrinsic)";
+      const char* msg;
+      if (callee->intrinsic_candidate()) {
+        msg = is_virtual() ? "failed to inline (intrinsic, virtual)" : "failed to inline (intrinsic)";
+      } else {
+        msg = is_virtual() ? "failed to inline (intrinsic, virtual), method not annotated"
+                           : "failed to inline (intrinsic), method not annotated";
+      }
       C->print_inlining(callee, jvms->depth() - 1, bci, msg);
     } else {
       // Root compile
@@ -760,6 +490,13 @@ bool LibraryCallKit::try_to_inline(int predicate) {
   case vmIntrinsics::_min:
   case vmIntrinsics::_max:                      return inline_min_max(intrinsic_id());
 
+  case vmIntrinsics::_notify:
+  case vmIntrinsics::_notifyAll:
+    if (InlineNotify) {
+      return inline_notify(intrinsic_id());
+    }
+    return false;
+
   case vmIntrinsics::_addExactI:                return inline_math_addExactI(false /* add */);
   case vmIntrinsics::_addExactL:                return inline_math_addExactL(false /* add */);
   case vmIntrinsics::_decrementExactI:          return inline_math_subtractExactI(true /* decrement */);
@@ -788,7 +525,6 @@ bool LibraryCallKit::try_to_inline(int predicate) {
   case vmIntrinsics::_getLong:                  return inline_unsafe_access(!is_native_ptr, !is_store, T_LONG,    !is_volatile);
   case vmIntrinsics::_getFloat:                 return inline_unsafe_access(!is_native_ptr, !is_store, T_FLOAT,   !is_volatile);
   case vmIntrinsics::_getDouble:                return inline_unsafe_access(!is_native_ptr, !is_store, T_DOUBLE,  !is_volatile);
-
   case vmIntrinsics::_putObject:                return inline_unsafe_access(!is_native_ptr,  is_store, T_OBJECT,  !is_volatile);
   case vmIntrinsics::_putBoolean:               return inline_unsafe_access(!is_native_ptr,  is_store, T_BOOLEAN, !is_volatile);
   case vmIntrinsics::_putByte:                  return inline_unsafe_access(!is_native_ptr,  is_store, T_BYTE,    !is_volatile);
@@ -942,6 +678,11 @@ bool LibraryCallKit::try_to_inline(int predicate) {
   case vmIntrinsics::_mulAdd:
     return inline_mulAdd();
 
+  case vmIntrinsics::_montgomeryMultiply:
+    return inline_montgomeryMultiply();
+  case vmIntrinsics::_montgomerySquare:
+    return inline_montgomerySquare();
+
   case vmIntrinsics::_ghash_processBlocks:
     return inline_ghash_processBlocks();
 
@@ -959,6 +700,11 @@ bool LibraryCallKit::try_to_inline(int predicate) {
     return inline_updateBytesCRC32C();
   case vmIntrinsics::_updateDirectByteBufferCRC32C:
     return inline_updateDirectByteBufferCRC32C();
+
+  case vmIntrinsics::_updateBytesAdler32:
+    return inline_updateBytesAdler32();
+  case vmIntrinsics::_updateByteBufferAdler32:
+    return inline_updateByteBufferAdler32();
 
   case vmIntrinsics::_profileBoolean:
     return inline_profileBoolean();
@@ -2054,6 +1800,21 @@ static bool is_simple_name(Node* n) {
           );
 }
 
+//----------------------------inline_notify-----------------------------------*
+bool LibraryCallKit::inline_notify(vmIntrinsics::ID id) {
+  const TypeFunc* ftype = OptoRuntime::monitor_notify_Type();
+  address func;
+  if (id == vmIntrinsics::_notify) {
+    func = OptoRuntime::monitor_notify_Java();
+  } else {
+    func = OptoRuntime::monitor_notifyAll_Java();
+  }
+  Node* call = make_runtime_call(RC_NO_LEAF, ftype, func, NULL, TypeRawPtr::BOTTOM, argument(0));
+  make_slow_call_ex(call, env()->Throwable_klass(), false);
+  return true;
+}
+
+
 //----------------------------inline_min_max-----------------------------------
 bool LibraryCallKit::inline_min_max(vmIntrinsics::ID id) {
   set_result(generate_min_max(id, argument(0), argument(1)));
@@ -2666,35 +2427,48 @@ bool LibraryCallKit::inline_unsafe_access(bool is_native_ptr, bool is_store, Bas
   // of safe & unsafe memory.
   if (need_mem_bar) insert_mem_bar(Op_MemBarCPUOrder);
 
-  if (!is_store) {
-    MemNode::MemOrd mo = is_volatile ? MemNode::acquire : MemNode::unordered;
-    // To be valid, unsafe loads may depend on other conditions than
-    // the one that guards them: pin the Load node
-    Node* p = make_load(control(), adr, value_type, type, adr_type, mo, LoadNode::Pinned, is_volatile);
-    // load value
-    switch (type) {
-    case T_BOOLEAN:
-    case T_CHAR:
-    case T_BYTE:
-    case T_SHORT:
-    case T_INT:
-    case T_LONG:
-    case T_FLOAT:
-    case T_DOUBLE:
-      break;
-    case T_OBJECT:
-      if (need_read_barrier) {
-        insert_pre_barrier(heap_base_oop, offset, p, !(is_volatile || need_mem_bar));
+   if (!is_store) {
+    Node* p = NULL;
+    // Try to constant fold a load from a constant field
+    ciField* field = alias_type->field();
+    if (heap_base_oop != top() &&
+        field != NULL && field->is_constant() && field->layout_type() == type) {
+      // final or stable field
+      const Type* con_type = Type::make_constant(alias_type->field(), heap_base_oop);
+      if (con_type != NULL) {
+        p = makecon(con_type);
       }
-      break;
-    case T_ADDRESS:
-      // Cast to an int type.
-      p = _gvn.transform(new CastP2XNode(NULL, p));
-      p = ConvX2UL(p);
-      break;
-    default:
-      fatal(err_msg_res("unexpected type %d: %s", type, type2name(type)));
-      break;
+    }
+    if (p == NULL) {
+      MemNode::MemOrd mo = is_volatile ? MemNode::acquire : MemNode::unordered;
+      // To be valid, unsafe loads may depend on other conditions than
+      // the one that guards them: pin the Load node
+      p = make_load(control(), adr, value_type, type, adr_type, mo, LoadNode::Pinned, is_volatile);
+      // load value
+      switch (type) {
+      case T_BOOLEAN:
+      case T_CHAR:
+      case T_BYTE:
+      case T_SHORT:
+      case T_INT:
+      case T_LONG:
+      case T_FLOAT:
+      case T_DOUBLE:
+        break;
+      case T_OBJECT:
+        if (need_read_barrier) {
+          insert_pre_barrier(heap_base_oop, offset, p, !(is_volatile || need_mem_bar));
+        }
+        break;
+      case T_ADDRESS:
+        // Cast to an int type.
+        p = _gvn.transform(new CastP2XNode(NULL, p));
+        p = ConvX2UL(p);
+        break;
+      default:
+        fatal(err_msg_res("unexpected type %d: %s", type, type2name(type)));
+        break;
+      }
     }
     // The load node has the control of the preceding MemBarCPUOrder.  All
     // following nodes will have the control of the MemBarCPUOrder inserted at
@@ -2963,7 +2737,22 @@ bool LibraryCallKit::inline_unsafe_load_store(BasicType type, LoadStoreKind kind
         load_store = _gvn.transform(new CompareAndSwapPNode(control(), mem, adr, newval, oldval));
       }
     }
-    post_barrier(control(), load_store, base, adr, alias_idx, newval, T_OBJECT, true);
+    if (kind == LS_cmpxchg) {
+      // Emit the post barrier only when the actual store happened.
+      // This makes sense to check only for compareAndSet that can fail to set the value.
+      // CAS success path is marked more likely since we anticipate this is a performance
+      // critical path, while CAS failure path can use the penalty for going through unlikely
+      // path as backoff. Which is still better than doing a store barrier there.
+      IdealKit ideal(this);
+      ideal.if_then(load_store, BoolTest::ne, ideal.ConI(0), PROB_STATIC_FREQUENT); {
+        sync_kit(ideal);
+        post_barrier(ideal.ctrl(), load_store, base, adr, alias_idx, newval, T_OBJECT, true);
+        ideal.sync_kit(this);
+      } ideal.end_if();
+      final_sync(ideal);
+    } else {
+      post_barrier(control(), load_store, base, adr, alias_idx, newval, T_OBJECT, true);
+    }
     break;
   default:
     fatal(err_msg_res("unexpected type %d: %s", type, type2name(type)));
@@ -5244,7 +5033,7 @@ bool LibraryCallKit::inline_encodeISOArray() {
 
 //-------------inline_multiplyToLen-----------------------------------
 bool LibraryCallKit::inline_multiplyToLen() {
-  assert(UseMultiplyToLenIntrinsic, "not implementated on this platform");
+  assert(UseMultiplyToLenIntrinsic, "not implemented on this platform");
 
   address stubAddr = StubRoutines::multiplyToLen();
   if (stubAddr == NULL) {
@@ -5254,11 +5043,12 @@ bool LibraryCallKit::inline_multiplyToLen() {
 
   assert(callee()->signature()->size() == 5, "multiplyToLen has 5 parameters");
 
-  Node* x    = argument(1);
-  Node* xlen = argument(2);
-  Node* y    = argument(3);
-  Node* ylen = argument(4);
-  Node* z    = argument(5);
+  // no receiver because it is a static method
+  Node* x    = argument(0);
+  Node* xlen = argument(1);
+  Node* y    = argument(2);
+  Node* ylen = argument(3);
+  Node* z    = argument(4);
 
   const Type* x_type = x->Value(&_gvn);
   const Type* y_type = y->Value(&_gvn);
@@ -5434,6 +5224,121 @@ bool LibraryCallKit::inline_mulAdd() {
                                   out_start,in_start, new_offset, len, k);
   Node* result = _gvn.transform(new ProjNode(call, TypeFunc::Parms));
   set_result(result);
+  return true;
+}
+
+//-------------inline_montgomeryMultiply-----------------------------------
+bool LibraryCallKit::inline_montgomeryMultiply() {
+  address stubAddr = StubRoutines::montgomeryMultiply();
+  if (stubAddr == NULL) {
+    return false; // Intrinsic's stub is not implemented on this platform
+  }
+
+  assert(UseMontgomeryMultiplyIntrinsic, "not implemented on this platform");
+  const char* stubName = "montgomery_square";
+
+  assert(callee()->signature()->size() == 7, "montgomeryMultiply has 7 parameters");
+
+  Node* a    = argument(0);
+  Node* b    = argument(1);
+  Node* n    = argument(2);
+  Node* len  = argument(3);
+  Node* inv  = argument(4);
+  Node* m    = argument(6);
+
+  const Type* a_type = a->Value(&_gvn);
+  const TypeAryPtr* top_a = a_type->isa_aryptr();
+  const Type* b_type = b->Value(&_gvn);
+  const TypeAryPtr* top_b = b_type->isa_aryptr();
+  const Type* n_type = a->Value(&_gvn);
+  const TypeAryPtr* top_n = n_type->isa_aryptr();
+  const Type* m_type = a->Value(&_gvn);
+  const TypeAryPtr* top_m = m_type->isa_aryptr();
+  if (top_a  == NULL || top_a->klass()  == NULL ||
+      top_b == NULL || top_b->klass()  == NULL ||
+      top_n == NULL || top_n->klass()  == NULL ||
+      top_m == NULL || top_m->klass()  == NULL) {
+    // failed array check
+    return false;
+  }
+
+  BasicType a_elem = a_type->isa_aryptr()->klass()->as_array_klass()->element_type()->basic_type();
+  BasicType b_elem = b_type->isa_aryptr()->klass()->as_array_klass()->element_type()->basic_type();
+  BasicType n_elem = n_type->isa_aryptr()->klass()->as_array_klass()->element_type()->basic_type();
+  BasicType m_elem = m_type->isa_aryptr()->klass()->as_array_klass()->element_type()->basic_type();
+  if (a_elem != T_INT || b_elem != T_INT || n_elem != T_INT || m_elem != T_INT) {
+    return false;
+  }
+
+  // Make the call
+  {
+    Node* a_start = array_element_address(a, intcon(0), a_elem);
+    Node* b_start = array_element_address(b, intcon(0), b_elem);
+    Node* n_start = array_element_address(n, intcon(0), n_elem);
+    Node* m_start = array_element_address(m, intcon(0), m_elem);
+
+    Node* call = make_runtime_call(RC_LEAF,
+                                   OptoRuntime::montgomeryMultiply_Type(),
+                                   stubAddr, stubName, TypePtr::BOTTOM,
+                                   a_start, b_start, n_start, len, inv, top(),
+                                   m_start);
+    set_result(m);
+  }
+
+  return true;
+}
+
+bool LibraryCallKit::inline_montgomerySquare() {
+  address stubAddr = StubRoutines::montgomerySquare();
+  if (stubAddr == NULL) {
+    return false; // Intrinsic's stub is not implemented on this platform
+  }
+
+  assert(UseMontgomerySquareIntrinsic, "not implemented on this platform");
+  const char* stubName = "montgomery_square";
+
+  assert(callee()->signature()->size() == 6, "montgomerySquare has 6 parameters");
+
+  Node* a    = argument(0);
+  Node* n    = argument(1);
+  Node* len  = argument(2);
+  Node* inv  = argument(3);
+  Node* m    = argument(5);
+
+  const Type* a_type = a->Value(&_gvn);
+  const TypeAryPtr* top_a = a_type->isa_aryptr();
+  const Type* n_type = a->Value(&_gvn);
+  const TypeAryPtr* top_n = n_type->isa_aryptr();
+  const Type* m_type = a->Value(&_gvn);
+  const TypeAryPtr* top_m = m_type->isa_aryptr();
+  if (top_a  == NULL || top_a->klass()  == NULL ||
+      top_n == NULL || top_n->klass()  == NULL ||
+      top_m == NULL || top_m->klass()  == NULL) {
+    // failed array check
+    return false;
+  }
+
+  BasicType a_elem = a_type->isa_aryptr()->klass()->as_array_klass()->element_type()->basic_type();
+  BasicType n_elem = n_type->isa_aryptr()->klass()->as_array_klass()->element_type()->basic_type();
+  BasicType m_elem = m_type->isa_aryptr()->klass()->as_array_klass()->element_type()->basic_type();
+  if (a_elem != T_INT || n_elem != T_INT || m_elem != T_INT) {
+    return false;
+  }
+
+  // Make the call
+  {
+    Node* a_start = array_element_address(a, intcon(0), a_elem);
+    Node* n_start = array_element_address(n, intcon(0), n_elem);
+    Node* m_start = array_element_address(m, intcon(0), m_elem);
+
+    Node* call = make_runtime_call(RC_LEAF,
+                                   OptoRuntime::montgomerySquare_Type(),
+                                   stubAddr, stubName, TypePtr::BOTTOM,
+                                   a_start, n_start, len, inv, top(),
+                                   m_start);
+    set_result(m);
+  }
+
   return true;
 }
 
@@ -5644,6 +5549,87 @@ bool LibraryCallKit::inline_updateDirectByteBufferCRC32C() {
   Node* call = make_runtime_call(RC_LEAF, OptoRuntime::updateBytesCRC32C_Type(),
                                  stubAddr, stubName, TypePtr::BOTTOM,
                                  crc, src_start, length, table_start);
+  Node* result = _gvn.transform(new ProjNode(call, TypeFunc::Parms));
+  set_result(result);
+  return true;
+}
+
+//------------------------------inline_updateBytesAdler32----------------------
+//
+// Calculate Adler32 checksum for byte[] array.
+// int java.util.zip.Adler32.updateBytes(int crc, byte[] buf, int off, int len)
+//
+bool LibraryCallKit::inline_updateBytesAdler32() {
+  assert(UseAdler32Intrinsics, "Adler32 Instrinsic support need"); // check if we actually need to check this flag or check a different one
+  assert(callee()->signature()->size() == 4, "updateBytes has 4 parameters");
+  assert(callee()->holder()->is_loaded(), "Adler32 class must be loaded");
+  // no receiver since it is static method
+  Node* crc     = argument(0); // type: int
+  Node* src     = argument(1); // type: oop
+  Node* offset  = argument(2); // type: int
+  Node* length  = argument(3); // type: int
+
+  const Type* src_type = src->Value(&_gvn);
+  const TypeAryPtr* top_src = src_type->isa_aryptr();
+  if (top_src  == NULL || top_src->klass()  == NULL) {
+    // failed array check
+    return false;
+  }
+
+  // Figure out the size and type of the elements we will be copying.
+  BasicType src_elem = src_type->isa_aryptr()->klass()->as_array_klass()->element_type()->basic_type();
+  if (src_elem != T_BYTE) {
+    return false;
+  }
+
+  // 'src_start' points to src array + scaled offset
+  Node* src_start = array_element_address(src, offset, src_elem);
+
+  // We assume that range check is done by caller.
+  // TODO: generate range check (offset+length < src.length) in debug VM.
+
+  // Call the stub.
+  address stubAddr = StubRoutines::updateBytesAdler32();
+  const char *stubName = "updateBytesAdler32";
+
+  Node* call = make_runtime_call(RC_LEAF, OptoRuntime::updateBytesAdler32_Type(),
+                                 stubAddr, stubName, TypePtr::BOTTOM,
+                                 crc, src_start, length);
+  Node* result = _gvn.transform(new ProjNode(call, TypeFunc::Parms));
+  set_result(result);
+  return true;
+}
+
+//------------------------------inline_updateByteBufferAdler32---------------
+//
+// Calculate Adler32 checksum for DirectByteBuffer.
+// int java.util.zip.Adler32.updateByteBuffer(int crc, long buf, int off, int len)
+//
+bool LibraryCallKit::inline_updateByteBufferAdler32() {
+  assert(UseAdler32Intrinsics, "Adler32 Instrinsic support need"); // check if we actually need to check this flag or check a different one
+  assert(callee()->signature()->size() == 5, "updateByteBuffer has 4 parameters and one is long");
+  assert(callee()->holder()->is_loaded(), "Adler32 class must be loaded");
+  // no receiver since it is static method
+  Node* crc     = argument(0); // type: int
+  Node* src     = argument(1); // type: long
+  Node* offset  = argument(3); // type: int
+  Node* length  = argument(4); // type: int
+
+  src = ConvL2X(src);  // adjust Java long to machine word
+  Node* base = _gvn.transform(new CastX2PNode(src));
+  offset = ConvI2X(offset);
+
+  // 'src_start' points to src array + scaled offset
+  Node* src_start = basic_plus_adr(top(), base, offset);
+
+  // Call the stub.
+  address stubAddr = StubRoutines::updateBytesAdler32();
+  const char *stubName = "updateBytesAdler32";
+
+  Node* call = make_runtime_call(RC_LEAF, OptoRuntime::updateBytesAdler32_Type(),
+                                 stubAddr, stubName, TypePtr::BOTTOM,
+                                 crc, src_start, length);
+
   Node* result = _gvn.transform(new ProjNode(call, TypeFunc::Parms));
   set_result(result);
   return true;

@@ -1,5 +1,5 @@
---- old/src/share/vm/opto/matcher.cpp	2015-07-20 21:11:21.590605100 +0300
-+++ new/src/share/vm/opto/matcher.cpp	2015-07-20 21:11:21.363887500 +0300
+--- old/src/share/vm/opto/matcher.cpp	2015-10-14 14:23:26.000000000 +0300
++++ new/src/share/vm/opto/matcher.cpp	2015-10-14 14:23:25.000000000 +0300
 @@ -939,6 +939,7 @@
      case Op_AryEq:
      case Op_MemBarVolatile:

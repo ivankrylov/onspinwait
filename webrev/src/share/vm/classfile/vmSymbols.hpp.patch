@@ -1,22 +1,12 @@
---- old/src/share/vm/classfile/vmSymbols.hpp	2015-07-20 21:11:17.039946800 +0300
-+++ new/src/share/vm/classfile/vmSymbols.hpp	2015-07-20 21:11:16.730656200 +0300
-@@ -583,6 +583,8 @@
-   template(addThreadDumpForMonitors_signature,         "(Ljava/lang/management/ThreadInfo;[Ljava/lang/Object;[I)V") \
-   template(addThreadDumpForSynchronizers_signature,    "(Ljava/lang/management/ThreadInfo;[Ljava/lang/Object;)V")   \
-                                                                                                                   \
-+  template(org_performance_Hints,                      "org/performancehints/SpinHint")                           \
-+                                                                                                                  \
-   /* JVMTI/java.lang.instrument support and VM Attach mechanism */                                                \
-   template(sun_misc_VMSupport,                         "sun/misc/VMSupport")                                      \
-   template(appendToClassPathForInstrumentation_name,   "appendToClassPathForInstrumentation")                     \
-@@ -894,6 +896,10 @@
-    do_name(     fullFence_name,                                  "fullFence")                                           \
-    do_alias(    fullFence_signature,                              void_method_signature)                                \
-                                                                                                                         \
-+  do_intrinsic(_spinLoopHint,             org_performance_Hints,  spinLoopHint_name, spinLoopHint_signature,     F_S)   \
+--- old/src/share/vm/classfile/vmSymbols.hpp	2015-10-14 14:23:24.000000000 +0300
++++ new/src/share/vm/classfile/vmSymbols.hpp	2015-10-14 14:23:24.000000000 +0300
+@@ -787,6 +787,9 @@
+   do_intrinsic(_currentThread,            java_lang_Thread,       currentThread_name, currentThread_signature,   F_S)   \
+    do_name(     currentThread_name,                              "currentThread")                                       \
+    do_signature(currentThread_signature,                         "()Ljava/lang/Thread;")                                \
++  do_intrinsic(_spinLoopHint,             java_lang_Thread,       spinLoopHint_name, spinLoopHint_signature,     F_S)   \
 +   do_name(     spinLoopHint_name,                               "spinLoopHint")                                        \
 +   do_alias(    spinLoopHint_signature,                           void_method_signature)                                \
-+                                                                                                                        \
-   /* Custom branch frequencies profiling support for JSR292 */                                                          \
-   do_class(java_lang_invoke_MethodHandleImpl,               "java/lang/invoke/MethodHandleImpl")                        \
-   do_intrinsic(_profileBoolean, java_lang_invoke_MethodHandleImpl, profileBoolean_name, profileBoolean_signature, F_S)  \
+                                                                                                                         \
+   /* reflective intrinsics, for java/lang/Class, etc. */                                                                \
+   do_intrinsic(_isAssignableFrom,         java_lang_Class,        isAssignableFrom_name, class_boolean_signature, F_RN) \

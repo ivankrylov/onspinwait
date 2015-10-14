@@ -241,535 +241,545 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
  159 
  160   assert(AllocatePrefetchStyle &gt;= 0, "AllocatePrefetchStyle should be positive");
  161 
- 162   if (UseCRC32Intrinsics) {
- 163     if (!FLAG_IS_DEFAULT(UseCRC32Intrinsics))
- 164       warning("CRC32 intrinsics  are not available on this CPU");
- 165     FLAG_SET_DEFAULT(UseCRC32Intrinsics, false);
- 166   }
- 167 
- 168   // The AES intrinsic stubs require AES instruction support.
- 169   if (UseAES) {
- 170     warning("AES instructions are not available on this CPU");
- 171     FLAG_SET_DEFAULT(UseAES, false);
- 172   }
- 173   if (UseAESIntrinsics) {
- 174     if (!FLAG_IS_DEFAULT(UseAESIntrinsics))
- 175       warning("AES intrinsics are not available on this CPU");
- 176     FLAG_SET_DEFAULT(UseAESIntrinsics, false);
- 177   }
- 178 
- 179   if (UseGHASHIntrinsics) {
- 180     warning("GHASH intrinsics are not available on this CPU");
- 181     FLAG_SET_DEFAULT(UseGHASHIntrinsics, false);
- 182   }
- 183 
- 184   if (UseSHA) {
- 185     warning("SHA instructions are not available on this CPU");
- 186     FLAG_SET_DEFAULT(UseSHA, false);
- 187   }
- 188   if (UseSHA1Intrinsics || UseSHA256Intrinsics || UseSHA512Intrinsics) {
- 189     warning("SHA intrinsics are not available on this CPU");
- 190     FLAG_SET_DEFAULT(UseSHA1Intrinsics, false);
- 191     FLAG_SET_DEFAULT(UseSHA256Intrinsics, false);
- 192     FLAG_SET_DEFAULT(UseSHA512Intrinsics, false);
- 193   }
- 194 
- 195   if (UseCRC32CIntrinsics) {
- 196     if (!FLAG_IS_DEFAULT(UseCRC32CIntrinsics))
- 197       warning("CRC32C intrinsics are not available on this CPU");
- 198     FLAG_SET_DEFAULT(UseCRC32CIntrinsics, false);
- 199   }
- 200 
- 201   // Adjust RTM (Restricted Transactional Memory) flags.
- 202   if (!has_tcheck() &amp;&amp; UseRTMLocking) {
- 203     // Can't continue because UseRTMLocking affects UseBiasedLocking flag
- 204     // setting during arguments processing. See use_biased_locking().
- 205     // VM_Version_init() is executed after UseBiasedLocking is used
- 206     // in Thread::allocate().
- 207     vm_exit_during_initialization("RTM instructions are not available on this CPU");
- 208   }
- 209 
- 210   if (UseRTMLocking) {
- 211 #if INCLUDE_RTM_OPT
- 212     if (!UnlockExperimentalVMOptions) {
- 213       vm_exit_during_initialization("UseRTMLocking is only available as experimental option on this platform. "
- 214                                     "It must be enabled via -XX:+UnlockExperimentalVMOptions flag.");
- 215     } else {
- 216       warning("UseRTMLocking is only available as experimental option on this platform.");
- 217     }
- 218     if (!FLAG_IS_CMDLINE(UseRTMLocking)) {
- 219       // RTM locking should be used only for applications with
- 220       // high lock contention. For now we do not use it by default.
- 221       vm_exit_during_initialization("UseRTMLocking flag should be only set on command line");
- 222     }
- 223     if (!is_power_of_2(RTMTotalCountIncrRate)) {
- 224       warning("RTMTotalCountIncrRate must be a power of 2, resetting it to 64");
- 225       FLAG_SET_DEFAULT(RTMTotalCountIncrRate, 64);
- 226     }
- 227     if (RTMAbortRatio &lt; 0 || RTMAbortRatio &gt; 100) {
- 228       warning("RTMAbortRatio must be in the range 0 to 100, resetting it to 50");
- 229       FLAG_SET_DEFAULT(RTMAbortRatio, 50);
- 230     }
- 231     FLAG_SET_ERGO(bool, UseNewFastLockPPC64, false); // Does not implement TM.
- 232     guarantee(RTMSpinLoopCount &gt; 0, "unsupported");
- 233 #else
- 234     // Only C2 does RTM locking optimization.
- 235     // Can't continue because UseRTMLocking affects UseBiasedLocking flag
- 236     // setting during arguments processing. See use_biased_locking().
- 237     vm_exit_during_initialization("RTM locking optimization is not supported in this VM");
- 238 #endif
- 239   } else { // !UseRTMLocking
- 240     if (UseRTMForStackLocks) {
- 241       if (!FLAG_IS_DEFAULT(UseRTMForStackLocks)) {
- 242         warning("UseRTMForStackLocks flag should be off when UseRTMLocking flag is off");
- 243       }
- 244       FLAG_SET_DEFAULT(UseRTMForStackLocks, false);
- 245     }
- 246     if (UseRTMDeopt) {
- 247       FLAG_SET_DEFAULT(UseRTMDeopt, false);
- 248     }
- 249     if (PrintPreciseRTMLockingStatistics) {
- 250       FLAG_SET_DEFAULT(PrintPreciseRTMLockingStatistics, false);
- 251     }
- 252   }
- 253 
- 254   // This machine does not allow unaligned memory accesses
- 255   if (UseUnalignedAccesses) {
- 256     if (!FLAG_IS_DEFAULT(UseUnalignedAccesses))
- 257       warning("Unaligned memory access is not available on this CPU");
- 258     FLAG_SET_DEFAULT(UseUnalignedAccesses, false);
- 259   }
- 260 }
- 261 
- 262 bool VM_Version::use_biased_locking() {
- 263 #if INCLUDE_RTM_OPT
- 264   // RTM locking is most useful when there is high lock contention and
- 265   // low data contention. With high lock contention the lock is usually
- 266   // inflated and biased locking is not suitable for that case.
- 267   // RTM locking code requires that biased locking is off.
- 268   // Note: we can't switch off UseBiasedLocking in get_processor_features()
- 269   // because it is used by Thread::allocate() which is called before
- 270   // VM_Version::initialize().
- 271   if (UseRTMLocking &amp;&amp; UseBiasedLocking) {
- 272     if (FLAG_IS_DEFAULT(UseBiasedLocking)) {
- 273       FLAG_SET_DEFAULT(UseBiasedLocking, false);
- 274     } else {
- 275       warning("Biased locking is not supported with RTM locking; ignoring UseBiasedLocking flag." );
- 276       UseBiasedLocking = false;
- 277     }
- 278   }
- 279 #endif
- 280   return UseBiasedLocking;
- 281 }
- 282 
- 283 void VM_Version::print_features() {
- 284   tty-&gt;print_cr("Version: %s cache_line_size = %d", cpu_features(), (int) get_cache_line_size());
- 285 }
- 286 
- 287 #ifdef COMPILER2
- 288 // Determine section size on power6: If section size is 8 instructions,
- 289 // there should be a difference between the two testloops of ~15 %. If
- 290 // no difference is detected the section is assumed to be 32 instructions.
- 291 void VM_Version::determine_section_size() {
+ 162   // Implementation does not use any of the vector instructions
+ 163   // available with Power8. Their exploitation is still pending.
+ 164   if (!UseCRC32Intrinsics) {
+ 165     if (FLAG_IS_DEFAULT(UseCRC32Intrinsics)) {
+ 166       FLAG_SET_DEFAULT(UseCRC32Intrinsics, true);
+ 167     }
+ 168   }
+ 169 
+ 170   if (UseCRC32CIntrinsics) {
+ 171     if (!FLAG_IS_DEFAULT(UseCRC32CIntrinsics))
+ 172       warning("CRC32C intrinsics are not available on this CPU");
+ 173     FLAG_SET_DEFAULT(UseCRC32CIntrinsics, false);
+ 174   }
+ 175 
+ 176   // The AES intrinsic stubs require AES instruction support.
+ 177   if (UseAES) {
+ 178     warning("AES instructions are not available on this CPU");
+ 179     FLAG_SET_DEFAULT(UseAES, false);
+ 180   }
+ 181   if (UseAESIntrinsics) {
+ 182     if (!FLAG_IS_DEFAULT(UseAESIntrinsics))
+ 183       warning("AES intrinsics are not available on this CPU");
+ 184     FLAG_SET_DEFAULT(UseAESIntrinsics, false);
+ 185   }
+ 186 
+ 187   if (UseGHASHIntrinsics) {
+ 188     warning("GHASH intrinsics are not available on this CPU");
+ 189     FLAG_SET_DEFAULT(UseGHASHIntrinsics, false);
+ 190   }
+ 191 
+ 192   if (UseSHA) {
+ 193     warning("SHA instructions are not available on this CPU");
+ 194     FLAG_SET_DEFAULT(UseSHA, false);
+ 195   }
+ 196   if (UseSHA1Intrinsics || UseSHA256Intrinsics || UseSHA512Intrinsics) {
+ 197     warning("SHA intrinsics are not available on this CPU");
+ 198     FLAG_SET_DEFAULT(UseSHA1Intrinsics, false);
+ 199     FLAG_SET_DEFAULT(UseSHA256Intrinsics, false);
+ 200     FLAG_SET_DEFAULT(UseSHA512Intrinsics, false);
+ 201   }
+ 202 
+ 203   if (UseAdler32Intrinsics) {
+ 204     warning("Adler32Intrinsics not available on this CPU.");
+ 205     FLAG_SET_DEFAULT(UseAdler32Intrinsics, false);
+ 206   }
+ 207 
+ 208   if (FLAG_IS_DEFAULT(UseMultiplyToLenIntrinsic)) {
+ 209     UseMultiplyToLenIntrinsic = true;
+ 210   }
+ 211 
+ 212   // Adjust RTM (Restricted Transactional Memory) flags.
+ 213   if (!has_tcheck() &amp;&amp; UseRTMLocking) {
+ 214     // Can't continue because UseRTMLocking affects UseBiasedLocking flag
+ 215     // setting during arguments processing. See use_biased_locking().
+ 216     // VM_Version_init() is executed after UseBiasedLocking is used
+ 217     // in Thread::allocate().
+ 218     vm_exit_during_initialization("RTM instructions are not available on this CPU");
+ 219   }
+ 220 
+ 221   if (UseRTMLocking) {
+ 222 #if INCLUDE_RTM_OPT
+ 223     if (!UnlockExperimentalVMOptions) {
+ 224       vm_exit_during_initialization("UseRTMLocking is only available as experimental option on this platform. "
+ 225                                     "It must be enabled via -XX:+UnlockExperimentalVMOptions flag.");
+ 226     } else {
+ 227       warning("UseRTMLocking is only available as experimental option on this platform.");
+ 228     }
+ 229     if (!FLAG_IS_CMDLINE(UseRTMLocking)) {
+ 230       // RTM locking should be used only for applications with
+ 231       // high lock contention. For now we do not use it by default.
+ 232       vm_exit_during_initialization("UseRTMLocking flag should be only set on command line");
+ 233     }
+ 234     if (!is_power_of_2(RTMTotalCountIncrRate)) {
+ 235       warning("RTMTotalCountIncrRate must be a power of 2, resetting it to 64");
+ 236       FLAG_SET_DEFAULT(RTMTotalCountIncrRate, 64);
+ 237     }
+ 238     if (RTMAbortRatio &lt; 0 || RTMAbortRatio &gt; 100) {
+ 239       warning("RTMAbortRatio must be in the range 0 to 100, resetting it to 50");
+ 240       FLAG_SET_DEFAULT(RTMAbortRatio, 50);
+ 241     }
+ 242     guarantee(RTMSpinLoopCount &gt; 0, "unsupported");
+ 243 #else
+ 244     // Only C2 does RTM locking optimization.
+ 245     // Can't continue because UseRTMLocking affects UseBiasedLocking flag
+ 246     // setting during arguments processing. See use_biased_locking().
+ 247     vm_exit_during_initialization("RTM locking optimization is not supported in this VM");
+ 248 #endif
+ 249   } else { // !UseRTMLocking
+ 250     if (UseRTMForStackLocks) {
+ 251       if (!FLAG_IS_DEFAULT(UseRTMForStackLocks)) {
+ 252         warning("UseRTMForStackLocks flag should be off when UseRTMLocking flag is off");
+ 253       }
+ 254       FLAG_SET_DEFAULT(UseRTMForStackLocks, false);
+ 255     }
+ 256     if (UseRTMDeopt) {
+ 257       FLAG_SET_DEFAULT(UseRTMDeopt, false);
+ 258     }
+ 259     if (PrintPreciseRTMLockingStatistics) {
+ 260       FLAG_SET_DEFAULT(PrintPreciseRTMLockingStatistics, false);
+ 261     }
+ 262   }
+ 263 
+ 264   // This machine does not allow unaligned memory accesses
+ 265   if (UseUnalignedAccesses) {
+ 266     if (!FLAG_IS_DEFAULT(UseUnalignedAccesses))
+ 267       warning("Unaligned memory access is not available on this CPU");
+ 268     FLAG_SET_DEFAULT(UseUnalignedAccesses, false);
+ 269   }
+ 270 }
+ 271 
+ 272 bool VM_Version::use_biased_locking() {
+ 273 #if INCLUDE_RTM_OPT
+ 274   // RTM locking is most useful when there is high lock contention and
+ 275   // low data contention. With high lock contention the lock is usually
+ 276   // inflated and biased locking is not suitable for that case.
+ 277   // RTM locking code requires that biased locking is off.
+ 278   // Note: we can't switch off UseBiasedLocking in get_processor_features()
+ 279   // because it is used by Thread::allocate() which is called before
+ 280   // VM_Version::initialize().
+ 281   if (UseRTMLocking &amp;&amp; UseBiasedLocking) {
+ 282     if (FLAG_IS_DEFAULT(UseBiasedLocking)) {
+ 283       FLAG_SET_DEFAULT(UseBiasedLocking, false);
+ 284     } else {
+ 285       warning("Biased locking is not supported with RTM locking; ignoring UseBiasedLocking flag." );
+ 286       UseBiasedLocking = false;
+ 287     }
+ 288   }
+ 289 #endif
+ 290   return UseBiasedLocking;
+ 291 }
  292 
- 293   int unroll = 80;
- 294 
- 295   const int code_size = (2* unroll * 32 + 100)*BytesPerInstWord;
+ 293 void VM_Version::print_features() {
+ 294   tty-&gt;print_cr("Version: %s cache_line_size = %d", cpu_features(), (int) get_cache_line_size());
+ 295 }
  296 
- 297   // Allocate space for the code.
- 298   ResourceMark rm;
- 299   CodeBuffer cb("detect_section_size", code_size, 0);
- 300   MacroAssembler* a = new MacroAssembler(&amp;cb);
- 301 
- 302   uint32_t *code = (uint32_t *)a-&gt;pc();
- 303   // Emit code.
- 304   void (*test1)() = (void(*)())(void *)a-&gt;function_entry();
- 305 
- 306   Label l1;
- 307 
- 308   a-&gt;li(R4, 1);
- 309   a-&gt;sldi(R4, R4, 28);
- 310   a-&gt;b(l1);
- 311   a-&gt;align(CodeEntryAlignment);
- 312 
- 313   a-&gt;bind(l1);
- 314 
- 315   for (int i = 0; i &lt; unroll; i++) {
- 316     // Schleife 1
- 317     // ------- sector 0 ------------
- 318     // ;; 0
- 319     a-&gt;nop();                   // 1
- 320     a-&gt;fpnop0();                // 2
- 321     a-&gt;fpnop1();                // 3
- 322     a-&gt;addi(R4,R4, -1); // 4
- 323 
- 324     // ;;  1
- 325     a-&gt;nop();                   // 5
- 326     a-&gt;fmr(F6, F6);             // 6
- 327     a-&gt;fmr(F7, F7);             // 7
- 328     a-&gt;endgroup();              // 8
- 329     // ------- sector 8 ------------
- 330 
- 331     // ;;  2
- 332     a-&gt;nop();                   // 9
- 333     a-&gt;nop();                   // 10
- 334     a-&gt;fmr(F8, F8);             // 11
- 335     a-&gt;fmr(F9, F9);             // 12
- 336 
- 337     // ;;  3
- 338     a-&gt;nop();                   // 13
- 339     a-&gt;fmr(F10, F10);           // 14
- 340     a-&gt;fmr(F11, F11);           // 15
- 341     a-&gt;endgroup();              // 16
- 342     // -------- sector 16 -------------
- 343 
- 344     // ;;  4
- 345     a-&gt;nop();                   // 17
- 346     a-&gt;nop();                   // 18
- 347     a-&gt;fmr(F15, F15);           // 19
- 348     a-&gt;fmr(F16, F16);           // 20
- 349 
- 350     // ;;  5
- 351     a-&gt;nop();                   // 21
- 352     a-&gt;fmr(F17, F17);           // 22
- 353     a-&gt;fmr(F18, F18);           // 23
- 354     a-&gt;endgroup();              // 24
- 355     // ------- sector 24  ------------
- 356 
- 357     // ;;  6
- 358     a-&gt;nop();                   // 25
- 359     a-&gt;nop();                   // 26
- 360     a-&gt;fmr(F19, F19);           // 27
- 361     a-&gt;fmr(F20, F20);           // 28
- 362 
- 363     // ;;  7
- 364     a-&gt;nop();                   // 29
- 365     a-&gt;fmr(F21, F21);           // 30
- 366     a-&gt;fmr(F22, F22);           // 31
- 367     a-&gt;brnop0();                // 32
- 368 
- 369     // ------- sector 32 ------------
- 370   }
- 371 
- 372   // ;; 8
- 373   a-&gt;cmpdi(CCR0, R4, unroll);   // 33
- 374   a-&gt;bge(CCR0, l1);             // 34
- 375   a-&gt;blr();
- 376 
- 377   // Emit code.
- 378   void (*test2)() = (void(*)())(void *)a-&gt;function_entry();
- 379   // uint32_t *code = (uint32_t *)a-&gt;pc();
- 380 
- 381   Label l2;
- 382 
- 383   a-&gt;li(R4, 1);
- 384   a-&gt;sldi(R4, R4, 28);
- 385   a-&gt;b(l2);
- 386   a-&gt;align(CodeEntryAlignment);
- 387 
- 388   a-&gt;bind(l2);
- 389 
- 390   for (int i = 0; i &lt; unroll; i++) {
- 391     // Schleife 2
- 392     // ------- sector 0 ------------
- 393     // ;; 0
- 394     a-&gt;brnop0();                  // 1
- 395     a-&gt;nop();                     // 2
- 396     //a-&gt;cmpdi(CCR0, R4, unroll);
- 397     a-&gt;fpnop0();                  // 3
- 398     a-&gt;fpnop1();                  // 4
- 399     a-&gt;addi(R4,R4, -1);           // 5
- 400 
- 401     // ;; 1
- 402 
- 403     a-&gt;nop();                     // 6
- 404     a-&gt;fmr(F6, F6);               // 7
- 405     a-&gt;fmr(F7, F7);               // 8
- 406     // ------- sector 8 ---------------
- 407 
- 408     // ;; 2
- 409     a-&gt;endgroup();                // 9
+ 297 #ifdef COMPILER2
+ 298 // Determine section size on power6: If section size is 8 instructions,
+ 299 // there should be a difference between the two testloops of ~15 %. If
+ 300 // no difference is detected the section is assumed to be 32 instructions.
+ 301 void VM_Version::determine_section_size() {
+ 302 
+ 303   int unroll = 80;
+ 304 
+ 305   const int code_size = (2* unroll * 32 + 100)*BytesPerInstWord;
+ 306 
+ 307   // Allocate space for the code.
+ 308   ResourceMark rm;
+ 309   CodeBuffer cb("detect_section_size", code_size, 0);
+ 310   MacroAssembler* a = new MacroAssembler(&amp;cb);
+ 311 
+ 312   uint32_t *code = (uint32_t *)a-&gt;pc();
+ 313   // Emit code.
+ 314   void (*test1)() = (void(*)())(void *)a-&gt;function_entry();
+ 315 
+ 316   Label l1;
+ 317 
+ 318   a-&gt;li(R4, 1);
+ 319   a-&gt;sldi(R4, R4, 28);
+ 320   a-&gt;b(l1);
+ 321   a-&gt;align(CodeEntryAlignment);
+ 322 
+ 323   a-&gt;bind(l1);
+ 324 
+ 325   for (int i = 0; i &lt; unroll; i++) {
+ 326     // Schleife 1
+ 327     // ------- sector 0 ------------
+ 328     // ;; 0
+ 329     a-&gt;nop();                   // 1
+ 330     a-&gt;fpnop0();                // 2
+ 331     a-&gt;fpnop1();                // 3
+ 332     a-&gt;addi(R4,R4, -1); // 4
+ 333 
+ 334     // ;;  1
+ 335     a-&gt;nop();                   // 5
+ 336     a-&gt;fmr(F6, F6);             // 6
+ 337     a-&gt;fmr(F7, F7);             // 7
+ 338     a-&gt;endgroup();              // 8
+ 339     // ------- sector 8 ------------
+ 340 
+ 341     // ;;  2
+ 342     a-&gt;nop();                   // 9
+ 343     a-&gt;nop();                   // 10
+ 344     a-&gt;fmr(F8, F8);             // 11
+ 345     a-&gt;fmr(F9, F9);             // 12
+ 346 
+ 347     // ;;  3
+ 348     a-&gt;nop();                   // 13
+ 349     a-&gt;fmr(F10, F10);           // 14
+ 350     a-&gt;fmr(F11, F11);           // 15
+ 351     a-&gt;endgroup();              // 16
+ 352     // -------- sector 16 -------------
+ 353 
+ 354     // ;;  4
+ 355     a-&gt;nop();                   // 17
+ 356     a-&gt;nop();                   // 18
+ 357     a-&gt;fmr(F15, F15);           // 19
+ 358     a-&gt;fmr(F16, F16);           // 20
+ 359 
+ 360     // ;;  5
+ 361     a-&gt;nop();                   // 21
+ 362     a-&gt;fmr(F17, F17);           // 22
+ 363     a-&gt;fmr(F18, F18);           // 23
+ 364     a-&gt;endgroup();              // 24
+ 365     // ------- sector 24  ------------
+ 366 
+ 367     // ;;  6
+ 368     a-&gt;nop();                   // 25
+ 369     a-&gt;nop();                   // 26
+ 370     a-&gt;fmr(F19, F19);           // 27
+ 371     a-&gt;fmr(F20, F20);           // 28
+ 372 
+ 373     // ;;  7
+ 374     a-&gt;nop();                   // 29
+ 375     a-&gt;fmr(F21, F21);           // 30
+ 376     a-&gt;fmr(F22, F22);           // 31
+ 377     a-&gt;brnop0();                // 32
+ 378 
+ 379     // ------- sector 32 ------------
+ 380   }
+ 381 
+ 382   // ;; 8
+ 383   a-&gt;cmpdi(CCR0, R4, unroll);   // 33
+ 384   a-&gt;bge(CCR0, l1);             // 34
+ 385   a-&gt;blr();
+ 386 
+ 387   // Emit code.
+ 388   void (*test2)() = (void(*)())(void *)a-&gt;function_entry();
+ 389   // uint32_t *code = (uint32_t *)a-&gt;pc();
+ 390 
+ 391   Label l2;
+ 392 
+ 393   a-&gt;li(R4, 1);
+ 394   a-&gt;sldi(R4, R4, 28);
+ 395   a-&gt;b(l2);
+ 396   a-&gt;align(CodeEntryAlignment);
+ 397 
+ 398   a-&gt;bind(l2);
+ 399 
+ 400   for (int i = 0; i &lt; unroll; i++) {
+ 401     // Schleife 2
+ 402     // ------- sector 0 ------------
+ 403     // ;; 0
+ 404     a-&gt;brnop0();                  // 1
+ 405     a-&gt;nop();                     // 2
+ 406     //a-&gt;cmpdi(CCR0, R4, unroll);
+ 407     a-&gt;fpnop0();                  // 3
+ 408     a-&gt;fpnop1();                  // 4
+ 409     a-&gt;addi(R4,R4, -1);           // 5
  410 
- 411     // ;; 3
- 412     a-&gt;nop();                     // 10
- 413     a-&gt;nop();                     // 11
- 414     a-&gt;fmr(F8, F8);               // 12
- 415 
- 416     // ;; 4
- 417     a-&gt;fmr(F9, F9);               // 13
- 418     a-&gt;nop();                     // 14
- 419     a-&gt;fmr(F10, F10);             // 15
+ 411     // ;; 1
+ 412 
+ 413     a-&gt;nop();                     // 6
+ 414     a-&gt;fmr(F6, F6);               // 7
+ 415     a-&gt;fmr(F7, F7);               // 8
+ 416     // ------- sector 8 ---------------
+ 417 
+ 418     // ;; 2
+ 419     a-&gt;endgroup();                // 9
  420 
- 421     // ;; 5
- 422     a-&gt;fmr(F11, F11);             // 16
- 423     // -------- sector 16 -------------
- 424 
- 425     // ;; 6
- 426     a-&gt;endgroup();                // 17
- 427 
- 428     // ;; 7
- 429     a-&gt;nop();                     // 18
- 430     a-&gt;nop();                     // 19
- 431     a-&gt;fmr(F15, F15);             // 20
- 432 
- 433     // ;; 8
- 434     a-&gt;fmr(F16, F16);             // 21
- 435     a-&gt;nop();                     // 22
- 436     a-&gt;fmr(F17, F17);             // 23
+ 421     // ;; 3
+ 422     a-&gt;nop();                     // 10
+ 423     a-&gt;nop();                     // 11
+ 424     a-&gt;fmr(F8, F8);               // 12
+ 425 
+ 426     // ;; 4
+ 427     a-&gt;fmr(F9, F9);               // 13
+ 428     a-&gt;nop();                     // 14
+ 429     a-&gt;fmr(F10, F10);             // 15
+ 430 
+ 431     // ;; 5
+ 432     a-&gt;fmr(F11, F11);             // 16
+ 433     // -------- sector 16 -------------
+ 434 
+ 435     // ;; 6
+ 436     a-&gt;endgroup();                // 17
  437 
- 438     // ;; 9
- 439     a-&gt;fmr(F18, F18);             // 24
- 440     // -------- sector 24 -------------
- 441 
- 442     // ;; 10
- 443     a-&gt;endgroup();                // 25
- 444 
- 445     // ;; 11
- 446     a-&gt;nop();                     // 26
- 447     a-&gt;nop();                     // 27
- 448     a-&gt;fmr(F19, F19);             // 28
- 449 
- 450     // ;; 12
- 451     a-&gt;fmr(F20, F20);             // 29
- 452     a-&gt;nop();                     // 30
- 453     a-&gt;fmr(F21, F21);             // 31
+ 438     // ;; 7
+ 439     a-&gt;nop();                     // 18
+ 440     a-&gt;nop();                     // 19
+ 441     a-&gt;fmr(F15, F15);             // 20
+ 442 
+ 443     // ;; 8
+ 444     a-&gt;fmr(F16, F16);             // 21
+ 445     a-&gt;nop();                     // 22
+ 446     a-&gt;fmr(F17, F17);             // 23
+ 447 
+ 448     // ;; 9
+ 449     a-&gt;fmr(F18, F18);             // 24
+ 450     // -------- sector 24 -------------
+ 451 
+ 452     // ;; 10
+ 453     a-&gt;endgroup();                // 25
  454 
- 455     // ;; 13
- 456     a-&gt;fmr(F22, F22);             // 32
- 457   }
- 458 
- 459   // -------- sector 32 -------------
- 460   // ;; 14
- 461   a-&gt;cmpdi(CCR0, R4, unroll); // 33
- 462   a-&gt;bge(CCR0, l2);           // 34
- 463 
- 464   a-&gt;blr();
- 465   uint32_t *code_end = (uint32_t *)a-&gt;pc();
- 466   a-&gt;flush();
- 467 
- 468   double loop1_seconds,loop2_seconds, rel_diff;
- 469   uint64_t start1, stop1;
- 470 
- 471   start1 = os::current_thread_cpu_time(false);
- 472   (*test1)();
- 473   stop1 = os::current_thread_cpu_time(false);
- 474   loop1_seconds = (stop1- start1) / (1000 *1000 *1000.0);
- 475 
- 476 
- 477   start1 = os::current_thread_cpu_time(false);
- 478   (*test2)();
- 479   stop1 = os::current_thread_cpu_time(false);
+ 455     // ;; 11
+ 456     a-&gt;nop();                     // 26
+ 457     a-&gt;nop();                     // 27
+ 458     a-&gt;fmr(F19, F19);             // 28
+ 459 
+ 460     // ;; 12
+ 461     a-&gt;fmr(F20, F20);             // 29
+ 462     a-&gt;nop();                     // 30
+ 463     a-&gt;fmr(F21, F21);             // 31
+ 464 
+ 465     // ;; 13
+ 466     a-&gt;fmr(F22, F22);             // 32
+ 467   }
+ 468 
+ 469   // -------- sector 32 -------------
+ 470   // ;; 14
+ 471   a-&gt;cmpdi(CCR0, R4, unroll); // 33
+ 472   a-&gt;bge(CCR0, l2);           // 34
+ 473 
+ 474   a-&gt;blr();
+ 475   uint32_t *code_end = (uint32_t *)a-&gt;pc();
+ 476   a-&gt;flush();
+ 477 
+ 478   double loop1_seconds,loop2_seconds, rel_diff;
+ 479   uint64_t start1, stop1;
  480 
- 481   loop2_seconds = (stop1 - start1) / (1000 *1000 *1000.0);
- 482 
- 483   rel_diff = (loop2_seconds - loop1_seconds) / loop1_seconds *100;
- 484 
- 485   if (PrintAssembly) {
- 486     ttyLocker ttyl;
- 487     tty-&gt;print_cr("Decoding section size detection stub at " INTPTR_FORMAT " before execution:", p2i(code));
- 488     Disassembler::decode((u_char*)code, (u_char*)code_end, tty);
- 489     tty-&gt;print_cr("Time loop1 :%f", loop1_seconds);
- 490     tty-&gt;print_cr("Time loop2 :%f", loop2_seconds);
- 491     tty-&gt;print_cr("(time2 - time1) / time1 = %f %%", rel_diff);
+ 481   start1 = os::current_thread_cpu_time(false);
+ 482   (*test1)();
+ 483   stop1 = os::current_thread_cpu_time(false);
+ 484   loop1_seconds = (stop1- start1) / (1000 *1000 *1000.0);
+ 485 
+ 486 
+ 487   start1 = os::current_thread_cpu_time(false);
+ 488   (*test2)();
+ 489   stop1 = os::current_thread_cpu_time(false);
+ 490 
+ 491   loop2_seconds = (stop1 - start1) / (1000 *1000 *1000.0);
  492 
- 493     if (rel_diff &gt; 12.0) {
- 494       tty-&gt;print_cr("Section Size 8 Instructions");
- 495     } else{
- 496       tty-&gt;print_cr("Section Size 32 Instructions or Power5");
- 497     }
- 498   }
- 499 
- 500 #if 0 // TODO: PPC port
- 501   // Set sector size (if not set explicitly).
- 502   if (FLAG_IS_DEFAULT(Power6SectorSize128PPC64)) {
+ 493   rel_diff = (loop2_seconds - loop1_seconds) / loop1_seconds *100;
+ 494 
+ 495   if (PrintAssembly) {
+ 496     ttyLocker ttyl;
+ 497     tty-&gt;print_cr("Decoding section size detection stub at " INTPTR_FORMAT " before execution:", p2i(code));
+ 498     Disassembler::decode((u_char*)code, (u_char*)code_end, tty);
+ 499     tty-&gt;print_cr("Time loop1 :%f", loop1_seconds);
+ 500     tty-&gt;print_cr("Time loop2 :%f", loop2_seconds);
+ 501     tty-&gt;print_cr("(time2 - time1) / time1 = %f %%", rel_diff);
+ 502 
  503     if (rel_diff &gt; 12.0) {
- 504       PdScheduling::power6SectorSize = 0x20;
- 505     } else {
- 506       PdScheduling::power6SectorSize = 0x80;
+ 504       tty-&gt;print_cr("Section Size 8 Instructions");
+ 505     } else{
+ 506       tty-&gt;print_cr("Section Size 32 Instructions or Power5");
  507     }
- 508   } else if (Power6SectorSize128PPC64) {
- 509     PdScheduling::power6SectorSize = 0x80;
- 510   } else {
- 511     PdScheduling::power6SectorSize = 0x20;
- 512   }
- 513 #endif
- 514   if (UsePower6SchedulerPPC64) Unimplemented();
- 515 }
- 516 #endif // COMPILER2
- 517 
- 518 void VM_Version::determine_features() {
- 519 #if defined(ABI_ELFv2)
- 520   // 1 InstWord per call for the blr instruction.
- 521   const int code_size = (num_features+1+2*1)*BytesPerInstWord;
- 522 #else
- 523   // 7 InstWords for each call (function descriptor + blr instruction).
- 524   const int code_size = (num_features+1+2*7)*BytesPerInstWord;
- 525 #endif
- 526   int features = 0;
+ 508   }
+ 509 
+ 510 #if 0 // TODO: PPC port
+ 511   // Set sector size (if not set explicitly).
+ 512   if (FLAG_IS_DEFAULT(Power6SectorSize128PPC64)) {
+ 513     if (rel_diff &gt; 12.0) {
+ 514       PdScheduling::power6SectorSize = 0x20;
+ 515     } else {
+ 516       PdScheduling::power6SectorSize = 0x80;
+ 517     }
+ 518   } else if (Power6SectorSize128PPC64) {
+ 519     PdScheduling::power6SectorSize = 0x80;
+ 520   } else {
+ 521     PdScheduling::power6SectorSize = 0x20;
+ 522   }
+ 523 #endif
+ 524   if (UsePower6SchedulerPPC64) Unimplemented();
+ 525 }
+ 526 #endif // COMPILER2
  527 
- 528   // create test area
- 529   enum { BUFFER_SIZE = 2*4*K }; // Needs to be &gt;=2* max cache line size (cache line size can't exceed min page size).
- 530   char test_area[BUFFER_SIZE];
- 531   char *mid_of_test_area = &amp;test_area[BUFFER_SIZE&gt;&gt;1];
- 532 
- 533   // Allocate space for the code.
- 534   ResourceMark rm;
- 535   CodeBuffer cb("detect_cpu_features", code_size, 0);
- 536   MacroAssembler* a = new MacroAssembler(&amp;cb);
+ 528 void VM_Version::determine_features() {
+ 529 #if defined(ABI_ELFv2)
+ 530   // 1 InstWord per call for the blr instruction.
+ 531   const int code_size = (num_features+1+2*1)*BytesPerInstWord;
+ 532 #else
+ 533   // 7 InstWords for each call (function descriptor + blr instruction).
+ 534   const int code_size = (num_features+1+2*7)*BytesPerInstWord;
+ 535 #endif
+ 536   int features = 0;
  537 
- 538   // Must be set to true so we can generate the test code.
- 539   _features = VM_Version::all_features_m;
- 540 
- 541   // Emit code.
- 542   void (*test)(address addr, uint64_t offset)=(void(*)(address addr, uint64_t offset))(void *)a-&gt;function_entry();
- 543   uint32_t *code = (uint32_t *)a-&gt;pc();
- 544   // Don't use R0 in ldarx.
- 545   // Keep R3_ARG1 unmodified, it contains &amp;field (see below).
- 546   // Keep R4_ARG2 unmodified, it contains offset = 0 (see below).
- 547   a-&gt;fsqrt(F3, F4);                            // code[0]  -&gt; fsqrt_m
- 548   a-&gt;fsqrts(F3, F4);                           // code[1]  -&gt; fsqrts_m
- 549   a-&gt;isel(R7, R5, R6, 0);                      // code[2]  -&gt; isel_m
- 550   a-&gt;ldarx_unchecked(R7, R3_ARG1, R4_ARG2, 1); // code[3]  -&gt; lxarx_m
- 551   a-&gt;cmpb(R7, R5, R6);                         // code[4]  -&gt; cmpb
- 552   a-&gt;popcntb(R7, R5);                          // code[5]  -&gt; popcntb
- 553   a-&gt;popcntw(R7, R5);                          // code[6]  -&gt; popcntw
- 554   a-&gt;fcfids(F3, F4);                           // code[7]  -&gt; fcfids
- 555   a-&gt;vand(VR0, VR0, VR0);                      // code[8]  -&gt; vand
- 556   // arg0 of lqarx must be an even register, (arg1 + arg2) must be a multiple of 16
- 557   a-&gt;lqarx_unchecked(R6, R3_ARG1, R4_ARG2, 1); // code[9]  -&gt; lqarx_m
- 558   a-&gt;vcipher(VR0, VR1, VR2);                   // code[10] -&gt; vcipher
- 559   a-&gt;vpmsumb(VR0, VR1, VR2);                   // code[11] -&gt; vpmsumb
- 560   a-&gt;tcheck(0);                                // code[12] -&gt; tcheck
- 561   a-&gt;blr();
- 562 
- 563   // Emit function to set one cache line to zero. Emit function descriptor and get pointer to it.
- 564   void (*zero_cacheline_func_ptr)(char*) = (void(*)(char*))(void *)a-&gt;function_entry();
- 565   a-&gt;dcbz(R3_ARG1); // R3_ARG1 = addr
- 566   a-&gt;blr();
- 567 
- 568   uint32_t *code_end = (uint32_t *)a-&gt;pc();
- 569   a-&gt;flush();
- 570   _features = VM_Version::unknown_m;
- 571 
- 572   // Print the detection code.
- 573   if (PrintAssembly) {
- 574     ttyLocker ttyl;
- 575     tty-&gt;print_cr("Decoding cpu-feature detection stub at " INTPTR_FORMAT " before execution:", p2i(code));
- 576     Disassembler::decode((u_char*)code, (u_char*)code_end, tty);
- 577   }
- 578 
- 579   // Measure cache line size.
- 580   memset(test_area, 0xFF, BUFFER_SIZE); // Fill test area with 0xFF.
- 581   (*zero_cacheline_func_ptr)(mid_of_test_area); // Call function which executes dcbz to the middle.
- 582   int count = 0; // count zeroed bytes
- 583   for (int i = 0; i &lt; BUFFER_SIZE; i++) if (test_area[i] == 0) count++;
- 584   guarantee(is_power_of_2(count), "cache line size needs to be a power of 2");
- 585   _measured_cache_line_size = count;
- 586 
- 587   // Execute code. Illegal instructions will be replaced by 0 in the signal handler.
- 588   VM_Version::_is_determine_features_test_running = true;
- 589   // We must align the first argument to 16 bytes because of the lqarx check.
- 590   (*test)((address)align_size_up((intptr_t)mid_of_test_area, 16), (uint64_t)0);
- 591   VM_Version::_is_determine_features_test_running = false;
- 592 
- 593   // determine which instructions are legal.
- 594   int feature_cntr = 0;
- 595   if (code[feature_cntr++]) features |= fsqrt_m;
- 596   if (code[feature_cntr++]) features |= fsqrts_m;
- 597   if (code[feature_cntr++]) features |= isel_m;
- 598   if (code[feature_cntr++]) features |= lxarxeh_m;
- 599   if (code[feature_cntr++]) features |= cmpb_m;
- 600   if (code[feature_cntr++]) features |= popcntb_m;
- 601   if (code[feature_cntr++]) features |= popcntw_m;
- 602   if (code[feature_cntr++]) features |= fcfids_m;
- 603   if (code[feature_cntr++]) features |= vand_m;
- 604   if (code[feature_cntr++]) features |= lqarx_m;
- 605   if (code[feature_cntr++]) features |= vcipher_m;
- 606   if (code[feature_cntr++]) features |= vpmsumb_m;
- 607   if (code[feature_cntr++]) features |= tcheck_m;
- 608 
- 609   // Print the detection code.
- 610   if (PrintAssembly) {
- 611     ttyLocker ttyl;
- 612     tty-&gt;print_cr("Decoding cpu-feature detection stub at " INTPTR_FORMAT " after execution:", p2i(code));
- 613     Disassembler::decode((u_char*)code, (u_char*)code_end, tty);
- 614   }
- 615 
- 616   _features = features;
- 617 }
+ 538   // create test area
+ 539   enum { BUFFER_SIZE = 2*4*K }; // Needs to be &gt;=2* max cache line size (cache line size can't exceed min page size).
+ 540   char test_area[BUFFER_SIZE];
+ 541   char *mid_of_test_area = &amp;test_area[BUFFER_SIZE&gt;&gt;1];
+ 542 
+ 543   // Allocate space for the code.
+ 544   ResourceMark rm;
+ 545   CodeBuffer cb("detect_cpu_features", code_size, 0);
+ 546   MacroAssembler* a = new MacroAssembler(&amp;cb);
+ 547 
+ 548   // Must be set to true so we can generate the test code.
+ 549   _features = VM_Version::all_features_m;
+ 550 
+ 551   // Emit code.
+ 552   void (*test)(address addr, uint64_t offset)=(void(*)(address addr, uint64_t offset))(void *)a-&gt;function_entry();
+ 553   uint32_t *code = (uint32_t *)a-&gt;pc();
+ 554   // Don't use R0 in ldarx.
+ 555   // Keep R3_ARG1 unmodified, it contains &amp;field (see below).
+ 556   // Keep R4_ARG2 unmodified, it contains offset = 0 (see below).
+ 557   a-&gt;fsqrt(F3, F4);                            // code[0]  -&gt; fsqrt_m
+ 558   a-&gt;fsqrts(F3, F4);                           // code[1]  -&gt; fsqrts_m
+ 559   a-&gt;isel(R7, R5, R6, 0);                      // code[2]  -&gt; isel_m
+ 560   a-&gt;ldarx_unchecked(R7, R3_ARG1, R4_ARG2, 1); // code[3]  -&gt; lxarx_m
+ 561   a-&gt;cmpb(R7, R5, R6);                         // code[4]  -&gt; cmpb
+ 562   a-&gt;popcntb(R7, R5);                          // code[5]  -&gt; popcntb
+ 563   a-&gt;popcntw(R7, R5);                          // code[6]  -&gt; popcntw
+ 564   a-&gt;fcfids(F3, F4);                           // code[7]  -&gt; fcfids
+ 565   a-&gt;vand(VR0, VR0, VR0);                      // code[8]  -&gt; vand
+ 566   // arg0 of lqarx must be an even register, (arg1 + arg2) must be a multiple of 16
+ 567   a-&gt;lqarx_unchecked(R6, R3_ARG1, R4_ARG2, 1); // code[9]  -&gt; lqarx_m
+ 568   a-&gt;vcipher(VR0, VR1, VR2);                   // code[10] -&gt; vcipher
+ 569   a-&gt;vpmsumb(VR0, VR1, VR2);                   // code[11] -&gt; vpmsumb
+ 570   a-&gt;tcheck(0);                                // code[12] -&gt; tcheck
+ 571   a-&gt;blr();
+ 572 
+ 573   // Emit function to set one cache line to zero. Emit function descriptor and get pointer to it.
+ 574   void (*zero_cacheline_func_ptr)(char*) = (void(*)(char*))(void *)a-&gt;function_entry();
+ 575   a-&gt;dcbz(R3_ARG1); // R3_ARG1 = addr
+ 576   a-&gt;blr();
+ 577 
+ 578   uint32_t *code_end = (uint32_t *)a-&gt;pc();
+ 579   a-&gt;flush();
+ 580   _features = VM_Version::unknown_m;
+ 581 
+ 582   // Print the detection code.
+ 583   if (PrintAssembly) {
+ 584     ttyLocker ttyl;
+ 585     tty-&gt;print_cr("Decoding cpu-feature detection stub at " INTPTR_FORMAT " before execution:", p2i(code));
+ 586     Disassembler::decode((u_char*)code, (u_char*)code_end, tty);
+ 587   }
+ 588 
+ 589   // Measure cache line size.
+ 590   memset(test_area, 0xFF, BUFFER_SIZE); // Fill test area with 0xFF.
+ 591   (*zero_cacheline_func_ptr)(mid_of_test_area); // Call function which executes dcbz to the middle.
+ 592   int count = 0; // count zeroed bytes
+ 593   for (int i = 0; i &lt; BUFFER_SIZE; i++) if (test_area[i] == 0) count++;
+ 594   guarantee(is_power_of_2(count), "cache line size needs to be a power of 2");
+ 595   _measured_cache_line_size = count;
+ 596 
+ 597   // Execute code. Illegal instructions will be replaced by 0 in the signal handler.
+ 598   VM_Version::_is_determine_features_test_running = true;
+ 599   // We must align the first argument to 16 bytes because of the lqarx check.
+ 600   (*test)((address)align_size_up((intptr_t)mid_of_test_area, 16), (uint64_t)0);
+ 601   VM_Version::_is_determine_features_test_running = false;
+ 602 
+ 603   // determine which instructions are legal.
+ 604   int feature_cntr = 0;
+ 605   if (code[feature_cntr++]) features |= fsqrt_m;
+ 606   if (code[feature_cntr++]) features |= fsqrts_m;
+ 607   if (code[feature_cntr++]) features |= isel_m;
+ 608   if (code[feature_cntr++]) features |= lxarxeh_m;
+ 609   if (code[feature_cntr++]) features |= cmpb_m;
+ 610   if (code[feature_cntr++]) features |= popcntb_m;
+ 611   if (code[feature_cntr++]) features |= popcntw_m;
+ 612   if (code[feature_cntr++]) features |= fcfids_m;
+ 613   if (code[feature_cntr++]) features |= vand_m;
+ 614   if (code[feature_cntr++]) features |= lqarx_m;
+ 615   if (code[feature_cntr++]) features |= vcipher_m;
+ 616   if (code[feature_cntr++]) features |= vpmsumb_m;
+ 617   if (code[feature_cntr++]) features |= tcheck_m;
  618 
- 619 // Power 8: Configure Data Stream Control Register.
- 620 void VM_Version::config_dscr() {
- 621   assert(has_tcheck(), "Only execute on Power 8 or later!");
- 622 
- 623   // 7 InstWords for each call (function descriptor + blr instruction).
- 624   const int code_size = (2+2*7)*BytesPerInstWord;
+ 619   // Print the detection code.
+ 620   if (PrintAssembly) {
+ 621     ttyLocker ttyl;
+ 622     tty-&gt;print_cr("Decoding cpu-feature detection stub at " INTPTR_FORMAT " after execution:", p2i(code));
+ 623     Disassembler::decode((u_char*)code, (u_char*)code_end, tty);
+ 624   }
  625 
- 626   // Allocate space for the code.
- 627   ResourceMark rm;
- 628   CodeBuffer cb("config_dscr", code_size, 0);
- 629   MacroAssembler* a = new MacroAssembler(&amp;cb);
- 630 
- 631   // Emit code.
- 632   uint64_t (*get_dscr)() = (uint64_t(*)())(void *)a-&gt;function_entry();
- 633   uint32_t *code = (uint32_t *)a-&gt;pc();
- 634   a-&gt;mfdscr(R3);
- 635   a-&gt;blr();
- 636 
- 637   void (*set_dscr)(long) = (void(*)(long))(void *)a-&gt;function_entry();
- 638   a-&gt;mtdscr(R3);
- 639   a-&gt;blr();
+ 626   _features = features;
+ 627 }
+ 628 
+ 629 // Power 8: Configure Data Stream Control Register.
+ 630 void VM_Version::config_dscr() {
+ 631   assert(has_tcheck(), "Only execute on Power 8 or later!");
+ 632 
+ 633   // 7 InstWords for each call (function descriptor + blr instruction).
+ 634   const int code_size = (2+2*7)*BytesPerInstWord;
+ 635 
+ 636   // Allocate space for the code.
+ 637   ResourceMark rm;
+ 638   CodeBuffer cb("config_dscr", code_size, 0);
+ 639   MacroAssembler* a = new MacroAssembler(&amp;cb);
  640 
- 641   uint32_t *code_end = (uint32_t *)a-&gt;pc();
- 642   a-&gt;flush();
- 643 
- 644   // Print the detection code.
- 645   if (PrintAssembly) {
- 646     ttyLocker ttyl;
- 647     tty-&gt;print_cr("Decoding dscr configuration stub at " INTPTR_FORMAT " before execution:", p2i(code));
- 648     Disassembler::decode((u_char*)code, (u_char*)code_end, tty);
- 649   }
+ 641   // Emit code.
+ 642   uint64_t (*get_dscr)() = (uint64_t(*)())(void *)a-&gt;function_entry();
+ 643   uint32_t *code = (uint32_t *)a-&gt;pc();
+ 644   a-&gt;mfdscr(R3);
+ 645   a-&gt;blr();
+ 646 
+ 647   void (*set_dscr)(long) = (void(*)(long))(void *)a-&gt;function_entry();
+ 648   a-&gt;mtdscr(R3);
+ 649   a-&gt;blr();
  650 
- 651   // Apply the configuration if needed.
- 652   uint64_t dscr_val = (*get_dscr)();
- 653   if (Verbose) {
- 654     tty-&gt;print_cr("dscr value was 0x%lx" , dscr_val);
- 655   }
- 656   bool change_requested = false;
- 657   if (DSCR_PPC64 != (uintx)-1) {
- 658     dscr_val = DSCR_PPC64;
- 659     change_requested = true;
- 660   }
- 661   if (DSCR_DPFD_PPC64 &lt;= 7) {
- 662     uint64_t mask = 0x7;
- 663     if ((dscr_val &amp; mask) != DSCR_DPFD_PPC64) {
- 664       dscr_val = (dscr_val &amp; ~mask) | (DSCR_DPFD_PPC64);
- 665       change_requested = true;
- 666     }
- 667   }
- 668   if (DSCR_URG_PPC64 &lt;= 7) {
- 669     uint64_t mask = 0x7 &lt;&lt; 6;
- 670     if ((dscr_val &amp; mask) != DSCR_DPFD_PPC64 &lt;&lt; 6) {
- 671       dscr_val = (dscr_val &amp; ~mask) | (DSCR_URG_PPC64 &lt;&lt; 6);
- 672       change_requested = true;
- 673     }
- 674   }
- 675   if (change_requested) {
- 676     (*set_dscr)(dscr_val);
- 677     if (Verbose) {
- 678       tty-&gt;print_cr("dscr was set to 0x%lx" , (*get_dscr)());
- 679     }
- 680   }
- 681 }
- 682 
- 683 static int saved_features = 0;
- 684 
- 685 void VM_Version::allow_all() {
- 686   saved_features = _features;
- 687   _features      = all_features_m;
- 688 }
- 689 
- 690 void VM_Version::revert() {
- 691   _features = saved_features;
- 692 }
+ 651   uint32_t *code_end = (uint32_t *)a-&gt;pc();
+ 652   a-&gt;flush();
+ 653 
+ 654   // Print the detection code.
+ 655   if (PrintAssembly) {
+ 656     ttyLocker ttyl;
+ 657     tty-&gt;print_cr("Decoding dscr configuration stub at " INTPTR_FORMAT " before execution:", p2i(code));
+ 658     Disassembler::decode((u_char*)code, (u_char*)code_end, tty);
+ 659   }
+ 660 
+ 661   // Apply the configuration if needed.
+ 662   uint64_t dscr_val = (*get_dscr)();
+ 663   if (Verbose) {
+ 664     tty-&gt;print_cr("dscr value was 0x%lx" , dscr_val);
+ 665   }
+ 666   bool change_requested = false;
+ 667   if (DSCR_PPC64 != (uintx)-1) {
+ 668     dscr_val = DSCR_PPC64;
+ 669     change_requested = true;
+ 670   }
+ 671   if (DSCR_DPFD_PPC64 &lt;= 7) {
+ 672     uint64_t mask = 0x7;
+ 673     if ((dscr_val &amp; mask) != DSCR_DPFD_PPC64) {
+ 674       dscr_val = (dscr_val &amp; ~mask) | (DSCR_DPFD_PPC64);
+ 675       change_requested = true;
+ 676     }
+ 677   }
+ 678   if (DSCR_URG_PPC64 &lt;= 7) {
+ 679     uint64_t mask = 0x7 &lt;&lt; 6;
+ 680     if ((dscr_val &amp; mask) != DSCR_DPFD_PPC64 &lt;&lt; 6) {
+ 681       dscr_val = (dscr_val &amp; ~mask) | (DSCR_URG_PPC64 &lt;&lt; 6);
+ 682       change_requested = true;
+ 683     }
+ 684   }
+ 685   if (change_requested) {
+ 686     (*set_dscr)(dscr_val);
+ 687     if (Verbose) {
+ 688       tty-&gt;print_cr("dscr was set to 0x%lx" , (*get_dscr)());
+ 689     }
+ 690   }
+ 691 }
+ 692 
+ 693 static int saved_features = 0;
+ 694 
+ 695 void VM_Version::allow_all() {
+ 696   saved_features = _features;
+ 697   _features      = all_features_m;
+ 698 }
+ 699 
+ 700 void VM_Version::revert() {
+ 701   _features = saved_features;
+ 702 }
 </pre></body></html>

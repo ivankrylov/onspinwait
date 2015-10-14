@@ -84,11 +84,11 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
         <a class="print" href="javascript:print()">Print this page</a>
 <pre></pre>
         <pre>
-<hr /><span class="oldmarker">*** 163,172 ****</span>
-<span class="newmarker">--- 163,178 ----</span>
-      if (!FLAG_IS_DEFAULT(UseCRC32Intrinsics))
-        warning("CRC32 intrinsics  are not available on this CPU");
-      FLAG_SET_DEFAULT(UseCRC32Intrinsics, false);
+<hr /><span class="oldmarker">*** 171,180 ****</span>
+<span class="newmarker">--- 171,186 ----</span>
+      if (!FLAG_IS_DEFAULT(UseCRC32CIntrinsics))
+        warning("CRC32C intrinsics are not available on this CPU");
+      FLAG_SET_DEFAULT(UseCRC32CIntrinsics, false);
     }
   
 <span class="new">+   if (UseSpinLoopHintIntrinsic) {</span>

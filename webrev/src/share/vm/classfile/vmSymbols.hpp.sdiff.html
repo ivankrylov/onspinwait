@@ -87,187 +87,97 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
 <td><pre>
 
 </pre><hr></hr><pre>
- 566   template(getAgentStatus_name,                        "getManagementAgentStatus")                                \
- 567   template(java_lang_management_ThreadInfo_constructor_signature, "(Ljava/lang/Thread;ILjava/lang/Object;Ljava/lang/Thread;JJJJ[Ljava/lang/StackTraceElement;)V") \
- 568   template(java_lang_management_ThreadInfo_with_locks_constructor_signature, "(Ljava/lang/Thread;ILjava/lang/Object;Ljava/lang/Thread;JJJJ[Ljava/lang/StackTraceElement;[Ljava/lang/Object;[I[Ljava/lang/Object;)V") \
- 569   template(long_long_long_long_void_signature,         "(JJJJ)V")                                                 \
- 570                                                                                                                   \
- 571   template(java_lang_management_MemoryPoolMXBean,      "java/lang/management/MemoryPoolMXBean")                   \
- 572   template(java_lang_management_MemoryManagerMXBean,   "java/lang/management/MemoryManagerMXBean")                \
- 573   template(java_lang_management_GarbageCollectorMXBean,"java/lang/management/GarbageCollectorMXBean")             \
- 574   template(gcInfoBuilder_name,                         "gcInfoBuilder")                                           \
- 575   template(createMemoryPool_name,                      "createMemoryPool")                                        \
- 576   template(createMemoryManager_name,                   "createMemoryManager")                                     \
- 577   template(createGarbageCollector_name,                "createGarbageCollector")                                  \
- 578   template(createMemoryPool_signature,                 "(Ljava/lang/String;ZJJ)Ljava/lang/management/MemoryPoolMXBean;") \
- 579   template(createMemoryManager_signature,              "(Ljava/lang/String;)Ljava/lang/management/MemoryManagerMXBean;") \
- 580   template(createGarbageCollector_signature,           "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/management/GarbageCollectorMXBean;") \
- 581   template(addThreadDumpForMonitors_name,              "addThreadDumpForMonitors")                                \
- 582   template(addThreadDumpForSynchronizers_name,         "addThreadDumpForSynchronizers")                           \
- 583   template(addThreadDumpForMonitors_signature,         "(Ljava/lang/management/ThreadInfo;[Ljava/lang/Object;[I)V") \
- 584   template(addThreadDumpForSynchronizers_signature,    "(Ljava/lang/management/ThreadInfo;[Ljava/lang/Object;)V")   \
- 585                                                                                                                   \
-
-
- 586   /* JVMTI/java.lang.instrument support and VM Attach mechanism */                                                \
- 587   template(sun_misc_VMSupport,                         "sun/misc/VMSupport")                                      \
- 588   template(appendToClassPathForInstrumentation_name,   "appendToClassPathForInstrumentation")                     \
- 589   do_alias(appendToClassPathForInstrumentation_signature, string_void_signature)                                  \
- 590   template(serializePropertiesToByteArray_name,        "serializePropertiesToByteArray")                          \
- 591   template(serializePropertiesToByteArray_signature,   "()[B")                                                    \
- 592   template(serializeAgentPropertiesToByteArray_name,   "serializeAgentPropertiesToByteArray")                     \
- 593   template(classRedefinedCount_name,                   "classRedefinedCount")                                     \
- 594   template(classLoader_name,                           "classLoader")                                             \
- 595   template(componentType_name,                         "componentType")                                           \
- 596                                                                                                                   \
- 597   /* forEachRemaining support */                                                                                  \
- 598   template(java_util_stream_StreamsRangeIntSpliterator,          "java/util/stream/Streams$RangeIntSpliterator")  \
- 599                                                                                                                   \
- 600   /* trace signatures */                                                                                          \
- 601   TRACE_TEMPLATES(template)                                                                                       \
- 602                                                                                                                   \
- 603   /*end*/
- 604 
- 605 // Here are all the intrinsics known to the runtime and the CI.
-
-</pre><hr></hr><pre>
- 876    do_name(     allocateInstance_name,                           "allocateInstance")                                    \
- 877    do_signature(allocateInstance_signature,   "(Ljava/lang/Class;)Ljava/lang/Object;")                                  \
- 878   do_intrinsic(_copyMemory,               sun_misc_Unsafe,        copyMemory_name, copyMemory_signature,         F_RN)  \
- 879    do_name(     copyMemory_name,                                 "copyMemory")                                          \
- 880    do_signature(copyMemory_signature,         "(Ljava/lang/Object;JLjava/lang/Object;JJ)V")                             \
- 881   do_intrinsic(_park,                     sun_misc_Unsafe,        park_name, park_signature,                     F_RN)  \
- 882    do_name(     park_name,                                       "park")                                                \
- 883    do_signature(park_signature,                                  "(ZJ)V")                                               \
- 884   do_intrinsic(_unpark,                   sun_misc_Unsafe,        unpark_name, unpark_signature,                 F_RN)  \
- 885    do_name(     unpark_name,                                     "unpark")                                              \
- 886    do_alias(    unpark_signature,                               /*(LObject;)V*/ object_void_signature)                  \
- 887   do_intrinsic(_loadFence,                sun_misc_Unsafe,        loadFence_name, loadFence_signature,           F_RN)  \
- 888    do_name(     loadFence_name,                                  "loadFence")                                           \
- 889    do_alias(    loadFence_signature,                              void_method_signature)                                \
- 890   do_intrinsic(_storeFence,               sun_misc_Unsafe,        storeFence_name, storeFence_signature,         F_RN)  \
- 891    do_name(     storeFence_name,                                 "storeFence")                                          \
- 892    do_alias(    storeFence_signature,                             void_method_signature)                                \
- 893   do_intrinsic(_fullFence,                sun_misc_Unsafe,        fullFence_name, fullFence_signature,           F_RN)  \
- 894    do_name(     fullFence_name,                                  "fullFence")                                           \
- 895    do_alias(    fullFence_signature,                              void_method_signature)                                \
+ 770                                                                                                                         \
+ 771   do_intrinsic(_identityHashCode,         java_lang_System,       identityHashCode_name, object_int_signature,   F_S)   \
+ 772    do_name(     identityHashCode_name,                           "identityHashCode")                                    \
+ 773   do_intrinsic(_currentTimeMillis,        java_lang_System,       currentTimeMillis_name, void_long_signature,   F_S)   \
+ 774                                                                                                                         \
+ 775    do_name(     currentTimeMillis_name,                          "currentTimeMillis")                                   \
+ 776   do_intrinsic(_nanoTime,                 java_lang_System,       nanoTime_name,          void_long_signature,   F_S)   \
+ 777    do_name(     nanoTime_name,                                   "nanoTime")                                            \
+ 778                                                                                                                         \
+ 779   TRACE_INTRINSICS(do_intrinsic, do_class, do_name, do_signature, do_alias)                                             \
+ 780                                                                                                                         \
+ 781   do_intrinsic(_arraycopy,                java_lang_System,       arraycopy_name, arraycopy_signature,           F_S)   \
+ 782    do_name(     arraycopy_name,                                  "arraycopy")                                           \
+ 783    do_signature(arraycopy_signature,                             "(Ljava/lang/Object;ILjava/lang/Object;II)V")          \
+ 784   do_intrinsic(_isInterrupted,            java_lang_Thread,       isInterrupted_name, isInterrupted_signature,   F_R)   \
+ 785    do_name(     isInterrupted_name,                              "isInterrupted")                                       \
+ 786    do_signature(isInterrupted_signature,                         "(Z)Z")                                                \
+ 787   do_intrinsic(_currentThread,            java_lang_Thread,       currentThread_name, currentThread_signature,   F_S)   \
+ 788    do_name(     currentThread_name,                              "currentThread")                                       \
+ 789    do_signature(currentThread_signature,                         "()Ljava/lang/Thread;")                                \
 
 
 
-
- 896                                                                                                                         \
- 897   /* Custom branch frequencies profiling support for JSR292 */                                                          \
- 898   do_class(java_lang_invoke_MethodHandleImpl,               "java/lang/invoke/MethodHandleImpl")                        \
- 899   do_intrinsic(_profileBoolean, java_lang_invoke_MethodHandleImpl, profileBoolean_name, profileBoolean_signature, F_S)  \
- 900    do_name(     profileBoolean_name,                             "profileBoolean")                                      \
- 901    do_signature(profileBoolean_signature,                        "(Z[I)Z")                                              \
- 902   do_intrinsic(_isCompileConstant, java_lang_invoke_MethodHandleImpl, isCompileConstant_name, isCompileConstant_signature, F_S) \
- 903    do_name(     isCompileConstant_name,                          "isCompileConstant")                                   \
- 904    do_alias(    isCompileConstant_signature,                      object_boolean_signature)                             \
- 905                                                                                                                         \
- 906   /* unsafe memory references (there are a lot of them...) */                                                           \
- 907   do_signature(getObject_signature,       "(Ljava/lang/Object;J)Ljava/lang/Object;")                                    \
- 908   do_signature(putObject_signature,       "(Ljava/lang/Object;JLjava/lang/Object;)V")                                   \
- 909   do_signature(getBoolean_signature,      "(Ljava/lang/Object;J)Z")                                                     \
- 910   do_signature(putBoolean_signature,      "(Ljava/lang/Object;JZ)V")                                                    \
- 911   do_signature(getByte_signature,         "(Ljava/lang/Object;J)B")                                                     \
- 912   do_signature(putByte_signature,         "(Ljava/lang/Object;JB)V")                                                    \
- 913   do_signature(getShort_signature,        "(Ljava/lang/Object;J)S")                                                     \
- 914   do_signature(putShort_signature,        "(Ljava/lang/Object;JS)V")                                                    \
- 915   do_signature(getChar_signature,         "(Ljava/lang/Object;J)C")                                                     \
+ 790                                                                                                                         \
+ 791   /* reflective intrinsics, for java/lang/Class, etc. */                                                                \
+ 792   do_intrinsic(_isAssignableFrom,         java_lang_Class,        isAssignableFrom_name, class_boolean_signature, F_RN) \
+ 793    do_name(     isAssignableFrom_name,                           "isAssignableFrom")                                    \
+ 794   do_intrinsic(_isInstance,               java_lang_Class,        isInstance_name, object_boolean_signature,     F_RN)  \
+ 795    do_name(     isInstance_name,                                 "isInstance")                                          \
+ 796   do_intrinsic(_getModifiers,             java_lang_Class,        getModifiers_name, void_int_signature,         F_RN)  \
+ 797    do_name(     getModifiers_name,                               "getModifiers")                                        \
+ 798   do_intrinsic(_isInterface,              java_lang_Class,        isInterface_name, void_boolean_signature,      F_RN)  \
+ 799    do_name(     isInterface_name,                                "isInterface")                                         \
+ 800   do_intrinsic(_isArray,                  java_lang_Class,        isArray_name, void_boolean_signature,          F_RN)  \
+ 801    do_name(     isArray_name,                                    "isArray")                                             \
+ 802   do_intrinsic(_isPrimitive,              java_lang_Class,        isPrimitive_name, void_boolean_signature,      F_RN)  \
+ 803    do_name(     isPrimitive_name,                                "isPrimitive")                                         \
+ 804   do_intrinsic(_getSuperclass,            java_lang_Class,        getSuperclass_name, void_class_signature,      F_RN)  \
+ 805    do_name(     getSuperclass_name,                              "getSuperclass")                                       \
+ 806   do_intrinsic(_Class_cast,               java_lang_Class,        Class_cast_name, object_object_signature,      F_R)   \
+ 807    do_name(     Class_cast_name,                                 "cast")                                                \
+ 808                                                                                                                         \
+ 809   do_intrinsic(_getClassAccessFlags,      sun_reflect_Reflection, getClassAccessFlags_name, class_int_signature, F_SN)  \
 
 </pre><hr></hr>
 </pre></td><td><pre>
 
 </pre><hr></hr><pre>
- 566   template(getAgentStatus_name,                        "getManagementAgentStatus")                                \
- 567   template(java_lang_management_ThreadInfo_constructor_signature, "(Ljava/lang/Thread;ILjava/lang/Object;Ljava/lang/Thread;JJJJ[Ljava/lang/StackTraceElement;)V") \
- 568   template(java_lang_management_ThreadInfo_with_locks_constructor_signature, "(Ljava/lang/Thread;ILjava/lang/Object;Ljava/lang/Thread;JJJJ[Ljava/lang/StackTraceElement;[Ljava/lang/Object;[I[Ljava/lang/Object;)V") \
- 569   template(long_long_long_long_void_signature,         "(JJJJ)V")                                                 \
- 570                                                                                                                   \
- 571   template(java_lang_management_MemoryPoolMXBean,      "java/lang/management/MemoryPoolMXBean")                   \
- 572   template(java_lang_management_MemoryManagerMXBean,   "java/lang/management/MemoryManagerMXBean")                \
- 573   template(java_lang_management_GarbageCollectorMXBean,"java/lang/management/GarbageCollectorMXBean")             \
- 574   template(gcInfoBuilder_name,                         "gcInfoBuilder")                                           \
- 575   template(createMemoryPool_name,                      "createMemoryPool")                                        \
- 576   template(createMemoryManager_name,                   "createMemoryManager")                                     \
- 577   template(createGarbageCollector_name,                "createGarbageCollector")                                  \
- 578   template(createMemoryPool_signature,                 "(Ljava/lang/String;ZJJ)Ljava/lang/management/MemoryPoolMXBean;") \
- 579   template(createMemoryManager_signature,              "(Ljava/lang/String;)Ljava/lang/management/MemoryManagerMXBean;") \
- 580   template(createGarbageCollector_signature,           "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/management/GarbageCollectorMXBean;") \
- 581   template(addThreadDumpForMonitors_name,              "addThreadDumpForMonitors")                                \
- 582   template(addThreadDumpForSynchronizers_name,         "addThreadDumpForSynchronizers")                           \
- 583   template(addThreadDumpForMonitors_signature,         "(Ljava/lang/management/ThreadInfo;[Ljava/lang/Object;[I)V") \
- 584   template(addThreadDumpForSynchronizers_signature,    "(Ljava/lang/management/ThreadInfo;[Ljava/lang/Object;)V")   \
- 585                                                                                                                   \
-<span class="new"> 586   template(org_performance_Hints,                      "org/performancehints/SpinHint")                           \</span>
-<span class="new"> 587                                                                                                                   \</span>
- 588   /* JVMTI/java.lang.instrument support and VM Attach mechanism */                                                \
- 589   template(sun_misc_VMSupport,                         "sun/misc/VMSupport")                                      \
- 590   template(appendToClassPathForInstrumentation_name,   "appendToClassPathForInstrumentation")                     \
- 591   do_alias(appendToClassPathForInstrumentation_signature, string_void_signature)                                  \
- 592   template(serializePropertiesToByteArray_name,        "serializePropertiesToByteArray")                          \
- 593   template(serializePropertiesToByteArray_signature,   "()[B")                                                    \
- 594   template(serializeAgentPropertiesToByteArray_name,   "serializeAgentPropertiesToByteArray")                     \
- 595   template(classRedefinedCount_name,                   "classRedefinedCount")                                     \
- 596   template(classLoader_name,                           "classLoader")                                             \
- 597   template(componentType_name,                         "componentType")                                           \
- 598                                                                                                                   \
- 599   /* forEachRemaining support */                                                                                  \
- 600   template(java_util_stream_StreamsRangeIntSpliterator,          "java/util/stream/Streams$RangeIntSpliterator")  \
- 601                                                                                                                   \
- 602   /* trace signatures */                                                                                          \
- 603   TRACE_TEMPLATES(template)                                                                                       \
- 604                                                                                                                   \
- 605   /*end*/
- 606 
- 607 // Here are all the intrinsics known to the runtime and the CI.
-
-</pre><hr></hr><pre>
- 878    do_name(     allocateInstance_name,                           "allocateInstance")                                    \
- 879    do_signature(allocateInstance_signature,   "(Ljava/lang/Class;)Ljava/lang/Object;")                                  \
- 880   do_intrinsic(_copyMemory,               sun_misc_Unsafe,        copyMemory_name, copyMemory_signature,         F_RN)  \
- 881    do_name(     copyMemory_name,                                 "copyMemory")                                          \
- 882    do_signature(copyMemory_signature,         "(Ljava/lang/Object;JLjava/lang/Object;JJ)V")                             \
- 883   do_intrinsic(_park,                     sun_misc_Unsafe,        park_name, park_signature,                     F_RN)  \
- 884    do_name(     park_name,                                       "park")                                                \
- 885    do_signature(park_signature,                                  "(ZJ)V")                                               \
- 886   do_intrinsic(_unpark,                   sun_misc_Unsafe,        unpark_name, unpark_signature,                 F_RN)  \
- 887    do_name(     unpark_name,                                     "unpark")                                              \
- 888    do_alias(    unpark_signature,                               /*(LObject;)V*/ object_void_signature)                  \
- 889   do_intrinsic(_loadFence,                sun_misc_Unsafe,        loadFence_name, loadFence_signature,           F_RN)  \
- 890    do_name(     loadFence_name,                                  "loadFence")                                           \
- 891    do_alias(    loadFence_signature,                              void_method_signature)                                \
- 892   do_intrinsic(_storeFence,               sun_misc_Unsafe,        storeFence_name, storeFence_signature,         F_RN)  \
- 893    do_name(     storeFence_name,                                 "storeFence")                                          \
- 894    do_alias(    storeFence_signature,                             void_method_signature)                                \
- 895   do_intrinsic(_fullFence,                sun_misc_Unsafe,        fullFence_name, fullFence_signature,           F_RN)  \
- 896    do_name(     fullFence_name,                                  "fullFence")                                           \
- 897    do_alias(    fullFence_signature,                              void_method_signature)                                \
-<span class="new"> 898                                                                                                                         \</span>
-<span class="new"> 899   do_intrinsic(_spinLoopHint,             org_performance_Hints,  spinLoopHint_name, spinLoopHint_signature,     F_S)   \</span>
-<span class="new"> 900    do_name(     spinLoopHint_name,                               "spinLoopHint")                                        \</span>
-<span class="new"> 901    do_alias(    spinLoopHint_signature,                           void_method_signature)                                \</span>
- 902                                                                                                                         \
- 903   /* Custom branch frequencies profiling support for JSR292 */                                                          \
- 904   do_class(java_lang_invoke_MethodHandleImpl,               "java/lang/invoke/MethodHandleImpl")                        \
- 905   do_intrinsic(_profileBoolean, java_lang_invoke_MethodHandleImpl, profileBoolean_name, profileBoolean_signature, F_S)  \
- 906    do_name(     profileBoolean_name,                             "profileBoolean")                                      \
- 907    do_signature(profileBoolean_signature,                        "(Z[I)Z")                                              \
- 908   do_intrinsic(_isCompileConstant, java_lang_invoke_MethodHandleImpl, isCompileConstant_name, isCompileConstant_signature, F_S) \
- 909    do_name(     isCompileConstant_name,                          "isCompileConstant")                                   \
- 910    do_alias(    isCompileConstant_signature,                      object_boolean_signature)                             \
- 911                                                                                                                         \
- 912   /* unsafe memory references (there are a lot of them...) */                                                           \
- 913   do_signature(getObject_signature,       "(Ljava/lang/Object;J)Ljava/lang/Object;")                                    \
- 914   do_signature(putObject_signature,       "(Ljava/lang/Object;JLjava/lang/Object;)V")                                   \
- 915   do_signature(getBoolean_signature,      "(Ljava/lang/Object;J)Z")                                                     \
- 916   do_signature(putBoolean_signature,      "(Ljava/lang/Object;JZ)V")                                                    \
- 917   do_signature(getByte_signature,         "(Ljava/lang/Object;J)B")                                                     \
- 918   do_signature(putByte_signature,         "(Ljava/lang/Object;JB)V")                                                    \
- 919   do_signature(getShort_signature,        "(Ljava/lang/Object;J)S")                                                     \
- 920   do_signature(putShort_signature,        "(Ljava/lang/Object;JS)V")                                                    \
- 921   do_signature(getChar_signature,         "(Ljava/lang/Object;J)C")                                                     \
+ 770                                                                                                                         \
+ 771   do_intrinsic(_identityHashCode,         java_lang_System,       identityHashCode_name, object_int_signature,   F_S)   \
+ 772    do_name(     identityHashCode_name,                           "identityHashCode")                                    \
+ 773   do_intrinsic(_currentTimeMillis,        java_lang_System,       currentTimeMillis_name, void_long_signature,   F_S)   \
+ 774                                                                                                                         \
+ 775    do_name(     currentTimeMillis_name,                          "currentTimeMillis")                                   \
+ 776   do_intrinsic(_nanoTime,                 java_lang_System,       nanoTime_name,          void_long_signature,   F_S)   \
+ 777    do_name(     nanoTime_name,                                   "nanoTime")                                            \
+ 778                                                                                                                         \
+ 779   TRACE_INTRINSICS(do_intrinsic, do_class, do_name, do_signature, do_alias)                                             \
+ 780                                                                                                                         \
+ 781   do_intrinsic(_arraycopy,                java_lang_System,       arraycopy_name, arraycopy_signature,           F_S)   \
+ 782    do_name(     arraycopy_name,                                  "arraycopy")                                           \
+ 783    do_signature(arraycopy_signature,                             "(Ljava/lang/Object;ILjava/lang/Object;II)V")          \
+ 784   do_intrinsic(_isInterrupted,            java_lang_Thread,       isInterrupted_name, isInterrupted_signature,   F_R)   \
+ 785    do_name(     isInterrupted_name,                              "isInterrupted")                                       \
+ 786    do_signature(isInterrupted_signature,                         "(Z)Z")                                                \
+ 787   do_intrinsic(_currentThread,            java_lang_Thread,       currentThread_name, currentThread_signature,   F_S)   \
+ 788    do_name(     currentThread_name,                              "currentThread")                                       \
+ 789    do_signature(currentThread_signature,                         "()Ljava/lang/Thread;")                                \
+<span class="new"> 790   do_intrinsic(_spinLoopHint,             java_lang_Thread,       spinLoopHint_name, spinLoopHint_signature,     F_S)   \</span>
+<span class="new"> 791    do_name(     spinLoopHint_name,                               "spinLoopHint")                                        \</span>
+<span class="new"> 792    do_alias(    spinLoopHint_signature,                           void_method_signature)                                \</span>
+ 793                                                                                                                         \
+ 794   /* reflective intrinsics, for java/lang/Class, etc. */                                                                \
+ 795   do_intrinsic(_isAssignableFrom,         java_lang_Class,        isAssignableFrom_name, class_boolean_signature, F_RN) \
+ 796    do_name(     isAssignableFrom_name,                           "isAssignableFrom")                                    \
+ 797   do_intrinsic(_isInstance,               java_lang_Class,        isInstance_name, object_boolean_signature,     F_RN)  \
+ 798    do_name(     isInstance_name,                                 "isInstance")                                          \
+ 799   do_intrinsic(_getModifiers,             java_lang_Class,        getModifiers_name, void_int_signature,         F_RN)  \
+ 800    do_name(     getModifiers_name,                               "getModifiers")                                        \
+ 801   do_intrinsic(_isInterface,              java_lang_Class,        isInterface_name, void_boolean_signature,      F_RN)  \
+ 802    do_name(     isInterface_name,                                "isInterface")                                         \
+ 803   do_intrinsic(_isArray,                  java_lang_Class,        isArray_name, void_boolean_signature,          F_RN)  \
+ 804    do_name(     isArray_name,                                    "isArray")                                             \
+ 805   do_intrinsic(_isPrimitive,              java_lang_Class,        isPrimitive_name, void_boolean_signature,      F_RN)  \
+ 806    do_name(     isPrimitive_name,                                "isPrimitive")                                         \
+ 807   do_intrinsic(_getSuperclass,            java_lang_Class,        getSuperclass_name, void_class_signature,      F_RN)  \
+ 808    do_name(     getSuperclass_name,                              "getSuperclass")                                       \
+ 809   do_intrinsic(_Class_cast,               java_lang_Class,        Class_cast_name, object_object_signature,      F_R)   \
+ 810    do_name(     Class_cast_name,                                 "cast")                                                \
+ 811                                                                                                                         \
+ 812   do_intrinsic(_getClassAccessFlags,      sun_reflect_Reflection, getClassAccessFlags_name, class_int_signature, F_SN)  \
 
 </pre><hr></hr>
 </pre></td>

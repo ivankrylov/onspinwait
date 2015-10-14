@@ -1,6 +1,6 @@
---- old/src/share/vm/runtime/vmStructs.cpp	2015-07-20 21:11:27.669728400 +0300
-+++ new/src/share/vm/runtime/vmStructs.cpp	2015-07-20 21:11:27.441054600 +0300
-@@ -1854,6 +1854,7 @@
+--- old/src/share/vm/runtime/vmStructs.cpp	2015-10-14 14:23:28.000000000 +0300
++++ new/src/share/vm/runtime/vmStructs.cpp	2015-10-14 14:23:27.000000000 +0300
+@@ -1857,6 +1857,7 @@
    declare_c2_type(StoreFenceNode, MemBarNode)                             \
    declare_c2_type(MemBarVolatileNode, MemBarNode)                         \
    declare_c2_type(MemBarCPUOrderNode, MemBarNode)                         \

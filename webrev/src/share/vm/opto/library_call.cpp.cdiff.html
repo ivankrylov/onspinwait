@@ -84,8 +84,8 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
         <a class="print" href="javascript:print()">Print this page</a>
 <pre></pre>
         <pre>
-<hr /><span class="oldmarker">*** 267,276 ****</span>
-<span class="newmarker">--- 267,277 ----</span>
+<hr /><span class="oldmarker">*** 269,278 ****</span>
+<span class="newmarker">--- 269,279 ----</span>
   
     typedef enum { LS_xadd, LS_xchg, LS_cmpxchg } LoadStoreKind;
     bool inline_unsafe_load_store(BasicType type,  LoadStoreKind kind);
@@ -97,24 +97,8 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
     bool inline_reference_get();
     bool inline_Class_cast();
     bool inline_aescrypt_Block(vmIntrinsics::ID id);
-<hr /><span class="oldmarker">*** 506,515 ****</span>
-<span class="newmarker">--- 507,520 ----</span>
-  
-    case vmIntrinsics::_mulAdd:
-      if (!UseMulAddIntrinsic) return NULL;
-      break;
-    
-<span class="new">+   case vmIntrinsics::_spinLoopHint:</span>
-<span class="new">+     if (!UseSpinLoopHintIntrinsic) return NULL;</span>
-<span class="new">+     break;</span>
-<span class="new">+ </span>
-    case vmIntrinsics::_cipherBlockChaining_encryptAESCrypt:
-    case vmIntrinsics::_cipherBlockChaining_decryptAESCrypt:
-      if (!UseAESIntrinsics) return NULL;
-      // these two require the predicated logic
-      predicates = 1;
-<hr /><span class="oldmarker">*** 863,872 ****</span>
-<span class="newmarker">--- 868,879 ----</span>
+<hr /><span class="oldmarker">*** 599,608 ****</span>
+<span class="newmarker">--- 600,611 ----</span>
   
     case vmIntrinsics::_loadFence:
     case vmIntrinsics::_storeFence:
@@ -127,8 +111,8 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
   
   #ifdef TRACE_HAVE_INTRINSICS
     case vmIntrinsics::_classID:                  return inline_native_classID();
-<hr /><span class="oldmarker">*** 3083,3092 ****</span>
-<span class="newmarker">--- 3090,3104 ----</span>
+<hr /><span class="oldmarker">*** 2872,2881 ****</span>
+<span class="newmarker">--- 2875,2889 ----</span>
         fatal_unexpected_iid(id);
         return false;
     }
@@ -144,5 +128,20 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
       return true;
     }
     const TypeKlassPtr* klsptr = kls-&gt;bottom_type()-&gt;isa_klassptr();
+<hr /><span class="oldmarker">*** 3255,3264 ****</span>
+<span class="newmarker">--- 3263,3275 ----</span>
+    case vmIntrinsics::_isInstance:
+      // nothing is an instance of a primitive type
+      query_value = gen_instanceof(obj, kls, safe_for_replace);
+      break;
+    
+<span class="new">+   case vmIntrinsics::_spinLoopHint:</span>
+<span class="new">+     break;</span>
+<span class="new">+ </span>
+    case vmIntrinsics::_getModifiers:
+      p = basic_plus_adr(kls, in_bytes(Klass::modifier_flags_offset()));
+      query_value = make_load(NULL, p, TypeInt::INT, T_INT, MemNode::unordered);
+      break;
+  
 </pre></body></html>
 

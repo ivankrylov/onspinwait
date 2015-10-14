@@ -2136,7 +2136,7 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
 2051 // Set bits if Node is shared or otherwise a root
 2052 void Matcher::find_shared( Node *n ) {
 2053   // Allocate stack of size C-&gt;unique() * 2 to avoid frequent realloc
-2054   MStack mstack(C-&gt;unique() * 2);
+2054   MStack mstack(C-&gt;live_nodes() * 2);
 2055   // Mark nodes as address_visited if they are inputs to an address expression
 2056   VectorSet address_visited(Thread::current()-&gt;resource_area());
 2057   mstack.push(n, Visit);     // Don't need to pre-visit root node

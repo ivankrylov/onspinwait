@@ -1,5 +1,5 @@
---- old/src/share/vm/opto/classes.hpp	2015-07-20 21:11:18.598422100 +0300
-+++ new/src/share/vm/opto/classes.hpp	2015-07-20 21:11:18.283020200 +0300
+--- old/src/share/vm/opto/classes.hpp	2015-10-14 14:23:25.000000000 +0300
++++ new/src/share/vm/opto/classes.hpp	2015-10-14 14:23:24.000000000 +0300
 @@ -169,6 +169,7 @@
  macro(Mach)
  macro(MachProj)

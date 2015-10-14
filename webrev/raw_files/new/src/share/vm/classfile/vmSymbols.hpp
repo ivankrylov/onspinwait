@@ -258,6 +258,8 @@
   /* Type Annotations (JDK 8 and above) */                                                        \
   template(type_annotations_name,                     "typeAnnotations")                          \
                                                                                                   \
+  /* Intrinsic Annotation (JDK 9 and above) */                                                    \
+  template(jdk_internal_HotSpotIntrinsicCandidate_signature, "Ljdk/internal/HotSpotIntrinsicCandidate;") \
                                                                                                   \
   /* Support for JSR 292 & invokedynamic (JDK 1.7 and above) */                                   \
   template(java_lang_invoke_CallSite,                 "java/lang/invoke/CallSite")                \
@@ -345,7 +347,6 @@
   template(dispatch_name,                             "dispatch")                                 \
   template(getSystemClassLoader_name,                 "getSystemClassLoader")                     \
   template(fillInStackTrace_name,                     "fillInStackTrace")                         \
-  template(fillInStackTrace0_name,                    "fillInStackTrace0")                        \
   template(getCause_name,                             "getCause")                                 \
   template(initCause_name,                            "initCause")                                \
   template(setProperty_name,                          "setProperty")                              \
@@ -567,6 +568,11 @@
   template(java_lang_management_ThreadInfo_constructor_signature, "(Ljava/lang/Thread;ILjava/lang/Object;Ljava/lang/Thread;JJJJ[Ljava/lang/StackTraceElement;)V") \
   template(java_lang_management_ThreadInfo_with_locks_constructor_signature, "(Ljava/lang/Thread;ILjava/lang/Object;Ljava/lang/Thread;JJJJ[Ljava/lang/StackTraceElement;[Ljava/lang/Object;[I[Ljava/lang/Object;)V") \
   template(long_long_long_long_void_signature,         "(JJJJ)V")                                                 \
+  template(finalizer_histogram_klass,                  "java/lang/ref/FinalizerHistogram")                        \
+  template(void_finalizer_histogram_entry_array_signature,  "()[Ljava/lang/ref/FinalizerHistogram$Entry;")                        \
+  template(get_finalizer_histogram_name,               "getFinalizerHistogram")                                   \
+  template(finalizer_histogram_entry_name_field,       "className")                                               \
+  template(finalizer_histogram_entry_count_field,      "instanceCount")                                           \
                                                                                                                   \
   template(java_lang_management_MemoryPoolMXBean,      "java/lang/management/MemoryPoolMXBean")                   \
   template(java_lang_management_MemoryManagerMXBean,   "java/lang/management/MemoryManagerMXBean")                \
@@ -582,8 +588,6 @@
   template(addThreadDumpForSynchronizers_name,         "addThreadDumpForSynchronizers")                           \
   template(addThreadDumpForMonitors_signature,         "(Ljava/lang/management/ThreadInfo;[Ljava/lang/Object;[I)V") \
   template(addThreadDumpForSynchronizers_signature,    "(Ljava/lang/management/ThreadInfo;[Ljava/lang/Object;)V")   \
-                                                                                                                  \
-  template(org_performance_Hints,                      "org/performancehints/SpinHint")                           \
                                                                                                                   \
   /* JVMTI/java.lang.instrument support and VM Attach mechanism */                                                \
   template(sun_misc_VMSupport,                         "sun/misc/VMSupport")                                      \
@@ -637,13 +641,56 @@
 // The F_xx is one of the Flags enum; see below.
 //
 // for Emacs: (let ((c-backslash-column 120) (c-backslash-max-column 120)) (c-backslash-region (point) (point-max) nil t))
+//
+//
+// There are two types of intrinsic methods: (1) Library intrinsics and (2) bytecode intrinsics.
+//
+// (1) A library intrinsic method may be replaced with hand-crafted assembly code,
+// with hand-crafted compiler IR, or with a combination of the two. The semantics
+// of the replacement code may differ from the semantics of the replaced code.
+//
+// (2) Bytecode intrinsic methods are not replaced by special code, but they are
+// treated in some other special way by the compiler. For example, the compiler
+// may delay inlining for some String-related intrinsic methods (e.g., some methods
+// defined in the StringBuilder and StringBuffer classes, see
+// Compile::should_delay_string_inlining() for more details).
+//
+// Due to the difference between the semantics of an intrinsic method as defined
+// in the (Java) source code and the semantics of the method as defined
+// by the code in the VM, intrinsic methods must be explicitly marked.
+//
+// Intrinsic methods are marked by the jdk.internal.HotSpotIntrinsicCandidate
+// annotation. If CheckIntrinsics is enabled, the VM performs the following
+// checks when a class C is loaded: (1) all intrinsics defined by the VM for
+// class C are present in the loaded class file and are marked;
+// (2) an intrinsic is defined by the VM for all marked methods of class C;
+// (3) check for orphan methods in class C (i.e., methods for which the VM
+// declares an intrinsic but that are not declared for the loaded class C.
+// Check (3) is available only in debug builds.
+//
+// If a mismatch is detected for a method, the VM behaves differently depending
+// on the type of build. A fastdebug build exits and reports an error on a mismatch.
+// A product build will not replace an unmarked library intrinsic method with
+// hand-crafted code, that is, unmarked library intrinsics are treated as ordinary
+// methods in a product build. The special treatment of a bytecode intrinsic method
+// persists even if the method not marked.
+//
+// When adding an intrinsic for a method, please make sure to appropriately
+// annotate the method in the source code. The list below contains all
+// library intrinsics followed by bytecode intrinsics. Please also make sure to
+// add the declaration of the intrinsic to the approriate section of the list.
 #define VM_INTRINSICS_DO(do_intrinsic, do_class, do_name, do_signature, do_alias)                                       \
+  /* (1) Library intrinsics                                                                        */                   \
   do_intrinsic(_hashCode,                 java_lang_Object,       hashCode_name, void_int_signature,             F_R)   \
    do_name(     hashCode_name,                                   "hashCode")                                            \
   do_intrinsic(_getClass,                 java_lang_Object,       getClass_name, void_class_signature,           F_R)   \
    do_name(     getClass_name,                                   "getClass")                                            \
   do_intrinsic(_clone,                    java_lang_Object,       clone_name, void_object_signature,             F_R)   \
    do_name(     clone_name,                                      "clone")                                               \
+  do_intrinsic(_notify,                   java_lang_Object,       notify_name, void_method_signature,            F_R)   \
+   do_name(     notify_name,                                     "notify")                                              \
+  do_intrinsic(_notifyAll,                java_lang_Object,       notifyAll_name, void_method_signature,         F_R)   \
+   do_name(     notifyAll_name,                                  "notifyAll")                                           \
                                                                                                                         \
   /* Math & StrictMath intrinsics are defined in terms of just a few signatures: */                                     \
   do_class(java_lang_Math,                "java/lang/Math")                                                             \
@@ -740,6 +787,9 @@
   do_intrinsic(_currentThread,            java_lang_Thread,       currentThread_name, currentThread_signature,   F_S)   \
    do_name(     currentThread_name,                              "currentThread")                                       \
    do_signature(currentThread_signature,                         "()Ljava/lang/Thread;")                                \
+  do_intrinsic(_spinLoopHint,             java_lang_Thread,       spinLoopHint_name, spinLoopHint_signature,     F_S)   \
+   do_name(     spinLoopHint_name,                               "spinLoopHint")                                        \
+   do_alias(    spinLoopHint_signature,                           void_method_signature)                                \
                                                                                                                         \
   /* reflective intrinsics, for java/lang/Class, etc. */                                                                \
   do_intrinsic(_isAssignableFrom,         java_lang_Class,        isAssignableFrom_name, class_boolean_signature, F_RN) \
@@ -794,12 +844,12 @@
                                                                                                                         \
   do_class(sun_nio_cs_iso8859_1_Encoder,  "sun/nio/cs/ISO_8859_1$Encoder")                                              \
   do_intrinsic(_encodeISOArray,     sun_nio_cs_iso8859_1_Encoder, encodeISOArray_name, encodeISOArray_signature, F_S)   \
-   do_name(     encodeISOArray_name,                             "encodeISOArray")                                      \
+   do_name(     encodeISOArray_name,                             "implEncodeISOArray")                                  \
    do_signature(encodeISOArray_signature,                        "([CI[BII)I")                                          \
                                                                                                                         \
   do_class(java_math_BigInteger,                      "java/math/BigInteger")                                           \
-  do_intrinsic(_multiplyToLen,      java_math_BigInteger, multiplyToLen_name, multiplyToLen_signature, F_R)             \
-   do_name(     multiplyToLen_name,                             "multiplyToLen")                                        \
+  do_intrinsic(_multiplyToLen,      java_math_BigInteger, multiplyToLen_name, multiplyToLen_signature, F_S)             \
+   do_name(     multiplyToLen_name,                             "implMultiplyToLen")                                    \
    do_signature(multiplyToLen_signature,                        "([II[II[I)[I")                                         \
                                                                                                                         \
   do_intrinsic(_squareToLen, java_math_BigInteger, squareToLen_name, squareToLen_signature, F_S)                        \
@@ -810,6 +860,14 @@
    do_name(     mulAdd_name,                                  "implMulAdd")                                             \
    do_signature(mulAdd_signature,                             "([I[IIII)I")                                             \
                                                                                                                         \
+  do_intrinsic(_montgomeryMultiply,      java_math_BigInteger, montgomeryMultiply_name, montgomeryMultiply_signature, F_S) \
+   do_name(     montgomeryMultiply_name,                             "implMontgomeryMultiply")                          \
+   do_signature(montgomeryMultiply_signature,                        "([I[I[IIJ[I)[I")                                  \
+                                                                                                                        \
+  do_intrinsic(_montgomerySquare,      java_math_BigInteger, montgomerySquare_name, montgomerySquare_signature, F_S)    \
+   do_name(     montgomerySquare_name,                             "implMontgomerySquare")                              \
+   do_signature(montgomerySquare_signature,                        "([I[IIJ[I)[I")                                      \
+                                                                                                                        \
   /* java/lang/ref/Reference */                                                                                         \
   do_intrinsic(_Reference_get,            java_lang_ref_Reference, get_name,    void_object_signature, F_R)             \
                                                                                                                         \
@@ -817,21 +875,21 @@
   do_class(com_sun_crypto_provider_aescrypt,      "com/sun/crypto/provider/AESCrypt")                                   \
   do_intrinsic(_aescrypt_encryptBlock, com_sun_crypto_provider_aescrypt, encryptBlock_name, byteArray_int_byteArray_int_signature, F_R)   \
   do_intrinsic(_aescrypt_decryptBlock, com_sun_crypto_provider_aescrypt, decryptBlock_name, byteArray_int_byteArray_int_signature, F_R)   \
-   do_name(     encryptBlock_name,                                 "encryptBlock")                                      \
-   do_name(     decryptBlock_name,                                 "decryptBlock")                                      \
+   do_name(     encryptBlock_name,                                 "implEncryptBlock")                                  \
+   do_name(     decryptBlock_name,                                 "implDecryptBlock")                                  \
    do_signature(byteArray_int_byteArray_int_signature,             "([BI[BI)V")                                         \
                                                                                                                         \
   do_class(com_sun_crypto_provider_cipherBlockChaining,            "com/sun/crypto/provider/CipherBlockChaining")       \
    do_intrinsic(_cipherBlockChaining_encryptAESCrypt, com_sun_crypto_provider_cipherBlockChaining, encrypt_name, byteArray_int_int_byteArray_int_signature, F_R)   \
    do_intrinsic(_cipherBlockChaining_decryptAESCrypt, com_sun_crypto_provider_cipherBlockChaining, decrypt_name, byteArray_int_int_byteArray_int_signature, F_R)   \
-   do_name(     encrypt_name,                                      "encrypt")                                           \
-   do_name(     decrypt_name,                                      "decrypt")                                           \
+   do_name(     encrypt_name,                                      "implEncrypt")                                       \
+   do_name(     decrypt_name,                                      "implDecrypt")                                       \
    do_signature(byteArray_int_int_byteArray_int_signature,         "([BII[BI)I")                                        \
                                                                                                                         \
   /* support for sun.security.provider.SHA */                                                                           \
   do_class(sun_security_provider_sha,                              "sun/security/provider/SHA")                         \
   do_intrinsic(_sha_implCompress, sun_security_provider_sha, implCompress_name, implCompress_signature, F_R)            \
-   do_name(     implCompress_name,                                 "implCompress")                                      \
+   do_name(     implCompress_name,                                 "implCompress0")                                     \
    do_signature(implCompress_signature,                            "([BI)V")                                            \
                                                                                                                         \
   /* support for sun.security.provider.SHA2 */                                                                          \
@@ -845,7 +903,7 @@
   /* support for sun.security.provider.DigestBase */                                                                    \
   do_class(sun_security_provider_digestbase,                       "sun/security/provider/DigestBase")                  \
   do_intrinsic(_digestBase_implCompressMB, sun_security_provider_digestbase, implCompressMB_name, implCompressMB_signature, F_R)   \
-   do_name(     implCompressMB_name,                               "implCompressMultiBlock")                            \
+   do_name(     implCompressMB_name,                               "implCompressMultiBlock0")                           \
    do_signature(implCompressMB_signature,                          "([BII)I")                                           \
                                                                                                                         \
   /* support for com.sun.crypto.provider.GHASH */                                                                       \
@@ -859,17 +917,24 @@
   do_intrinsic(_updateCRC32,               java_util_zip_CRC32,   update_name, int2_int_signature,               F_SN)  \
    do_name(     update_name,                                      "update")                                             \
   do_intrinsic(_updateBytesCRC32,          java_util_zip_CRC32,   updateBytes_name, updateBytes_signature,       F_SN)  \
-   do_name(     updateBytes_name,                                "updateBytes")                                         \
+   do_name(     updateBytes_name,                                "updateBytes0")                                        \
    do_signature(updateBytes_signature,                           "(I[BII)I")                                            \
   do_intrinsic(_updateByteBufferCRC32,     java_util_zip_CRC32,   updateByteBuffer_name, updateByteBuffer_signature, F_SN) \
-   do_name(     updateByteBuffer_name,                           "updateByteBuffer")                                    \
+   do_name(     updateByteBuffer_name,                           "updateByteBuffer0")                                   \
    do_signature(updateByteBuffer_signature,                      "(IJII)I")                                             \
                                                                                                                         \
   /* support for java.util.zip.CRC32C */                                                                                \
   do_class(java_util_zip_CRC32C,          "java/util/zip/CRC32C")                                                       \
-  do_intrinsic(_updateBytesCRC32C,         java_util_zip_CRC32C,  updateBytes_name, updateBytes_signature,       F_S)   \
-  do_intrinsic(_updateDirectByteBufferCRC32C, java_util_zip_CRC32C, updateDirectByteBuffer_name, updateByteBuffer_signature, F_S) \
-   do_name(     updateDirectByteBuffer_name,                     "updateDirectByteBuffer")                              \
+  do_intrinsic(_updateBytesCRC32C,         java_util_zip_CRC32C,  updateBytes_C_name, updateBytes_signature,       F_S) \
+   do_name(     updateBytes_C_name,                               "updateBytes")                                        \
+  do_intrinsic(_updateDirectByteBufferCRC32C, java_util_zip_CRC32C, updateDirectByteBuffer_C_name, updateByteBuffer_signature, F_S) \
+   do_name(    updateDirectByteBuffer_C_name,                     "updateDirectByteBuffer")                             \
+                                                                                                                        \
+   /* support for java.util.zip.Adler32 */                                                                              \
+  do_class(java_util_zip_Adler32,        "java/util/zip/Adler32")                                                       \
+  do_intrinsic(_updateBytesAdler32,       java_util_zip_Adler32,  updateBytes_C_name,  updateBytes_signature,  F_SN)    \
+  do_intrinsic(_updateByteBufferAdler32,  java_util_zip_Adler32,  updateByteBuffer_A_name,  updateByteBuffer_signature,  F_SN) \
+   do_name(     updateByteBuffer_A_name,                          "updateByteBuffer")                                   \
                                                                                                                         \
   /* support for sun.misc.Unsafe */                                                                                     \
   do_class(sun_misc_Unsafe,               "sun/misc/Unsafe")                                                            \
@@ -880,12 +945,6 @@
   do_intrinsic(_copyMemory,               sun_misc_Unsafe,        copyMemory_name, copyMemory_signature,         F_RN)  \
    do_name(     copyMemory_name,                                 "copyMemory")                                          \
    do_signature(copyMemory_signature,         "(Ljava/lang/Object;JLjava/lang/Object;JJ)V")                             \
-  do_intrinsic(_park,                     sun_misc_Unsafe,        park_name, park_signature,                     F_RN)  \
-   do_name(     park_name,                                       "park")                                                \
-   do_signature(park_signature,                                  "(ZJ)V")                                               \
-  do_intrinsic(_unpark,                   sun_misc_Unsafe,        unpark_name, unpark_signature,                 F_RN)  \
-   do_name(     unpark_name,                                     "unpark")                                              \
-   do_alias(    unpark_signature,                               /*(LObject;)V*/ object_void_signature)                  \
   do_intrinsic(_loadFence,                sun_misc_Unsafe,        loadFence_name, loadFence_signature,           F_RN)  \
    do_name(     loadFence_name,                                  "loadFence")                                           \
    do_alias(    loadFence_signature,                              void_method_signature)                                \
@@ -895,10 +954,6 @@
   do_intrinsic(_fullFence,                sun_misc_Unsafe,        fullFence_name, fullFence_signature,           F_RN)  \
    do_name(     fullFence_name,                                  "fullFence")                                           \
    do_alias(    fullFence_signature,                              void_method_signature)                                \
-                                                                                                                        \
-  do_intrinsic(_spinLoopHint,             org_performance_Hints,  spinLoopHint_name, spinLoopHint_signature,     F_S)   \
-   do_name(     spinLoopHint_name,                               "spinLoopHint")                                        \
-   do_alias(    spinLoopHint_signature,                           void_method_signature)                                \
                                                                                                                         \
   /* Custom branch frequencies profiling support for JSR292 */                                                          \
   do_class(java_lang_invoke_MethodHandleImpl,               "java/lang/invoke/MethodHandleImpl")                        \
@@ -1072,11 +1127,15 @@
   do_intrinsic(_getAndSetObject,          sun_misc_Unsafe,        getAndSetObject_name, getAndSetObject_signature,  F_R)\
    do_name(     getAndSetObject_name,                             "getAndSetObject")                                    \
    do_signature(getAndSetObject_signature,                        "(Ljava/lang/Object;JLjava/lang/Object;)Ljava/lang/Object;" ) \
-    /*== LAST_COMPILER_INLINE*/                                                                                         \
-    /*the compiler does have special inlining code for these; bytecode inline is just fine */                           \
                                                                                                                         \
-  do_intrinsic(_fillInStackTrace,         java_lang_Throwable, fillInStackTrace_name, void_throwable_signature,  F_RNY) \
-                                                                                                                          \
+   /* (2) Bytecode intrinsics                                                                        */                 \
+                                                                                                                        \
+  do_intrinsic(_park,                     sun_misc_Unsafe,        park_name, park_signature,                     F_RN)  \
+   do_name(     park_name,                                       "park")                                                \
+   do_signature(park_signature,                                  "(ZJ)V")                                               \
+  do_intrinsic(_unpark,                   sun_misc_Unsafe,        unpark_name, unpark_signature,                 F_RN)  \
+   do_name(     unpark_name,                                     "unpark")                                              \
+   do_alias(    unpark_signature,                               /*(LObject;)V*/ object_void_signature)                  \
   do_intrinsic(_StringBuilder_void,   java_lang_StringBuilder, object_initializer_name, void_method_signature,     F_R)   \
   do_intrinsic(_StringBuilder_int,    java_lang_StringBuilder, object_initializer_name, int_void_signature,        F_R)   \
   do_intrinsic(_StringBuilder_String, java_lang_StringBuilder, object_initializer_name, string_void_signature,     F_R)   \
@@ -1323,6 +1382,25 @@ public:
 
   // Raw conversion:
   static ID for_raw_conversion(BasicType src, BasicType dest);
+
+  // The methods below provide information related to compiling intrinsics.
+
+  // (1) Information needed by the C1 compiler.
+
+  static bool preserves_state(vmIntrinsics::ID id);
+  static bool can_trap(vmIntrinsics::ID id);
+
+  // (2) Information needed by the C2 compiler.
+
+  // Returns true if the intrinsic for method 'method' will perform a virtual dispatch.
+  static bool does_virtual_dispatch(vmIntrinsics::ID id);
+  // A return value larger than 0 indicates that the intrinsic for method
+  // 'method' requires predicated logic.
+  static int predicates_needed(vmIntrinsics::ID id);
+
+  // Returns true if a compiler intrinsic is disabled by command-line flags
+  // and false otherwise.
+  static bool is_disabled_by_flags(methodHandle method, methodHandle compilation_context);
 };
 
 #endif // SHARE_VM_CLASSFILE_VMSYMBOLS_HPP

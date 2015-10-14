@@ -1,6 +1,6 @@
---- old/src/share/vm/opto/library_call.cpp	2015-07-20 21:11:19.972595700 +0300
-+++ new/src/share/vm/opto/library_call.cpp	2015-07-20 21:11:19.660856600 +0300
-@@ -269,6 +269,7 @@
+--- old/src/share/vm/opto/library_call.cpp	2015-10-14 14:23:25.000000000 +0300
++++ new/src/share/vm/opto/library_call.cpp	2015-10-14 14:23:25.000000000 +0300
+@@ -271,6 +271,7 @@
    bool inline_unsafe_load_store(BasicType type,  LoadStoreKind kind);
    bool inline_unsafe_ordered_store(BasicType type);
    bool inline_unsafe_fence(vmIntrinsics::ID id);
@@ -8,18 +8,7 @@
    bool inline_fp_conversions(vmIntrinsics::ID id);
    bool inline_number_methods(vmIntrinsics::ID id);
    bool inline_reference_get();
-@@ -507,6 +508,10 @@
-   case vmIntrinsics::_mulAdd:
-     if (!UseMulAddIntrinsic) return NULL;
-     break;
-+  
-+  case vmIntrinsics::_spinLoopHint:
-+    if (!UseSpinLoopHintIntrinsic) return NULL;
-+    break;
- 
-   case vmIntrinsics::_cipherBlockChaining_encryptAESCrypt:
-   case vmIntrinsics::_cipherBlockChaining_decryptAESCrypt:
-@@ -865,6 +870,8 @@
+@@ -601,6 +602,8 @@
    case vmIntrinsics::_storeFence:
    case vmIntrinsics::_fullFence:                return inline_unsafe_fence(intrinsic_id());
  
@@ -28,7 +17,7 @@
    case vmIntrinsics::_currentThread:            return inline_native_currentThread();
    case vmIntrinsics::_isInterrupted:            return inline_native_isInterrupted();
  
-@@ -3085,6 +3092,11 @@
+@@ -2874,6 +2877,11 @@
    }
  }
  
@@ -40,3 +29,13 @@
  bool LibraryCallKit::klass_needs_init_guard(Node* kls) {
    if (!kls->is_Con()) {
      return true;
+@@ -3256,6 +3264,9 @@
+     // nothing is an instance of a primitive type
+     query_value = gen_instanceof(obj, kls, safe_for_replace);
+     break;
++  
++  case vmIntrinsics::_spinLoopHint:
++    break;
+ 
+   case vmIntrinsics::_getModifiers:
+     p = basic_plus_adr(kls, in_bytes(Klass::modifier_flags_offset()));

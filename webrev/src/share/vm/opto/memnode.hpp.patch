@@ -1,6 +1,6 @@
---- old/src/share/vm/opto/memnode.hpp	2015-07-20 21:11:24.760338100 +0300
-+++ new/src/share/vm/opto/memnode.hpp	2015-07-20 21:11:24.513080900 +0300
-@@ -1073,6 +1073,13 @@
+--- old/src/share/vm/opto/memnode.hpp	2015-10-14 14:23:27.000000000 +0300
++++ new/src/share/vm/opto/memnode.hpp	2015-10-14 14:23:26.000000000 +0300
+@@ -1075,6 +1075,13 @@
    virtual uint ideal_reg() const { return 0; } // not matched in the AD file
  };
  

@@ -1,0 +1,603 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta charset="utf-8">
+<meta http-equiv="cache-control" content="no-cache" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="-1" />
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+a.print { font-size: x-small; }
+
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+    <script type="text/javascript" src="../../../../ancnav.js"></script>
+    </head>
+    <body id="SUNWwebrev" onkeypress="keypress(event);">
+    <a name="0"></a>
+    <pre></pre><hr></hr>
+<pre>
+   1 /*
+   2  * Copyright (c) 1999, 2014, Oracle and/or its affiliates. All rights reserved.
+   3  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4  *
+   5  * This code is free software; you can redistribute it and/or modify it
+   6  * under the terms of the GNU General Public License version 2 only, as
+   7  * published by the Free Software Foundation.
+   8  *
+   9  * This code is distributed in the hope that it will be useful, but WITHOUT
+  10  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  11  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  12  * version 2 for more details (a copy is included in the LICENSE file that
+  13  * accompanied this code).
+  14  *
+  15  * You should have received a copy of the GNU General Public License version
+  16  * 2 along with this work; if not, write to the Free Software Foundation,
+  17  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  18  *
+  19  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  20  * or visit www.oracle.com if you need additional information or have any
+  21  * questions.
+  22  *
+  23  */
+  24 
+  25 #include "precompiled.hpp"
+  26 #include "opto/c2compiler.hpp"
+  27 #include "opto/compile.hpp"
+  28 #include "opto/optoreg.hpp"
+  29 #include "opto/output.hpp"
+  30 #include "opto/runtime.hpp"
+  31 
+  32 // register information defined by ADLC
+  33 extern const char register_save_policy[];
+  34 extern const int  register_save_type[];
+  35 
+  36 const char* C2Compiler::retry_no_subsuming_loads() {
+  37   return "retry without subsuming loads";
+  38 }
+  39 const char* C2Compiler::retry_no_escape_analysis() {
+  40   return "retry without escape analysis";
+  41 }
+  42 const char* C2Compiler::retry_class_loading_during_parsing() {
+  43   return "retry class loading during parsing";
+  44 }
+  45 bool C2Compiler::init_c2_runtime() {
+  46 
+  47   // Check assumptions used while running ADLC
+  48   Compile::adlc_verification();
+  49   assert(REG_COUNT &lt;= ConcreteRegisterImpl::number_of_registers, "incompatible register counts");
+  50 
+  51   for (int i = 0; i &lt; ConcreteRegisterImpl::number_of_registers ; i++ ) {
+  52       OptoReg::vm2opto[i] = OptoReg::Bad;
+  53   }
+  54 
+  55   for( OptoReg::Name i=OptoReg::Name(0); i&lt;OptoReg::Name(REG_COUNT); i = OptoReg::add(i,1) ) {
+  56     VMReg r = OptoReg::as_VMReg(i);
+  57     if (r-&gt;is_valid()) {
+  58       OptoReg::vm2opto[r-&gt;value()] = i;
+  59     }
+  60   }
+  61 
+  62   // Check that runtime and architecture description agree on callee-saved-floats
+  63   bool callee_saved_floats = false;
+  64   for( OptoReg::Name i=OptoReg::Name(0); i&lt;OptoReg::Name(_last_Mach_Reg); i = OptoReg::add(i,1) ) {
+  65     // Is there a callee-saved float or double?
+  66     if( register_save_policy[i] == 'E' /* callee-saved */ &amp;&amp;
+  67        (register_save_type[i] == Op_RegF || register_save_type[i] == Op_RegD) ) {
+  68       callee_saved_floats = true;
+  69     }
+  70   }
+  71 
+  72   DEBUG_ONLY( Node::init_NodeProperty(); )
+  73 
+  74   Compile::pd_compiler2_init();
+  75 
+  76   CompilerThread* thread = CompilerThread::current();
+  77 
+  78   HandleMark handle_mark(thread);
+  79   return OptoRuntime::generate(thread-&gt;env());
+  80 }
+  81 
+  82 void C2Compiler::initialize() {
+  83   // The first compiler thread that gets here will initialize the
+  84   // small amount of global state (and runtime stubs) that C2 needs.
+  85 
+  86   // There is a race possible once at startup and then we're fine
+  87 
+  88   // Note that this is being called from a compiler thread not the
+  89   // main startup thread.
+  90   if (should_perform_init()) {
+  91     bool successful = C2Compiler::init_c2_runtime();
+  92     int new_state = (successful) ? initialized : failed;
+  93     set_state(new_state);
+  94   }
+  95 }
+  96 
+  97 void C2Compiler::compile_method(ciEnv* env, ciMethod* target, int entry_bci) {
+  98   assert(is_initialized(), "Compiler thread must be initialized");
+  99 
+ 100   bool subsume_loads = SubsumeLoads;
+ 101   bool do_escape_analysis = DoEscapeAnalysis &amp;&amp; !env-&gt;should_retain_local_variables();
+ 102   bool eliminate_boxing = EliminateAutoBox;
+ 103   while (!env-&gt;failing()) {
+ 104     // Attempt to compile while subsuming loads into machine instructions.
+ 105     Compile C(env, this, target, entry_bci, subsume_loads, do_escape_analysis, eliminate_boxing);
+ 106 
+ 107     // Check result and retry if appropriate.
+ 108     if (C.failure_reason() != NULL) {
+ 109       if (C.failure_reason_is(retry_class_loading_during_parsing())) {
+ 110         env-&gt;report_failure(C.failure_reason());
+ 111         continue;  // retry
+ 112       }
+ 113       if (C.failure_reason_is(retry_no_subsuming_loads())) {
+ 114         assert(subsume_loads, "must make progress");
+ 115         subsume_loads = false;
+ 116         env-&gt;report_failure(C.failure_reason());
+ 117         continue;  // retry
+ 118       }
+ 119       if (C.failure_reason_is(retry_no_escape_analysis())) {
+ 120         assert(do_escape_analysis, "must make progress");
+ 121         do_escape_analysis = false;
+ 122         env-&gt;report_failure(C.failure_reason());
+ 123         continue;  // retry
+ 124       }
+ 125       if (C.has_boxed_value()) {
+ 126         // Recompile without boxing elimination regardless failure reason.
+ 127         assert(eliminate_boxing, "must make progress");
+ 128         eliminate_boxing = false;
+ 129         env-&gt;report_failure(C.failure_reason());
+ 130         continue;  // retry
+ 131       }
+ 132       // Pass any other failure reason up to the ciEnv.
+ 133       // Note that serious, irreversible failures are already logged
+ 134       // on the ciEnv via env-&gt;record_method_not_compilable().
+ 135       env-&gt;record_failure(C.failure_reason());
+ 136     }
+ 137     if (StressRecompilation) {
+ 138       if (subsume_loads) {
+ 139         subsume_loads = false;
+ 140         continue;  // retry
+ 141       }
+ 142       if (do_escape_analysis) {
+ 143         do_escape_analysis = false;
+ 144         continue;  // retry
+ 145       }
+ 146     }
+ 147 
+ 148     // print inlining for last compilation only
+ 149     C.dump_print_inlining();
+ 150 
+ 151     // No retry; just break the loop.
+ 152     break;
+ 153   }
+ 154 }
+ 155 
+ 156 void C2Compiler::print_timers() {
+ 157   Compile::print_timers();
+ 158 }
+ 159 
+ 160 bool C2Compiler::is_intrinsic_supported(methodHandle method, bool is_virtual) {
+ 161   vmIntrinsics::ID id = method-&gt;intrinsic_id();
+ 162   assert(id != vmIntrinsics::_none, "must be a VM intrinsic");
+ 163 
+ 164   if (id &lt; vmIntrinsics::FIRST_ID || id &gt; vmIntrinsics::LAST_COMPILER_INLINE) {
+ 165     return false;
+ 166   }
+ 167 
+ 168   // Only Object.hashCode and Object.clone intrinsics implement also a virtual
+ 169   // dispatch because calling both methods is expensive but both methods are
+ 170   // frequently overridden. All other intrinsics implement only a non-virtual
+ 171   // dispatch.
+ 172   if (is_virtual) {
+ 173     switch (id) {
+ 174     case vmIntrinsics::_hashCode:
+ 175     case vmIntrinsics::_clone:
+ 176       break;
+ 177     default:
+ 178       return false;
+ 179     }
+ 180   }
+ 181 
+ 182   switch (id) {
+ 183   case vmIntrinsics::_compareTo:
+ 184     if (!Matcher::match_rule_supported(Op_StrComp)) return false;
+ 185     break;
+ 186   case vmIntrinsics::_equals:
+ 187     if (!Matcher::match_rule_supported(Op_StrEquals)) return false;
+ 188     break;
+ 189   case vmIntrinsics::_equalsC:
+ 190     if (!Matcher::match_rule_supported(Op_AryEq)) return false;
+ 191     break;
+ 192   case vmIntrinsics::_copyMemory:
+ 193     if (StubRoutines::unsafe_arraycopy() == NULL) return false;
+ 194     break;
+ 195   case vmIntrinsics::_encodeISOArray:
+ 196     if (!Matcher::match_rule_supported(Op_EncodeISOArray)) return false;
+ 197     break;
+ 198   case vmIntrinsics::_bitCount_i:
+ 199     if (!Matcher::match_rule_supported(Op_PopCountI)) return false;
+ 200     break;
+ 201   case vmIntrinsics::_bitCount_l:
+ 202     if (!Matcher::match_rule_supported(Op_PopCountL)) return false;
+ 203     break;
+ 204   case vmIntrinsics::_numberOfLeadingZeros_i:
+ 205     if (!Matcher::match_rule_supported(Op_CountLeadingZerosI)) return false;
+ 206     break;
+ 207   case vmIntrinsics::_numberOfLeadingZeros_l:
+ 208     if (!Matcher::match_rule_supported(Op_CountLeadingZerosL)) return false;
+ 209     break;
+ 210   case vmIntrinsics::_numberOfTrailingZeros_i:
+ 211     if (!Matcher::match_rule_supported(Op_CountTrailingZerosI)) return false;
+ 212     break;
+ 213   case vmIntrinsics::_numberOfTrailingZeros_l:
+ 214     if (!Matcher::match_rule_supported(Op_CountTrailingZerosL)) return false;
+ 215     break;
+ 216   case vmIntrinsics::_reverseBytes_c:
+ 217     if (!Matcher::match_rule_supported(Op_ReverseBytesUS)) return false;
+ 218     break;
+ 219   case vmIntrinsics::_reverseBytes_s:
+ 220     if (!Matcher::match_rule_supported(Op_ReverseBytesS)) return false;
+ 221     break;
+ 222   case vmIntrinsics::_reverseBytes_i:
+ 223     if (!Matcher::match_rule_supported(Op_ReverseBytesI)) return false;
+ 224     break;
+ 225   case vmIntrinsics::_reverseBytes_l:
+ 226     if (!Matcher::match_rule_supported(Op_ReverseBytesL)) return false;
+ 227     break;
+ 228   case vmIntrinsics::_compareAndSwapObject:
+ 229 #ifdef _LP64
+ 230     if (!UseCompressedOops &amp;&amp; !Matcher::match_rule_supported(Op_CompareAndSwapP)) return false;
+ 231 #endif
+ 232     break;
+ 233   case vmIntrinsics::_compareAndSwapLong:
+ 234     if (!Matcher::match_rule_supported(Op_CompareAndSwapL)) return false;
+ 235     break;
+ 236   case vmIntrinsics::_getAndAddInt:
+ 237     if (!Matcher::match_rule_supported(Op_GetAndAddI)) return false;
+ 238     break;
+ 239   case vmIntrinsics::_getAndAddLong:
+ 240     if (!Matcher::match_rule_supported(Op_GetAndAddL)) return false;
+ 241     break;
+ 242   case vmIntrinsics::_getAndSetInt:
+ 243     if (!Matcher::match_rule_supported(Op_GetAndSetI)) return false;
+ 244     break;
+ 245   case vmIntrinsics::_getAndSetLong:
+ 246     if (!Matcher::match_rule_supported(Op_GetAndSetL)) return false;
+ 247     break;
+ 248   case vmIntrinsics::_getAndSetObject:
+ 249 #ifdef _LP64
+ 250     if (!UseCompressedOops &amp;&amp; !Matcher::match_rule_supported(Op_GetAndSetP)) return false;
+ 251     if (UseCompressedOops &amp;&amp; !Matcher::match_rule_supported(Op_GetAndSetN)) return false;
+ 252     break;
+ 253 #else
+ 254     if (!Matcher::match_rule_supported(Op_GetAndSetP)) return false;
+ 255     break;
+ 256 #endif
+ 257   case vmIntrinsics::_incrementExactI:
+ 258   case vmIntrinsics::_addExactI:
+ 259     if (!Matcher::match_rule_supported(Op_OverflowAddI)) return false;
+ 260     break;
+ 261   case vmIntrinsics::_incrementExactL:
+ 262   case vmIntrinsics::_addExactL:
+ 263     if (!Matcher::match_rule_supported(Op_OverflowAddL)) return false;
+ 264     break;
+ 265   case vmIntrinsics::_decrementExactI:
+ 266   case vmIntrinsics::_subtractExactI:
+ 267     if (!Matcher::match_rule_supported(Op_OverflowSubI)) return false;
+ 268     break;
+ 269   case vmIntrinsics::_decrementExactL:
+ 270   case vmIntrinsics::_subtractExactL:
+ 271     if (!Matcher::match_rule_supported(Op_OverflowSubL)) return false;
+ 272     break;
+ 273   case vmIntrinsics::_negateExactI:
+ 274     if (!Matcher::match_rule_supported(Op_OverflowSubI)) return false;
+ 275     break;
+ 276   case vmIntrinsics::_negateExactL:
+ 277     if (!Matcher::match_rule_supported(Op_OverflowSubL)) return false;
+ 278     break;
+ 279   case vmIntrinsics::_multiplyExactI:
+ 280     if (!Matcher::match_rule_supported(Op_OverflowMulI)) return false;
+ 281     break;
+ 282   case vmIntrinsics::_multiplyExactL:
+ 283     if (!Matcher::match_rule_supported(Op_OverflowMulL)) return false;
+ 284     break;
+ 285   case vmIntrinsics::_getCallerClass:
+ 286     if (SystemDictionary::reflect_CallerSensitive_klass() == NULL) return false;
+ 287     break;
+ 288   case vmIntrinsics::_hashCode:
+ 289   case vmIntrinsics::_identityHashCode:
+ 290   case vmIntrinsics::_getClass:
+ 291   case vmIntrinsics::_dsin:
+ 292   case vmIntrinsics::_dcos:
+ 293   case vmIntrinsics::_dtan:
+ 294   case vmIntrinsics::_dabs:
+ 295   case vmIntrinsics::_datan2:
+ 296   case vmIntrinsics::_dsqrt:
+ 297   case vmIntrinsics::_dexp:
+ 298   case vmIntrinsics::_dlog:
+ 299   case vmIntrinsics::_dlog10:
+ 300   case vmIntrinsics::_dpow:
+ 301   case vmIntrinsics::_min:
+ 302   case vmIntrinsics::_max:
+ 303   case vmIntrinsics::_arraycopy:
+ 304   case vmIntrinsics::_indexOf:
+ 305   case vmIntrinsics::_getObject:
+ 306   case vmIntrinsics::_getBoolean:
+ 307   case vmIntrinsics::_getByte:
+ 308   case vmIntrinsics::_getShort:
+ 309   case vmIntrinsics::_getChar:
+ 310   case vmIntrinsics::_getInt:
+ 311   case vmIntrinsics::_getLong:
+ 312   case vmIntrinsics::_getFloat:
+ 313   case vmIntrinsics::_getDouble:
+ 314   case vmIntrinsics::_putObject:
+ 315   case vmIntrinsics::_putBoolean:
+ 316   case vmIntrinsics::_putByte:
+ 317   case vmIntrinsics::_putShort:
+ 318   case vmIntrinsics::_putChar:
+ 319   case vmIntrinsics::_putInt:
+ 320   case vmIntrinsics::_putLong:
+ 321   case vmIntrinsics::_putFloat:
+ 322   case vmIntrinsics::_putDouble:
+ 323   case vmIntrinsics::_getByte_raw:
+ 324   case vmIntrinsics::_getShort_raw:
+ 325   case vmIntrinsics::_getChar_raw:
+ 326   case vmIntrinsics::_getInt_raw:
+ 327   case vmIntrinsics::_getLong_raw:
+ 328   case vmIntrinsics::_getFloat_raw:
+ 329   case vmIntrinsics::_getDouble_raw:
+ 330   case vmIntrinsics::_getAddress_raw:
+ 331   case vmIntrinsics::_putByte_raw:
+ 332   case vmIntrinsics::_putShort_raw:
+ 333   case vmIntrinsics::_putChar_raw:
+ 334   case vmIntrinsics::_putInt_raw:
+ 335   case vmIntrinsics::_putLong_raw:
+ 336   case vmIntrinsics::_putFloat_raw:
+ 337   case vmIntrinsics::_putDouble_raw:
+ 338   case vmIntrinsics::_putAddress_raw:
+ 339   case vmIntrinsics::_getObjectVolatile:
+ 340   case vmIntrinsics::_getBooleanVolatile:
+ 341   case vmIntrinsics::_getByteVolatile:
+ 342   case vmIntrinsics::_getShortVolatile:
+ 343   case vmIntrinsics::_getCharVolatile:
+ 344   case vmIntrinsics::_getIntVolatile:
+ 345   case vmIntrinsics::_getLongVolatile:
+ 346   case vmIntrinsics::_getFloatVolatile:
+ 347   case vmIntrinsics::_getDoubleVolatile:
+ 348   case vmIntrinsics::_putObjectVolatile:
+ 349   case vmIntrinsics::_putBooleanVolatile:
+ 350   case vmIntrinsics::_putByteVolatile:
+ 351   case vmIntrinsics::_putShortVolatile:
+ 352   case vmIntrinsics::_putCharVolatile:
+ 353   case vmIntrinsics::_putIntVolatile:
+ 354   case vmIntrinsics::_putLongVolatile:
+ 355   case vmIntrinsics::_putFloatVolatile:
+ 356   case vmIntrinsics::_putDoubleVolatile:
+ 357   case vmIntrinsics::_getShortUnaligned:
+ 358   case vmIntrinsics::_getCharUnaligned:
+ 359   case vmIntrinsics::_getIntUnaligned:
+ 360   case vmIntrinsics::_getLongUnaligned:
+ 361   case vmIntrinsics::_putShortUnaligned:
+ 362   case vmIntrinsics::_putCharUnaligned:
+ 363   case vmIntrinsics::_putIntUnaligned:
+ 364   case vmIntrinsics::_putLongUnaligned:
+ 365   case vmIntrinsics::_compareAndSwapInt:
+ 366   case vmIntrinsics::_putOrderedObject:
+ 367   case vmIntrinsics::_putOrderedInt:
+ 368   case vmIntrinsics::_putOrderedLong:
+ 369   case vmIntrinsics::_loadFence:
+ 370   case vmIntrinsics::_storeFence:
+ 371   case vmIntrinsics::_fullFence:
+ 372   case vmIntrinsics::_currentThread:
+ 373   case vmIntrinsics::_isInterrupted:
+<a name="1" id="anc1"></a><span class="new"> 374   case vmIntrinsics::_spinLoopHint:</span>
+ 375 #ifdef TRACE_HAVE_INTRINSICS
+ 376   case vmIntrinsics::_classID:
+ 377   case vmIntrinsics::_threadID:
+ 378   case vmIntrinsics::_counterTime:
+ 379 #endif
+ 380   case vmIntrinsics::_currentTimeMillis:
+ 381   case vmIntrinsics::_nanoTime:
+ 382   case vmIntrinsics::_allocateInstance:
+ 383   case vmIntrinsics::_newArray:
+ 384   case vmIntrinsics::_getLength:
+ 385   case vmIntrinsics::_copyOf:
+ 386   case vmIntrinsics::_copyOfRange:
+ 387   case vmIntrinsics::_clone:
+ 388   case vmIntrinsics::_isAssignableFrom:
+ 389   case vmIntrinsics::_isInstance:
+ 390   case vmIntrinsics::_getModifiers:
+ 391   case vmIntrinsics::_isInterface:
+ 392   case vmIntrinsics::_isArray:
+ 393   case vmIntrinsics::_isPrimitive:
+ 394   case vmIntrinsics::_getSuperclass:
+ 395   case vmIntrinsics::_getClassAccessFlags:
+ 396   case vmIntrinsics::_floatToRawIntBits:
+ 397   case vmIntrinsics::_floatToIntBits:
+ 398   case vmIntrinsics::_intBitsToFloat:
+ 399   case vmIntrinsics::_doubleToRawLongBits:
+ 400   case vmIntrinsics::_doubleToLongBits:
+ 401   case vmIntrinsics::_longBitsToDouble:
+ 402   case vmIntrinsics::_Reference_get:
+ 403   case vmIntrinsics::_Class_cast:
+ 404   case vmIntrinsics::_aescrypt_encryptBlock:
+ 405   case vmIntrinsics::_aescrypt_decryptBlock:
+ 406   case vmIntrinsics::_cipherBlockChaining_encryptAESCrypt:
+ 407   case vmIntrinsics::_cipherBlockChaining_decryptAESCrypt:
+ 408   case vmIntrinsics::_sha_implCompress:
+ 409   case vmIntrinsics::_sha2_implCompress:
+ 410   case vmIntrinsics::_sha5_implCompress:
+ 411   case vmIntrinsics::_digestBase_implCompressMB:
+ 412   case vmIntrinsics::_multiplyToLen:
+ 413   case vmIntrinsics::_squareToLen:
+ 414   case vmIntrinsics::_mulAdd:
+ 415   case vmIntrinsics::_montgomeryMultiply:
+ 416   case vmIntrinsics::_montgomerySquare:
+ 417   case vmIntrinsics::_ghash_processBlocks:
+ 418   case vmIntrinsics::_updateCRC32:
+ 419   case vmIntrinsics::_updateBytesCRC32:
+ 420   case vmIntrinsics::_updateByteBufferCRC32:
+ 421   case vmIntrinsics::_updateBytesCRC32C:
+ 422   case vmIntrinsics::_updateDirectByteBufferCRC32C:
+ 423   case vmIntrinsics::_updateBytesAdler32:
+ 424   case vmIntrinsics::_updateByteBufferAdler32:
+ 425   case vmIntrinsics::_profileBoolean:
+ 426   case vmIntrinsics::_isCompileConstant:
+ 427     break;
+ 428   default:
+ 429     return false;
+ 430   }
+ 431   return true;
+ 432 }
+ 433 
+ 434 int C2Compiler::initial_code_buffer_size() {
+ 435   assert(SegmentedCodeCache, "Should be only used with a segmented code cache");
+ 436   return Compile::MAX_inst_size + Compile::MAX_locs_size + initial_const_capacity;
+ 437 }
+<a name="2" id="anc2"></a><b style="font-size: large; color: red">--- EOF ---</b>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</pre><form name="eof"><input name="value" value="2" type="hidden" /></form></body></html>

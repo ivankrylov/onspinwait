@@ -84,35 +84,20 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
         <a class="print" href="javascript:print()">Print this page</a>
 <pre></pre>
         <pre>
-<hr /><span class="oldmarker">*** 581,590 ****</span>
-<span class="newmarker">--- 581,592 ----</span>
-    template(addThreadDumpForMonitors_name,              "addThreadDumpForMonitors")                                \
-    template(addThreadDumpForSynchronizers_name,         "addThreadDumpForSynchronizers")                           \
-    template(addThreadDumpForMonitors_signature,         "(Ljava/lang/management/ThreadInfo;[Ljava/lang/Object;[I)V") \
-    template(addThreadDumpForSynchronizers_signature,    "(Ljava/lang/management/ThreadInfo;[Ljava/lang/Object;)V")   \
-                                                                                                                    \
-<span class="new">+   template(org_performance_Hints,                      "org/performancehints/SpinHint")                           \</span>
-<span class="new">+                                                                                                                   \</span>
-    /* JVMTI/java.lang.instrument support and VM Attach mechanism */                                                \
-    template(sun_misc_VMSupport,                         "sun/misc/VMSupport")                                      \
-    template(appendToClassPathForInstrumentation_name,   "appendToClassPathForInstrumentation")                     \
-    do_alias(appendToClassPathForInstrumentation_signature, string_void_signature)                                  \
-    template(serializePropertiesToByteArray_name,        "serializePropertiesToByteArray")                          \
-<hr /><span class="oldmarker">*** 892,901 ****</span>
-<span class="newmarker">--- 894,907 ----</span>
-     do_alias(    storeFence_signature,                             void_method_signature)                                \
-    do_intrinsic(_fullFence,                sun_misc_Unsafe,        fullFence_name, fullFence_signature,           F_RN)  \
-     do_name(     fullFence_name,                                  "fullFence")                                           \
-     do_alias(    fullFence_signature,                              void_method_signature)                                \
-                                                                                                                          \
-<span class="new">+   do_intrinsic(_spinLoopHint,             org_performance_Hints,  spinLoopHint_name, spinLoopHint_signature,     F_S)   \</span>
+<hr /><span class="oldmarker">*** 785,794 ****</span>
+<span class="newmarker">--- 785,797 ----</span>
+     do_name(     isInterrupted_name,                              "isInterrupted")                                       \
+     do_signature(isInterrupted_signature,                         "(Z)Z")                                                \
+    do_intrinsic(_currentThread,            java_lang_Thread,       currentThread_name, currentThread_signature,   F_S)   \
+     do_name(     currentThread_name,                              "currentThread")                                       \
+     do_signature(currentThread_signature,                         "()Ljava/lang/Thread;")                                \
+<span class="new">+   do_intrinsic(_spinLoopHint,             java_lang_Thread,       spinLoopHint_name, spinLoopHint_signature,     F_S)   \</span>
 <span class="new">+    do_name(     spinLoopHint_name,                               "spinLoopHint")                                        \</span>
 <span class="new">+    do_alias(    spinLoopHint_signature,                           void_method_signature)                                \</span>
-<span class="new">+                                                                                                                         \</span>
-    /* Custom branch frequencies profiling support for JSR292 */                                                          \
-    do_class(java_lang_invoke_MethodHandleImpl,               "java/lang/invoke/MethodHandleImpl")                        \
-    do_intrinsic(_profileBoolean, java_lang_invoke_MethodHandleImpl, profileBoolean_name, profileBoolean_signature, F_S)  \
-     do_name(     profileBoolean_name,                             "profileBoolean")                                      \
-     do_signature(profileBoolean_signature,                        "(Z[I)Z")                                              \
+                                                                                                                          \
+    /* reflective intrinsics, for java/lang/Class, etc. */                                                                \
+    do_intrinsic(_isAssignableFrom,         java_lang_Class,        isAssignableFrom_name, class_boolean_signature, F_RN) \
+     do_name(     isAssignableFrom_name,                           "isAssignableFrom")                                    \
+    do_intrinsic(_isInstance,               java_lang_Class,        isInstance_name, object_boolean_signature,     F_RN)  \
 </pre></body></html>
 

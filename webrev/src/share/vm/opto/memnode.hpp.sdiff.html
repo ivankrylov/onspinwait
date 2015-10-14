@@ -87,26 +87,26 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
 <td><pre>
 
 </pre><hr></hr><pre>
-1056 // Ordering between a volatile store and a following volatile load.
-1057 // Requires multi-CPU visibility?
-1058 class MemBarVolatileNode: public MemBarNode {
-1059 public:
-1060   MemBarVolatileNode(Compile* C, int alias_idx, Node* precedent)
-1061     : MemBarNode(C, alias_idx, precedent) {}
-1062   virtual int Opcode() const;
-1063 };
-1064 
-1065 // Ordering within the same CPU.  Used to order unsafe memory references
-1066 // inside the compiler when we lack alias info.  Not needed "outside" the
-1067 // compiler because the CPU does all the ordering for us.
-1068 class MemBarCPUOrderNode: public MemBarNode {
-1069 public:
-1070   MemBarCPUOrderNode(Compile* C, int alias_idx, Node* precedent)
-1071     : MemBarNode(C, alias_idx, precedent) {}
-1072   virtual int Opcode() const;
-1073   virtual uint ideal_reg() const { return 0; } // not matched in the AD file
-1074 };
-1075 
+1058 // Ordering between a volatile store and a following volatile load.
+1059 // Requires multi-CPU visibility?
+1060 class MemBarVolatileNode: public MemBarNode {
+1061 public:
+1062   MemBarVolatileNode(Compile* C, int alias_idx, Node* precedent)
+1063     : MemBarNode(C, alias_idx, precedent) {}
+1064   virtual int Opcode() const;
+1065 };
+1066 
+1067 // Ordering within the same CPU.  Used to order unsafe memory references
+1068 // inside the compiler when we lack alias info.  Not needed "outside" the
+1069 // compiler because the CPU does all the ordering for us.
+1070 class MemBarCPUOrderNode: public MemBarNode {
+1071 public:
+1072   MemBarCPUOrderNode(Compile* C, int alias_idx, Node* precedent)
+1073     : MemBarNode(C, alias_idx, precedent) {}
+1074   virtual int Opcode() const;
+1075   virtual uint ideal_reg() const { return 0; } // not matched in the AD file
+1076 };
+1077 
 
 
 
@@ -114,78 +114,78 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
 
 
 
-1076 // Isolation of object setup after an AllocateNode and before next safepoint.
-1077 // (See comment in memnode.cpp near InitializeNode::InitializeNode for semantics.)
-1078 class InitializeNode: public MemBarNode {
-1079   friend class AllocateNode;
-1080 
-1081   enum {
-1082     Incomplete    = 0,
-1083     Complete      = 1,
-1084     WithArraycopy = 2
-1085   };
-1086   int _is_complete;
-1087 
-1088   bool _does_not_escape;
+1078 // Isolation of object setup after an AllocateNode and before next safepoint.
+1079 // (See comment in memnode.cpp near InitializeNode::InitializeNode for semantics.)
+1080 class InitializeNode: public MemBarNode {
+1081   friend class AllocateNode;
+1082 
+1083   enum {
+1084     Incomplete    = 0,
+1085     Complete      = 1,
+1086     WithArraycopy = 2
+1087   };
+1088   int _is_complete;
 1089 
-1090 public:
-1091   enum {
-1092     Control    = TypeFunc::Control,
-1093     Memory     = TypeFunc::Memory,     // MergeMem for states affected by this op
-1094     RawAddress = TypeFunc::Parms+0,    // the newly-allocated raw address
-1095     RawStores  = TypeFunc::Parms+1     // zero or more stores (or TOP)
+1090   bool _does_not_escape;
+1091 
+1092 public:
+1093   enum {
+1094     Control    = TypeFunc::Control,
+1095     Memory     = TypeFunc::Memory,     // MergeMem for states affected by this op
+1096     RawAddress = TypeFunc::Parms+0,    // the newly-allocated raw address
+1097     RawStores  = TypeFunc::Parms+1     // zero or more stores (or TOP)
 
 </pre><hr></hr>
 </pre></td><td><pre>
 
 </pre><hr></hr><pre>
-1056 // Ordering between a volatile store and a following volatile load.
-1057 // Requires multi-CPU visibility?
-1058 class MemBarVolatileNode: public MemBarNode {
-1059 public:
-1060   MemBarVolatileNode(Compile* C, int alias_idx, Node* precedent)
-1061     : MemBarNode(C, alias_idx, precedent) {}
-1062   virtual int Opcode() const;
-1063 };
-1064 
-1065 // Ordering within the same CPU.  Used to order unsafe memory references
-1066 // inside the compiler when we lack alias info.  Not needed "outside" the
-1067 // compiler because the CPU does all the ordering for us.
-1068 class MemBarCPUOrderNode: public MemBarNode {
-1069 public:
-1070   MemBarCPUOrderNode(Compile* C, int alias_idx, Node* precedent)
-1071     : MemBarNode(C, alias_idx, precedent) {}
-1072   virtual int Opcode() const;
-1073   virtual uint ideal_reg() const { return 0; } // not matched in the AD file
-1074 };
-1075 
-<span class="new">1076 class SpinLoopHintNode: public MemBarNode {</span>
-<span class="new">1077 public:</span>
-<span class="new">1078   SpinLoopHintNode(Compile* C, int alias_idx, Node* precedent)</span>
-<span class="new">1079     : MemBarNode(C, alias_idx, precedent) {}</span>
-<span class="new">1080   virtual int Opcode() const;</span>
-<span class="new">1081 };</span>
-<span class="new">1082 </span>
-1083 // Isolation of object setup after an AllocateNode and before next safepoint.
-1084 // (See comment in memnode.cpp near InitializeNode::InitializeNode for semantics.)
-1085 class InitializeNode: public MemBarNode {
-1086   friend class AllocateNode;
-1087 
-1088   enum {
-1089     Incomplete    = 0,
-1090     Complete      = 1,
-1091     WithArraycopy = 2
-1092   };
-1093   int _is_complete;
-1094 
-1095   bool _does_not_escape;
+1058 // Ordering between a volatile store and a following volatile load.
+1059 // Requires multi-CPU visibility?
+1060 class MemBarVolatileNode: public MemBarNode {
+1061 public:
+1062   MemBarVolatileNode(Compile* C, int alias_idx, Node* precedent)
+1063     : MemBarNode(C, alias_idx, precedent) {}
+1064   virtual int Opcode() const;
+1065 };
+1066 
+1067 // Ordering within the same CPU.  Used to order unsafe memory references
+1068 // inside the compiler when we lack alias info.  Not needed "outside" the
+1069 // compiler because the CPU does all the ordering for us.
+1070 class MemBarCPUOrderNode: public MemBarNode {
+1071 public:
+1072   MemBarCPUOrderNode(Compile* C, int alias_idx, Node* precedent)
+1073     : MemBarNode(C, alias_idx, precedent) {}
+1074   virtual int Opcode() const;
+1075   virtual uint ideal_reg() const { return 0; } // not matched in the AD file
+1076 };
+1077 
+<span class="new">1078 class SpinLoopHintNode: public MemBarNode {</span>
+<span class="new">1079 public:</span>
+<span class="new">1080   SpinLoopHintNode(Compile* C, int alias_idx, Node* precedent)</span>
+<span class="new">1081     : MemBarNode(C, alias_idx, precedent) {}</span>
+<span class="new">1082   virtual int Opcode() const;</span>
+<span class="new">1083 };</span>
+<span class="new">1084 </span>
+1085 // Isolation of object setup after an AllocateNode and before next safepoint.
+1086 // (See comment in memnode.cpp near InitializeNode::InitializeNode for semantics.)
+1087 class InitializeNode: public MemBarNode {
+1088   friend class AllocateNode;
+1089 
+1090   enum {
+1091     Incomplete    = 0,
+1092     Complete      = 1,
+1093     WithArraycopy = 2
+1094   };
+1095   int _is_complete;
 1096 
-1097 public:
-1098   enum {
-1099     Control    = TypeFunc::Control,
-1100     Memory     = TypeFunc::Memory,     // MergeMem for states affected by this op
-1101     RawAddress = TypeFunc::Parms+0,    // the newly-allocated raw address
-1102     RawStores  = TypeFunc::Parms+1     // zero or more stores (or TOP)
+1097   bool _does_not_escape;
+1098 
+1099 public:
+1100   enum {
+1101     Control    = TypeFunc::Control,
+1102     Memory     = TypeFunc::Memory,     // MergeMem for states affected by this op
+1103     RawAddress = TypeFunc::Parms+0,    // the newly-allocated raw address
+1104     RawStores  = TypeFunc::Parms+1     // zero or more stores (or TOP)
 
 </pre><hr></hr>
 </pre></td>

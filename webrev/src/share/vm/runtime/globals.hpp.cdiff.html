@@ -84,12 +84,12 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
         <a class="print" href="javascript:print()">Print this page</a>
 <pre></pre>
         <pre>
-<hr /><span class="oldmarker">*** 849,858 ****</span>
-<span class="newmarker">--- 849,861 ----</span>
-            "use intrinsics for java.util.zip.CRC32")                         \
+<hr /><span class="oldmarker">*** 836,845 ****</span>
+<span class="newmarker">--- 836,848 ----</span>
+            "use intrinsics for java.util.zip.Adler32")                       \
                                                                               \
-    product(bool, UseCRC32CIntrinsics, false,                                 \
-            "use intrinsics for java.util.zip.CRC32C")                        \
+    diagnostic(ccstrlist, DisableIntrinsic, "",                               \
+           "do not expand intrinsics whose (internal) names appear here")     \
                                                                               \
 <span class="new">+   product(bool, UseSpinLoopHintIntrinsic, false,                            \</span>
 <span class="new">+           "Use intrinsics for spinLoopHint")                                \</span>

@@ -93,7 +93,7 @@ span.new {
 <pre></pre>
         <pre>
 </pre><hr /><pre>
-<span class="newmarker">@@ -267,10 +267,11 @@</span>
+<span class="newmarker">@@ -269,10 +269,11 @@</span>
  
    typedef enum { LS_xadd, LS_xchg, LS_cmpxchg } LoadStoreKind;
    bool inline_unsafe_load_store(BasicType type,  LoadStoreKind kind);
@@ -106,23 +106,7 @@ span.new {
    bool inline_Class_cast();
    bool inline_aescrypt_Block(vmIntrinsics::ID id);
 </pre><hr /><pre>
-<span class="newmarker">@@ -506,10 +507,14 @@</span>
- 
-   case vmIntrinsics::_mulAdd:
-     if (!UseMulAddIntrinsic) return NULL;
-     break;
- 
-<span class="new">+  case vmIntrinsics::_spinLoopHint:</span>
-<span class="new">+    if (!UseSpinLoopHintIntrinsic) return NULL;</span>
-<span class="new">+    break;</span>
-<span class="new">+</span>
-   case vmIntrinsics::_cipherBlockChaining_encryptAESCrypt:
-   case vmIntrinsics::_cipherBlockChaining_decryptAESCrypt:
-     if (!UseAESIntrinsics) return NULL;
-     // these two require the predicated logic
-     predicates = 1;
-</pre><hr /><pre>
-<span class="newmarker">@@ -863,10 +868,12 @@</span>
+<span class="newmarker">@@ -599,10 +600,12 @@</span>
  
    case vmIntrinsics::_loadFence:
    case vmIntrinsics::_storeFence:
@@ -136,7 +120,7 @@ span.new {
  #ifdef TRACE_HAVE_INTRINSICS
    case vmIntrinsics::_classID:                  return inline_native_classID();
 </pre><hr /><pre>
-<span class="newmarker">@@ -3083,10 +3090,15 @@</span>
+<span class="newmarker">@@ -2872,10 +2875,15 @@</span>
        fatal_unexpected_iid(id);
        return false;
    }
@@ -152,5 +136,20 @@ span.new {
      return true;
    }
    const TypeKlassPtr* klsptr = kls-&gt;bottom_type()-&gt;isa_klassptr();
+</pre><hr /><pre>
+<span class="newmarker">@@ -3255,10 +3263,13 @@</span>
+   case vmIntrinsics::_isInstance:
+     // nothing is an instance of a primitive type
+     query_value = gen_instanceof(obj, kls, safe_for_replace);
+     break;
+ 
+<span class="new">+  case vmIntrinsics::_spinLoopHint:</span>
+<span class="new">+    break;</span>
+<span class="new">+</span>
+   case vmIntrinsics::_getModifiers:
+     p = basic_plus_adr(kls, in_bytes(Klass::modifier_flags_offset()));
+     query_value = make_load(NULL, p, TypeInt::INT, T_INT, MemNode::unordered);
+     break;
+ 
 </pre></body></html>
 

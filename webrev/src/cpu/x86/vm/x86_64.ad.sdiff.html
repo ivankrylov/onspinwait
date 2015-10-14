@@ -87,26 +87,26 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
 <td><pre>
 
 </pre><hr></hr><pre>
-6287   match(StoreFence);
-6288   ins_cost(0);
-6289 
-6290   size(0);
-6291   format %{ "MEMBAR-release ! (empty encoding)" %}
-6292   ins_encode();
-6293   ins_pipe(empty);
-6294 %}
-6295 
-6296 instruct membar_release_lock()
-6297 %{
-6298   match(MemBarReleaseLock);
-6299   ins_cost(0);
-6300 
-6301   size(0);
-6302   format %{ "MEMBAR-release (a FastUnlock follows so empty encoding)" %}
-6303   ins_encode();
-6304   ins_pipe(empty);
-6305 %}
-6306 
+6291   match(StoreFence);
+6292   ins_cost(0);
+6293 
+6294   size(0);
+6295   format %{ "MEMBAR-release ! (empty encoding)" %}
+6296   ins_encode();
+6297   ins_pipe(empty);
+6298 %}
+6299 
+6300 instruct membar_release_lock()
+6301 %{
+6302   match(MemBarReleaseLock);
+6303   ins_cost(0);
+6304 
+6305   size(0);
+6306   format %{ "MEMBAR-release (a FastUnlock follows so empty encoding)" %}
+6307   ins_encode();
+6308   ins_pipe(empty);
+6309 %}
+6310 
 
 
 
@@ -126,90 +126,90 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
 
 
 
-6307 instruct membar_volatile(rFlagsReg cr) %{
-6308   match(MemBarVolatile);
-6309   effect(KILL cr);
-6310   ins_cost(400);
-6311 
-6312   format %{
-6313     $$template
-6314     if (os::is_MP()) {
-6315       $$emit$$"lock addl [rsp + #0], 0\t! membar_volatile"
-6316     } else {
-6317       $$emit$$"MEMBAR-volatile ! (empty encoding)"
-6318     }
-6319   %}
-6320   ins_encode %{
-6321     __ membar(Assembler::StoreLoad);
-6322   %}
-6323   ins_pipe(pipe_slow);
-6324 %}
-6325 
-6326 instruct unnecessary_membar_volatile()
+6311 instruct membar_volatile(rFlagsReg cr) %{
+6312   match(MemBarVolatile);
+6313   effect(KILL cr);
+6314   ins_cost(400);
+6315 
+6316   format %{
+6317     $$template
+6318     if (os::is_MP()) {
+6319       $$emit$$"lock addl [rsp + #0], 0\t! membar_volatile"
+6320     } else {
+6321       $$emit$$"MEMBAR-volatile ! (empty encoding)"
+6322     }
+6323   %}
+6324   ins_encode %{
+6325     __ membar(Assembler::StoreLoad);
+6326   %}
+6327   ins_pipe(pipe_slow);
+6328 %}
+6329 
+6330 instruct unnecessary_membar_volatile()
 
 </pre><hr></hr>
 </pre></td><td><pre>
 
 </pre><hr></hr><pre>
-6287   match(StoreFence);
-6288   ins_cost(0);
-6289 
-6290   size(0);
-6291   format %{ "MEMBAR-release ! (empty encoding)" %}
-6292   ins_encode();
-6293   ins_pipe(empty);
-6294 %}
-6295 
-6296 instruct membar_release_lock()
-6297 %{
-6298   match(MemBarReleaseLock);
-6299   ins_cost(0);
-6300 
-6301   size(0);
-6302   format %{ "MEMBAR-release (a FastUnlock follows so empty encoding)" %}
-6303   ins_encode();
-6304   ins_pipe(empty);
-6305 %}
-6306 
-<span class="new">6307 instruct spinloophint()</span>
-<span class="new">6308 %{</span>
-<span class="new">6309   match(SpinLoopHint);</span>
-<span class="new">6310   ins_cost(200);</span>
-<span class="new">6311 </span>
-<span class="new">6312   format %{</span>
-<span class="new">6313     $$template</span>
-<span class="new">6314     if (os::is_MP()) {</span>
-<span class="new">6315       $$emit$$"pause\t! membar_spinloophint"</span>
-<span class="new">6316     } else {</span>
-<span class="new">6317       $$emit$$"MEMBAR-spinloophint ! (empty encoding)"</span>
-<span class="new">6318     }</span>
-<span class="new">6319   %}</span>
-<span class="new">6320   ins_encode %{</span>
-<span class="new">6321     __ pause();</span>
-<span class="new">6322   %}</span>
-<span class="new">6323   ins_pipe(pipe_slow);</span>
-<span class="new">6324 %}</span>
-<span class="new">6325 </span>
-6326 instruct membar_volatile(rFlagsReg cr) %{
-6327   match(MemBarVolatile);
-6328   effect(KILL cr);
-6329   ins_cost(400);
-6330 
-6331   format %{
-6332     $$template
-6333     if (os::is_MP()) {
-6334       $$emit$$"lock addl [rsp + #0], 0\t! membar_volatile"
-6335     } else {
-6336       $$emit$$"MEMBAR-volatile ! (empty encoding)"
-6337     }
-6338   %}
-6339   ins_encode %{
-6340     __ membar(Assembler::StoreLoad);
-6341   %}
-6342   ins_pipe(pipe_slow);
-6343 %}
-6344 
-6345 instruct unnecessary_membar_volatile()
+6291   match(StoreFence);
+6292   ins_cost(0);
+6293 
+6294   size(0);
+6295   format %{ "MEMBAR-release ! (empty encoding)" %}
+6296   ins_encode();
+6297   ins_pipe(empty);
+6298 %}
+6299 
+6300 instruct membar_release_lock()
+6301 %{
+6302   match(MemBarReleaseLock);
+6303   ins_cost(0);
+6304 
+6305   size(0);
+6306   format %{ "MEMBAR-release (a FastUnlock follows so empty encoding)" %}
+6307   ins_encode();
+6308   ins_pipe(empty);
+6309 %}
+6310 
+<span class="new">6311 instruct spinloophint()</span>
+<span class="new">6312 %{</span>
+<span class="new">6313   match(SpinLoopHint);</span>
+<span class="new">6314   ins_cost(200);</span>
+<span class="new">6315 </span>
+<span class="new">6316   format %{</span>
+<span class="new">6317     $$template</span>
+<span class="new">6318     if (os::is_MP()) {</span>
+<span class="new">6319       $$emit$$"pause\t! membar_spinloophint"</span>
+<span class="new">6320     } else {</span>
+<span class="new">6321       $$emit$$"MEMBAR-spinloophint ! (empty encoding)"</span>
+<span class="new">6322     }</span>
+<span class="new">6323   %}</span>
+<span class="new">6324   ins_encode %{</span>
+<span class="new">6325     __ pause();</span>
+<span class="new">6326   %}</span>
+<span class="new">6327   ins_pipe(pipe_slow);</span>
+<span class="new">6328 %}</span>
+<span class="new">6329 </span>
+6330 instruct membar_volatile(rFlagsReg cr) %{
+6331   match(MemBarVolatile);
+6332   effect(KILL cr);
+6333   ins_cost(400);
+6334 
+6335   format %{
+6336     $$template
+6337     if (os::is_MP()) {
+6338       $$emit$$"lock addl [rsp + #0], 0\t! membar_volatile"
+6339     } else {
+6340       $$emit$$"MEMBAR-volatile ! (empty encoding)"
+6341     }
+6342   %}
+6343   ins_encode %{
+6344     __ membar(Assembler::StoreLoad);
+6345   %}
+6346   ins_pipe(pipe_slow);
+6347 %}
+6348 
+6349 instruct unnecessary_membar_volatile()
 
 </pre><hr></hr>
 </pre></td>

@@ -93,10 +93,10 @@ span.new {
 <pre></pre>
         <pre>
 </pre><hr /><pre>
-<span class="newmarker">@@ -379,10 +379,16 @@</span>
-   } else if (UseCRC32CIntrinsics) {
-     warning("CRC32C instruction is not available on this CPU");
-     FLAG_SET_DEFAULT(UseCRC32CIntrinsics, false);
+<span class="newmarker">@@ -363,10 +363,16 @@</span>
+   } else if (UseAdler32Intrinsics) {
+     warning("SPARC Adler32 intrinsics require VIS3 instruction support. Intrinsics will be disabled.");
+     FLAG_SET_DEFAULT(UseAdler32Intrinsics, false);
    }
  
 <span class="new">+  if (UseSpinLoopHintIntrinsic) {</span>

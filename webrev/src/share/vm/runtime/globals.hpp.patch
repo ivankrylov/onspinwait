@@ -1,8 +1,8 @@
---- old/src/share/vm/runtime/globals.hpp	2015-07-20 21:11:26.146165300 +0300
-+++ new/src/share/vm/runtime/globals.hpp	2015-07-20 21:11:25.895991900 +0300
-@@ -851,6 +851,9 @@
-   product(bool, UseCRC32CIntrinsics, false,                                 \
-           "use intrinsics for java.util.zip.CRC32C")                        \
+--- old/src/share/vm/runtime/globals.hpp	2015-10-14 14:23:27.000000000 +0300
++++ new/src/share/vm/runtime/globals.hpp	2015-10-14 14:23:27.000000000 +0300
+@@ -838,6 +838,9 @@
+   diagnostic(ccstrlist, DisableIntrinsic, "",                               \
+          "do not expand intrinsics whose (internal) names appear here")     \
                                                                              \
 +  product(bool, UseSpinLoopHintIntrinsic, false,                            \
 +          "Use intrinsics for spinLoopHint")                                \

@@ -85,27 +85,6 @@ void VM_Version::initialize() {
   _supports_cx8 = has_v9();
   _supports_atomic_getset4 = true; // swap instruction
 
-  // There are Fujitsu Sparc64 CPUs which support blk_init as well so
-  // we have to take this check out of the 'is_niagara()' block below.
-  if (has_blk_init()) {
-    // When using CMS or G1, we cannot use memset() in BOT updates
-    // because the sun4v/CMT version in libc_psr uses BIS which
-    // exposes "phantom zeros" to concurrent readers. See 6948537.
-    if (FLAG_IS_DEFAULT(UseMemSetInBOT) && (UseConcMarkSweepGC || UseG1GC)) {
-      FLAG_SET_DEFAULT(UseMemSetInBOT, false);
-    }
-    // Issue a stern warning if the user has explicitly set
-    // UseMemSetInBOT (it is known to cause issues), but allow
-    // use for experimentation and debugging.
-    if (UseConcMarkSweepGC || UseG1GC) {
-      if (UseMemSetInBOT) {
-        assert(!FLAG_IS_DEFAULT(UseMemSetInBOT), "Error");
-        warning("Experimental flag -XX:+UseMemSetInBOT is known to cause instability"
-                " on sun4v; please understand that you are using at your own risk!");
-      }
-    }
-  }
-
   if (is_niagara()) {
     // Indirect branch is the same cost as direct
     if (FLAG_IS_DEFAULT(UseInlineCaches)) {
@@ -308,7 +287,7 @@ void VM_Version::initialize() {
     }
   } else if (UseGHASHIntrinsics) {
     if (!FLAG_IS_DEFAULT(UseGHASHIntrinsics))
-      warning("GHASH intrinsics require VIS3 insructions support. Intriniscs will be disabled");
+      warning("GHASH intrinsics require VIS3 instruction support. Intrinsics will be disabled");
     FLAG_SET_DEFAULT(UseGHASHIntrinsics, false);
   }
 
@@ -329,39 +308,35 @@ void VM_Version::initialize() {
     FLAG_SET_DEFAULT(UseSHA, false);
   }
 
-  if (!UseSHA) {
+  if (UseSHA && has_sha1()) {
+    if (FLAG_IS_DEFAULT(UseSHA1Intrinsics)) {
+      FLAG_SET_DEFAULT(UseSHA1Intrinsics, true);
+    }
+  } else if (UseSHA1Intrinsics) {
+    warning("Intrinsics for SHA-1 crypto hash functions not available on this CPU.");
     FLAG_SET_DEFAULT(UseSHA1Intrinsics, false);
-    FLAG_SET_DEFAULT(UseSHA256Intrinsics, false);
-    FLAG_SET_DEFAULT(UseSHA512Intrinsics, false);
-  } else {
-    if (has_sha1()) {
-      if (FLAG_IS_DEFAULT(UseSHA1Intrinsics)) {
-        FLAG_SET_DEFAULT(UseSHA1Intrinsics, true);
-      }
-    } else if (UseSHA1Intrinsics) {
-      warning("SHA1 instruction is not available on this CPU.");
-      FLAG_SET_DEFAULT(UseSHA1Intrinsics, false);
-    }
-    if (has_sha256()) {
-      if (FLAG_IS_DEFAULT(UseSHA256Intrinsics)) {
-        FLAG_SET_DEFAULT(UseSHA256Intrinsics, true);
-      }
-    } else if (UseSHA256Intrinsics) {
-      warning("SHA256 instruction (for SHA-224 and SHA-256) is not available on this CPU.");
-      FLAG_SET_DEFAULT(UseSHA256Intrinsics, false);
-    }
+  }
 
-    if (has_sha512()) {
-      if (FLAG_IS_DEFAULT(UseSHA512Intrinsics)) {
-        FLAG_SET_DEFAULT(UseSHA512Intrinsics, true);
-      }
-    } else if (UseSHA512Intrinsics) {
-      warning("SHA512 instruction (for SHA-384 and SHA-512) is not available on this CPU.");
-      FLAG_SET_DEFAULT(UseSHA512Intrinsics, false);
+  if (UseSHA && has_sha256()) {
+    if (FLAG_IS_DEFAULT(UseSHA256Intrinsics)) {
+      FLAG_SET_DEFAULT(UseSHA256Intrinsics, true);
     }
-    if (!(UseSHA1Intrinsics || UseSHA256Intrinsics || UseSHA512Intrinsics)) {
-      FLAG_SET_DEFAULT(UseSHA, false);
+  } else if (UseSHA256Intrinsics) {
+    warning("Intrinsics for SHA-224 and SHA-256 crypto hash functions not available on this CPU.");
+    FLAG_SET_DEFAULT(UseSHA256Intrinsics, false);
+  }
+
+  if (UseSHA && has_sha512()) {
+    if (FLAG_IS_DEFAULT(UseSHA512Intrinsics)) {
+      FLAG_SET_DEFAULT(UseSHA512Intrinsics, true);
     }
+  } else if (UseSHA512Intrinsics) {
+    warning("Intrinsics for SHA-384 and SHA-512 crypto hash functions not available on this CPU.");
+    FLAG_SET_DEFAULT(UseSHA512Intrinsics, false);
+  }
+
+  if (!(UseSHA1Intrinsics || UseSHA256Intrinsics || UseSHA512Intrinsics)) {
+    FLAG_SET_DEFAULT(UseSHA, false);
   }
 
   // SPARC T4 and above should have support for CRC32C instruction
@@ -379,6 +354,15 @@ void VM_Version::initialize() {
   } else if (UseCRC32CIntrinsics) {
     warning("CRC32C instruction is not available on this CPU");
     FLAG_SET_DEFAULT(UseCRC32CIntrinsics, false);
+  }
+
+  if (UseVIS > 2) {
+    if (FLAG_IS_DEFAULT(UseAdler32Intrinsics)) {
+      FLAG_SET_DEFAULT(UseAdler32Intrinsics, true);
+    }
+  } else if (UseAdler32Intrinsics) {
+    warning("SPARC Adler32 intrinsics require VIS3 instruction support. Intrinsics will be disabled.");
+    FLAG_SET_DEFAULT(UseAdler32Intrinsics, false);
   }
 
   if (FLAG_IS_DEFAULT(ContendedPaddingWidth) &&
