@@ -1,0 +1,15 @@
+--- old/src/cpu/sparc/vm/vm_version_sparc.cpp	2015-11-30 17:23:03.648785715 +0300
++++ new/src/cpu/sparc/vm/vm_version_sparc.cpp	2015-11-30 17:23:03.568785717 +0300
+@@ -347,6 +347,12 @@
+     FLAG_SET_DEFAULT(UseAdler32Intrinsics, false);
+   }
+ 
++  if (UseSpinLoopHintIntrinsic) {
++    if (!FLAG_IS_DEFAULT(UseSpinLoopHintIntrinsic))
++      warning("spinLoopHint intrinsic is not available on this CPU");
++    FLAG_SET_DEFAULT(UseSpinLoopHintIntrinsic, false);
++  }
++
+   if (FLAG_IS_DEFAULT(ContendedPaddingWidth) &&
+     (cache_line_size > ContendedPaddingWidth))
+     ContendedPaddingWidth = cache_line_size;

@@ -1,0 +1,217 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta charset="utf-8">
+<meta http-equiv="cache-control" content="no-cache" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="-1" />
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+a.print { font-size: x-small; }
+
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>hotspot Sdiff src/cpu/x86/vm </title>
+</head><body id="SUNWwebrev">
+<h2>src/cpu/x86/vm/x86_64.ad</h2>
+<a class="print" href="javascript:print()">Print this page</a>
+<pre></pre>
+
+<table><tr valign="top">
+<td><pre>
+
+</pre><hr></hr><pre>
+6323   match(StoreFence);
+6324   ins_cost(0);
+6325 
+6326   size(0);
+6327   format %{ "MEMBAR-release ! (empty encoding)" %}
+6328   ins_encode();
+6329   ins_pipe(empty);
+6330 %}
+6331 
+6332 instruct membar_release_lock()
+6333 %{
+6334   match(MemBarReleaseLock);
+6335   ins_cost(0);
+6336 
+6337   size(0);
+6338   format %{ "MEMBAR-release (a FastUnlock follows so empty encoding)" %}
+6339   ins_encode();
+6340   ins_pipe(empty);
+6341 %}
+6342 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+6343 instruct membar_volatile(rFlagsReg cr) %{
+6344   match(MemBarVolatile);
+6345   effect(KILL cr);
+6346   ins_cost(400);
+6347 
+6348   format %{
+6349     $$template
+6350     if (os::is_MP()) {
+6351       $$emit$$"lock addl [rsp + #0], 0\t! membar_volatile"
+6352     } else {
+6353       $$emit$$"MEMBAR-volatile ! (empty encoding)"
+6354     }
+6355   %}
+6356   ins_encode %{
+6357     __ membar(Assembler::StoreLoad);
+6358   %}
+6359   ins_pipe(pipe_slow);
+6360 %}
+6361 
+6362 instruct unnecessary_membar_volatile()
+
+</pre><hr></hr>
+</pre></td><td><pre>
+
+</pre><hr></hr><pre>
+6323   match(StoreFence);
+6324   ins_cost(0);
+6325 
+6326   size(0);
+6327   format %{ "MEMBAR-release ! (empty encoding)" %}
+6328   ins_encode();
+6329   ins_pipe(empty);
+6330 %}
+6331 
+6332 instruct membar_release_lock()
+6333 %{
+6334   match(MemBarReleaseLock);
+6335   ins_cost(0);
+6336 
+6337   size(0);
+6338   format %{ "MEMBAR-release (a FastUnlock follows so empty encoding)" %}
+6339   ins_encode();
+6340   ins_pipe(empty);
+6341 %}
+6342 
+<span class="new">6343 instruct spinloophint()</span>
+<span class="new">6344 %{</span>
+<span class="new">6345   match(SpinLoopHint);</span>
+<span class="new">6346   ins_cost(200);</span>
+<span class="new">6347 </span>
+<span class="new">6348   format %{</span>
+<span class="new">6349     $$template</span>
+<span class="new">6350     if (os::is_MP()) {</span>
+<span class="new">6351       $$emit$$"pause\t! membar_spinloophint"</span>
+<span class="new">6352     } else {</span>
+<span class="new">6353       $$emit$$"MEMBAR-spinloophint ! (empty encoding)"</span>
+<span class="new">6354     }</span>
+<span class="new">6355   %}</span>
+<span class="new">6356   ins_encode %{</span>
+<span class="new">6357     __ pause();</span>
+<span class="new">6358   %}</span>
+<span class="new">6359   ins_pipe(pipe_slow);</span>
+<span class="new">6360 %}</span>
+<span class="new">6361 </span>
+6362 instruct membar_volatile(rFlagsReg cr) %{
+6363   match(MemBarVolatile);
+6364   effect(KILL cr);
+6365   ins_cost(400);
+6366 
+6367   format %{
+6368     $$template
+6369     if (os::is_MP()) {
+6370       $$emit$$"lock addl [rsp + #0], 0\t! membar_volatile"
+6371     } else {
+6372       $$emit$$"MEMBAR-volatile ! (empty encoding)"
+6373     }
+6374   %}
+6375   ins_encode %{
+6376     __ membar(Assembler::StoreLoad);
+6377   %}
+6378   ins_pipe(pipe_slow);
+6379 %}
+6380 
+6381 instruct unnecessary_membar_volatile()
+
+</pre><hr></hr>
+</pre></td>
+</tr></table>
+</body></html>

@@ -1,0 +1,30 @@
+--- old/src/java.base/share/classes/java/lang/Runtime.java	2015-11-30 17:36:55.260762148 +0300
++++ new/src/java.base/share/classes/java/lang/Runtime.java	2015-11-30 17:36:54.840762159 +0300
+@@ -29,6 +29,7 @@
+ import java.util.StringTokenizer;
+ import sun.reflect.CallerSensitive;
+ import sun.reflect.Reflection;
++import jdk.internal.HotSpotIntrinsicCandidate;
+ 
+ /**
+  * Every Java application has a single instance of class
+@@ -875,6 +876,19 @@
+     }
+ 
+     /**
++     * Provide the JVM with a hint that this call is made from within a spinning
++     * loop. The JVM may assume that the speed of executing the loop (e.g. in
++     * terms of number of loop executions per second) is less important than the
++     * reaction time to events that would cause the loop to terminate, or than
++     * potential power savings that may be derived from possible execution
++     * choices. The JVM will not slow down the loop execution to a point where
++     * execution will be delayed indefinitely, but other choices of loop execution
++     * speed are system-specific.
++     */
++    @HotSpotIntrinsicCandidate
++    public static final void onSpinWait() {};
++
++    /**
+      * Creates a localized version of an input stream. This method takes
+      * an {@code InputStream} and returns an {@code InputStream}
+      * equivalent to the argument in all respects except that it is

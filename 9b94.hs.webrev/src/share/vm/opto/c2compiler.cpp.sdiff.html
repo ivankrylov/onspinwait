@@ -1,0 +1,181 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta charset="utf-8">
+<meta http-equiv="cache-control" content="no-cache" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="-1" />
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+a.print { font-size: x-small; }
+
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>hotspot Sdiff src/share/vm/opto </title>
+</head><body id="SUNWwebrev">
+<h2>src/share/vm/opto/c2compiler.cpp</h2>
+<a class="print" href="javascript:print()">Print this page</a>
+<pre></pre>
+
+<table><tr valign="top">
+<td><pre>
+
+</pre><hr></hr><pre>
+ 382   case vmIntrinsics::_putLongVolatile:
+ 383   case vmIntrinsics::_putFloatVolatile:
+ 384   case vmIntrinsics::_putDoubleVolatile:
+ 385   case vmIntrinsics::_getShortUnaligned:
+ 386   case vmIntrinsics::_getCharUnaligned:
+ 387   case vmIntrinsics::_getIntUnaligned:
+ 388   case vmIntrinsics::_getLongUnaligned:
+ 389   case vmIntrinsics::_putShortUnaligned:
+ 390   case vmIntrinsics::_putCharUnaligned:
+ 391   case vmIntrinsics::_putIntUnaligned:
+ 392   case vmIntrinsics::_putLongUnaligned:
+ 393   case vmIntrinsics::_compareAndSwapInt:
+ 394   case vmIntrinsics::_putOrderedObject:
+ 395   case vmIntrinsics::_putOrderedInt:
+ 396   case vmIntrinsics::_putOrderedLong:
+ 397   case vmIntrinsics::_loadFence:
+ 398   case vmIntrinsics::_storeFence:
+ 399   case vmIntrinsics::_fullFence:
+ 400   case vmIntrinsics::_currentThread:
+ 401   case vmIntrinsics::_isInterrupted:
+
+ 402 #ifdef TRACE_HAVE_INTRINSICS
+ 403   case vmIntrinsics::_classID:
+ 404   case vmIntrinsics::_threadID:
+ 405   case vmIntrinsics::_counterTime:
+ 406 #endif
+ 407   case vmIntrinsics::_currentTimeMillis:
+ 408   case vmIntrinsics::_nanoTime:
+ 409   case vmIntrinsics::_allocateInstance:
+ 410   case vmIntrinsics::_newArray:
+ 411   case vmIntrinsics::_getLength:
+ 412   case vmIntrinsics::_copyOf:
+ 413   case vmIntrinsics::_copyOfRange:
+ 414   case vmIntrinsics::_clone:
+ 415   case vmIntrinsics::_isAssignableFrom:
+ 416   case vmIntrinsics::_isInstance:
+ 417   case vmIntrinsics::_getModifiers:
+ 418   case vmIntrinsics::_isInterface:
+ 419   case vmIntrinsics::_isArray:
+ 420   case vmIntrinsics::_isPrimitive:
+ 421   case vmIntrinsics::_getSuperclass:
+
+</pre><hr></hr>
+</pre></td><td><pre>
+
+</pre><hr></hr><pre>
+ 382   case vmIntrinsics::_putLongVolatile:
+ 383   case vmIntrinsics::_putFloatVolatile:
+ 384   case vmIntrinsics::_putDoubleVolatile:
+ 385   case vmIntrinsics::_getShortUnaligned:
+ 386   case vmIntrinsics::_getCharUnaligned:
+ 387   case vmIntrinsics::_getIntUnaligned:
+ 388   case vmIntrinsics::_getLongUnaligned:
+ 389   case vmIntrinsics::_putShortUnaligned:
+ 390   case vmIntrinsics::_putCharUnaligned:
+ 391   case vmIntrinsics::_putIntUnaligned:
+ 392   case vmIntrinsics::_putLongUnaligned:
+ 393   case vmIntrinsics::_compareAndSwapInt:
+ 394   case vmIntrinsics::_putOrderedObject:
+ 395   case vmIntrinsics::_putOrderedInt:
+ 396   case vmIntrinsics::_putOrderedLong:
+ 397   case vmIntrinsics::_loadFence:
+ 398   case vmIntrinsics::_storeFence:
+ 399   case vmIntrinsics::_fullFence:
+ 400   case vmIntrinsics::_currentThread:
+ 401   case vmIntrinsics::_isInterrupted:
+<span class="new"> 402   case vmIntrinsics::_spinLoopHint:</span>
+ 403 #ifdef TRACE_HAVE_INTRINSICS
+ 404   case vmIntrinsics::_classID:
+ 405   case vmIntrinsics::_threadID:
+ 406   case vmIntrinsics::_counterTime:
+ 407 #endif
+ 408   case vmIntrinsics::_currentTimeMillis:
+ 409   case vmIntrinsics::_nanoTime:
+ 410   case vmIntrinsics::_allocateInstance:
+ 411   case vmIntrinsics::_newArray:
+ 412   case vmIntrinsics::_getLength:
+ 413   case vmIntrinsics::_copyOf:
+ 414   case vmIntrinsics::_copyOfRange:
+ 415   case vmIntrinsics::_clone:
+ 416   case vmIntrinsics::_isAssignableFrom:
+ 417   case vmIntrinsics::_isInstance:
+ 418   case vmIntrinsics::_getModifiers:
+ 419   case vmIntrinsics::_isInterface:
+ 420   case vmIntrinsics::_isArray:
+ 421   case vmIntrinsics::_isPrimitive:
+ 422   case vmIntrinsics::_getSuperclass:
+
+</pre><hr></hr>
+</pre></td>
+</tr></table>
+</body></html>

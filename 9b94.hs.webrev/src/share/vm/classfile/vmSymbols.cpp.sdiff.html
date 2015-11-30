@@ -1,0 +1,335 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta charset="utf-8">
+<meta http-equiv="cache-control" content="no-cache" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="-1" />
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+a.print { font-size: x-small; }
+
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>hotspot Sdiff src/share/vm/classfile </title>
+</head><body id="SUNWwebrev">
+<h2>src/share/vm/classfile/vmSymbols.cpp</h2>
+<a class="print" href="javascript:print()">Print this page</a>
+<pre></pre>
+
+<table><tr valign="top">
+<td><pre>
+
+</pre><hr></hr><pre>
+ 338   case vmIntrinsics::_intBitsToFloat:
+ 339   case vmIntrinsics::_doubleToRawLongBits:
+ 340   case vmIntrinsics::_longBitsToDouble:
+ 341   case vmIntrinsics::_getClass:
+ 342   case vmIntrinsics::_isInstance:
+ 343   case vmIntrinsics::_currentThread:
+ 344   case vmIntrinsics::_dabs:
+ 345   case vmIntrinsics::_dsqrt:
+ 346   case vmIntrinsics::_dsin:
+ 347   case vmIntrinsics::_dcos:
+ 348   case vmIntrinsics::_dtan:
+ 349   case vmIntrinsics::_dlog:
+ 350   case vmIntrinsics::_dlog10:
+ 351   case vmIntrinsics::_dexp:
+ 352   case vmIntrinsics::_dpow:
+ 353   case vmIntrinsics::_checkIndex:
+ 354   case vmIntrinsics::_Reference_get:
+ 355   case vmIntrinsics::_updateCRC32:
+ 356   case vmIntrinsics::_updateBytesCRC32:
+ 357   case vmIntrinsics::_updateByteBufferCRC32:
+
+ 358     return true;
+ 359   default:
+ 360     return false;
+ 361   }
+ 362 }
+ 363 
+ 364 bool vmIntrinsics::can_trap(vmIntrinsics::ID id) {
+ 365   assert(id != vmIntrinsics::_none, "must be a VM intrinsic");
+ 366   switch(id) {
+ 367 #ifdef TRACE_HAVE_INTRINSICS
+ 368   case vmIntrinsics::_counterTime:
+ 369 #endif
+ 370   case vmIntrinsics::_currentTimeMillis:
+ 371   case vmIntrinsics::_nanoTime:
+ 372   case vmIntrinsics::_floatToRawIntBits:
+ 373   case vmIntrinsics::_intBitsToFloat:
+ 374   case vmIntrinsics::_doubleToRawLongBits:
+ 375   case vmIntrinsics::_longBitsToDouble:
+ 376   case vmIntrinsics::_currentThread:
+ 377   case vmIntrinsics::_dabs:
+ 378   case vmIntrinsics::_dsqrt:
+ 379   case vmIntrinsics::_dsin:
+ 380   case vmIntrinsics::_dcos:
+ 381   case vmIntrinsics::_dtan:
+ 382   case vmIntrinsics::_dlog:
+ 383   case vmIntrinsics::_dlog10:
+ 384   case vmIntrinsics::_dexp:
+ 385   case vmIntrinsics::_dpow:
+ 386   case vmIntrinsics::_updateCRC32:
+ 387   case vmIntrinsics::_updateBytesCRC32:
+ 388   case vmIntrinsics::_updateByteBufferCRC32:
+
+ 389     return false;
+ 390   default:
+ 391     return true;
+ 392   }
+ 393 }
+ 394 
+ 395 bool vmIntrinsics::does_virtual_dispatch(vmIntrinsics::ID id) {
+ 396   assert(id != vmIntrinsics::_none, "must be a VM intrinsic");
+ 397   switch(id) {
+ 398   case vmIntrinsics::_hashCode:
+ 399   case vmIntrinsics::_clone:
+ 400     return true;
+ 401     break;
+ 402   default:
+ 403     return false;
+ 404   }
+ 405 }
+ 406 
+ 407 int vmIntrinsics::predicates_needed(vmIntrinsics::ID id) {
+ 408   assert(id != vmIntrinsics::_none, "must be a VM intrinsic");
+
+</pre><hr></hr><pre>
+ 663   case vmIntrinsics::_encodeByteISOArray:
+ 664     if (!SpecialEncodeISOArray) return true;
+ 665     break;
+ 666   case vmIntrinsics::_getCallerClass:
+ 667     if (!InlineReflectionGetCallerClass) return true;
+ 668     break;
+ 669   case vmIntrinsics::_multiplyToLen:
+ 670     if (!UseMultiplyToLenIntrinsic) return true;
+ 671     break;
+ 672   case vmIntrinsics::_squareToLen:
+ 673     if (!UseSquareToLenIntrinsic) return true;
+ 674     break;
+ 675   case vmIntrinsics::_mulAdd:
+ 676     if (!UseMulAddIntrinsic) return true;
+ 677     break;
+ 678   case vmIntrinsics::_montgomeryMultiply:
+ 679     if (!UseMontgomeryMultiplyIntrinsic) return true;
+ 680     break;
+ 681   case vmIntrinsics::_montgomerySquare:
+ 682     if (!UseMontgomerySquareIntrinsic) return true;
+
+
+
+ 683     break;
+ 684   case vmIntrinsics::_addExactI:
+ 685   case vmIntrinsics::_addExactL:
+ 686   case vmIntrinsics::_decrementExactI:
+ 687   case vmIntrinsics::_decrementExactL:
+ 688   case vmIntrinsics::_incrementExactI:
+ 689   case vmIntrinsics::_incrementExactL:
+ 690   case vmIntrinsics::_multiplyExactI:
+ 691   case vmIntrinsics::_multiplyExactL:
+ 692   case vmIntrinsics::_negateExactI:
+ 693   case vmIntrinsics::_negateExactL:
+ 694   case vmIntrinsics::_subtractExactI:
+ 695   case vmIntrinsics::_subtractExactL:
+ 696     if (!UseMathExactIntrinsics || !InlineMathNatives) return true;
+ 697     break;
+ 698 #endif // COMPILER2
+ 699   default:
+ 700     return false;
+ 701   }
+ 702 
+
+</pre><hr></hr>
+</pre></td><td><pre>
+
+</pre><hr></hr><pre>
+ 338   case vmIntrinsics::_intBitsToFloat:
+ 339   case vmIntrinsics::_doubleToRawLongBits:
+ 340   case vmIntrinsics::_longBitsToDouble:
+ 341   case vmIntrinsics::_getClass:
+ 342   case vmIntrinsics::_isInstance:
+ 343   case vmIntrinsics::_currentThread:
+ 344   case vmIntrinsics::_dabs:
+ 345   case vmIntrinsics::_dsqrt:
+ 346   case vmIntrinsics::_dsin:
+ 347   case vmIntrinsics::_dcos:
+ 348   case vmIntrinsics::_dtan:
+ 349   case vmIntrinsics::_dlog:
+ 350   case vmIntrinsics::_dlog10:
+ 351   case vmIntrinsics::_dexp:
+ 352   case vmIntrinsics::_dpow:
+ 353   case vmIntrinsics::_checkIndex:
+ 354   case vmIntrinsics::_Reference_get:
+ 355   case vmIntrinsics::_updateCRC32:
+ 356   case vmIntrinsics::_updateBytesCRC32:
+ 357   case vmIntrinsics::_updateByteBufferCRC32:
+<span class="new"> 358   case vmIntrinsics::_spinLoopHint:</span>
+ 359     return true;
+ 360   default:
+ 361     return false;
+ 362   }
+ 363 }
+ 364 
+ 365 bool vmIntrinsics::can_trap(vmIntrinsics::ID id) {
+ 366   assert(id != vmIntrinsics::_none, "must be a VM intrinsic");
+ 367   switch(id) {
+ 368 #ifdef TRACE_HAVE_INTRINSICS
+ 369   case vmIntrinsics::_counterTime:
+ 370 #endif
+ 371   case vmIntrinsics::_currentTimeMillis:
+ 372   case vmIntrinsics::_nanoTime:
+ 373   case vmIntrinsics::_floatToRawIntBits:
+ 374   case vmIntrinsics::_intBitsToFloat:
+ 375   case vmIntrinsics::_doubleToRawLongBits:
+ 376   case vmIntrinsics::_longBitsToDouble:
+ 377   case vmIntrinsics::_currentThread:
+ 378   case vmIntrinsics::_dabs:
+ 379   case vmIntrinsics::_dsqrt:
+ 380   case vmIntrinsics::_dsin:
+ 381   case vmIntrinsics::_dcos:
+ 382   case vmIntrinsics::_dtan:
+ 383   case vmIntrinsics::_dlog:
+ 384   case vmIntrinsics::_dlog10:
+ 385   case vmIntrinsics::_dexp:
+ 386   case vmIntrinsics::_dpow:
+ 387   case vmIntrinsics::_updateCRC32:
+ 388   case vmIntrinsics::_updateBytesCRC32:
+ 389   case vmIntrinsics::_updateByteBufferCRC32:
+<span class="new"> 390   case vmIntrinsics::_spinLoopHint:</span>
+ 391     return false;
+ 392   default:
+ 393     return true;
+ 394   }
+ 395 }
+ 396 
+ 397 bool vmIntrinsics::does_virtual_dispatch(vmIntrinsics::ID id) {
+ 398   assert(id != vmIntrinsics::_none, "must be a VM intrinsic");
+ 399   switch(id) {
+ 400   case vmIntrinsics::_hashCode:
+ 401   case vmIntrinsics::_clone:
+ 402     return true;
+ 403     break;
+ 404   default:
+ 405     return false;
+ 406   }
+ 407 }
+ 408 
+ 409 int vmIntrinsics::predicates_needed(vmIntrinsics::ID id) {
+ 410   assert(id != vmIntrinsics::_none, "must be a VM intrinsic");
+
+</pre><hr></hr><pre>
+ 665   case vmIntrinsics::_encodeByteISOArray:
+ 666     if (!SpecialEncodeISOArray) return true;
+ 667     break;
+ 668   case vmIntrinsics::_getCallerClass:
+ 669     if (!InlineReflectionGetCallerClass) return true;
+ 670     break;
+ 671   case vmIntrinsics::_multiplyToLen:
+ 672     if (!UseMultiplyToLenIntrinsic) return true;
+ 673     break;
+ 674   case vmIntrinsics::_squareToLen:
+ 675     if (!UseSquareToLenIntrinsic) return true;
+ 676     break;
+ 677   case vmIntrinsics::_mulAdd:
+ 678     if (!UseMulAddIntrinsic) return true;
+ 679     break;
+ 680   case vmIntrinsics::_montgomeryMultiply:
+ 681     if (!UseMontgomeryMultiplyIntrinsic) return true;
+ 682     break;
+ 683   case vmIntrinsics::_montgomerySquare:
+ 684     if (!UseMontgomerySquareIntrinsic) return true;
+<span class="new"> 685     break;</span>
+<span class="new"> 686   case vmIntrinsics::_spinLoopHint:</span>
+<span class="new"> 687     if (!UseSpinLoopHintIntrinsic) return true;</span>
+ 688     break;
+ 689   case vmIntrinsics::_addExactI:
+ 690   case vmIntrinsics::_addExactL:
+ 691   case vmIntrinsics::_decrementExactI:
+ 692   case vmIntrinsics::_decrementExactL:
+ 693   case vmIntrinsics::_incrementExactI:
+ 694   case vmIntrinsics::_incrementExactL:
+ 695   case vmIntrinsics::_multiplyExactI:
+ 696   case vmIntrinsics::_multiplyExactL:
+ 697   case vmIntrinsics::_negateExactI:
+ 698   case vmIntrinsics::_negateExactL:
+ 699   case vmIntrinsics::_subtractExactI:
+ 700   case vmIntrinsics::_subtractExactL:
+ 701     if (!UseMathExactIntrinsics || !InlineMathNatives) return true;
+ 702     break;
+ 703 #endif // COMPILER2
+ 704   default:
+ 705     return false;
+ 706   }
+ 707 
+
+</pre><hr></hr>
+</pre></td>
+</tr></table>
+</body></html>

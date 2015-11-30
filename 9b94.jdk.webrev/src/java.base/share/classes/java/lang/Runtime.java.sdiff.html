@@ -1,0 +1,291 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta charset="utf-8">
+<meta http-equiv="cache-control" content="no-cache" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="-1" />
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+a.print { font-size: x-small; }
+
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>jdk Sdiff src/java.base/share/classes/java/lang </title>
+</head><body id="SUNWwebrev">
+<h2>src/java.base/share/classes/java/lang/Runtime.java</h2>
+<a class="print" href="javascript:print()">Print this page</a>
+<pre></pre>
+
+<table><tr valign="top">
+<td><pre>
+
+</pre><hr></hr><pre>
+  12  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14  * version 2 for more details (a copy is included in the LICENSE file that
+  15  * accompanied this code).
+  16  *
+  17  * You should have received a copy of the GNU General Public License version
+  18  * 2 along with this work; if not, write to the Free Software Foundation,
+  19  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20  *
+  21  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22  * or visit www.oracle.com if you need additional information or have any
+  23  * questions.
+  24  */
+  25 
+  26 package java.lang;
+  27 
+  28 import java.io.*;
+  29 import java.util.StringTokenizer;
+  30 import sun.reflect.CallerSensitive;
+  31 import sun.reflect.Reflection;
+
+  32 
+  33 /**
+  34  * Every Java application has a single instance of class
+  35  * {@code Runtime} that allows the application to interface with
+  36  * the environment in which the application is running. The current
+  37  * runtime can be obtained from the {@code getRuntime} method.
+  38  * &lt;p&gt;
+  39  * An application cannot create its own instance of this class.
+  40  *
+  41  * @author  unascribed
+  42  * @see     java.lang.Runtime#getRuntime()
+  43  * @since   1.0
+  44  */
+  45 
+  46 public class Runtime {
+  47     private static Runtime currentRuntime = new Runtime();
+  48 
+  49     /**
+  50      * Returns the runtime object associated with the current Java application.
+  51      * Most of the methods of class {@code Runtime} are instance
+
+</pre><hr></hr><pre>
+ 856      *             {@code null}
+ 857      * @see        java.lang.SecurityException
+ 858      * @see        java.lang.SecurityManager#checkLink(java.lang.String)
+ 859      */
+ 860     @CallerSensitive
+ 861     public void loadLibrary(String libname) {
+ 862         loadLibrary0(Reflection.getCallerClass(), libname);
+ 863     }
+ 864 
+ 865     synchronized void loadLibrary0(Class&lt;?&gt; fromClass, String libname) {
+ 866         SecurityManager security = System.getSecurityManager();
+ 867         if (security != null) {
+ 868             security.checkLink(libname);
+ 869         }
+ 870         if (libname.indexOf((int)File.separatorChar) != -1) {
+ 871             throw new UnsatisfiedLinkError(
+ 872     "Directory separator should not appear in library name: " + libname);
+ 873         }
+ 874         ClassLoader.loadLibrary(fromClass, libname, false);
+ 875     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 876 
+ 877     /**
+ 878      * Creates a localized version of an input stream. This method takes
+ 879      * an {@code InputStream} and returns an {@code InputStream}
+ 880      * equivalent to the argument in all respects except that it is
+ 881      * localized: as characters in the local character set are read from
+ 882      * the stream, they are automatically converted from the local
+ 883      * character set to Unicode.
+ 884      * &lt;p&gt;
+ 885      * If the argument is already a localized stream, it may be returned
+ 886      * as the result.
+ 887      *
+ 888      * @param      in InputStream to localize
+ 889      * @return     a localized input stream
+ 890      * @see        java.io.InputStream
+ 891      * @see        java.io.BufferedReader#BufferedReader(java.io.Reader)
+ 892      * @see        java.io.InputStreamReader#InputStreamReader(java.io.InputStream)
+ 893      * @deprecated As of JDK&amp;nbsp;1.1, the preferred way to translate a byte
+ 894      * stream in the local encoding into a character stream in Unicode is via
+ 895      * the {@code InputStreamReader} and {@code BufferedReader}
+
+</pre><hr></hr>
+</pre></td><td><pre>
+
+</pre><hr></hr><pre>
+  12  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14  * version 2 for more details (a copy is included in the LICENSE file that
+  15  * accompanied this code).
+  16  *
+  17  * You should have received a copy of the GNU General Public License version
+  18  * 2 along with this work; if not, write to the Free Software Foundation,
+  19  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20  *
+  21  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22  * or visit www.oracle.com if you need additional information or have any
+  23  * questions.
+  24  */
+  25 
+  26 package java.lang;
+  27 
+  28 import java.io.*;
+  29 import java.util.StringTokenizer;
+  30 import sun.reflect.CallerSensitive;
+  31 import sun.reflect.Reflection;
+<span class="new">  32 import jdk.internal.HotSpotIntrinsicCandidate;</span>
+  33 
+  34 /**
+  35  * Every Java application has a single instance of class
+  36  * {@code Runtime} that allows the application to interface with
+  37  * the environment in which the application is running. The current
+  38  * runtime can be obtained from the {@code getRuntime} method.
+  39  * &lt;p&gt;
+  40  * An application cannot create its own instance of this class.
+  41  *
+  42  * @author  unascribed
+  43  * @see     java.lang.Runtime#getRuntime()
+  44  * @since   1.0
+  45  */
+  46 
+  47 public class Runtime {
+  48     private static Runtime currentRuntime = new Runtime();
+  49 
+  50     /**
+  51      * Returns the runtime object associated with the current Java application.
+  52      * Most of the methods of class {@code Runtime} are instance
+
+</pre><hr></hr><pre>
+ 857      *             {@code null}
+ 858      * @see        java.lang.SecurityException
+ 859      * @see        java.lang.SecurityManager#checkLink(java.lang.String)
+ 860      */
+ 861     @CallerSensitive
+ 862     public void loadLibrary(String libname) {
+ 863         loadLibrary0(Reflection.getCallerClass(), libname);
+ 864     }
+ 865 
+ 866     synchronized void loadLibrary0(Class&lt;?&gt; fromClass, String libname) {
+ 867         SecurityManager security = System.getSecurityManager();
+ 868         if (security != null) {
+ 869             security.checkLink(libname);
+ 870         }
+ 871         if (libname.indexOf((int)File.separatorChar) != -1) {
+ 872             throw new UnsatisfiedLinkError(
+ 873     "Directory separator should not appear in library name: " + libname);
+ 874         }
+ 875         ClassLoader.loadLibrary(fromClass, libname, false);
+ 876     }
+<span class="new"> 877 </span>
+<span class="new"> 878     /**</span>
+<span class="new"> 879      * Provide the JVM with a hint that this call is made from within a spinning</span>
+<span class="new"> 880      * loop. The JVM may assume that the speed of executing the loop (e.g. in</span>
+<span class="new"> 881      * terms of number of loop executions per second) is less important than the</span>
+<span class="new"> 882      * reaction time to events that would cause the loop to terminate, or than</span>
+<span class="new"> 883      * potential power savings that may be derived from possible execution</span>
+<span class="new"> 884      * choices. The JVM will not slow down the loop execution to a point where</span>
+<span class="new"> 885      * execution will be delayed indefinitely, but other choices of loop execution</span>
+<span class="new"> 886      * speed are system-specific.</span>
+<span class="new"> 887      */</span>
+<span class="new"> 888     @HotSpotIntrinsicCandidate</span>
+<span class="new"> 889     public static final void onSpinWait() {};</span>
+ 890 
+ 891     /**
+ 892      * Creates a localized version of an input stream. This method takes
+ 893      * an {@code InputStream} and returns an {@code InputStream}
+ 894      * equivalent to the argument in all respects except that it is
+ 895      * localized: as characters in the local character set are read from
+ 896      * the stream, they are automatically converted from the local
+ 897      * character set to Unicode.
+ 898      * &lt;p&gt;
+ 899      * If the argument is already a localized stream, it may be returned
+ 900      * as the result.
+ 901      *
+ 902      * @param      in InputStream to localize
+ 903      * @return     a localized input stream
+ 904      * @see        java.io.InputStream
+ 905      * @see        java.io.BufferedReader#BufferedReader(java.io.Reader)
+ 906      * @see        java.io.InputStreamReader#InputStreamReader(java.io.InputStream)
+ 907      * @deprecated As of JDK&amp;nbsp;1.1, the preferred way to translate a byte
+ 908      * stream in the local encoding into a character stream in Unicode is via
+ 909      * the {@code InputStreamReader} and {@code BufferedReader}
+
+</pre><hr></hr>
+</pre></td>
+</tr></table>
+</body></html>

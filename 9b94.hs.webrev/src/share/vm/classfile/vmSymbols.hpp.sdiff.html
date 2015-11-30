@@ -1,0 +1,273 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta charset="utf-8">
+<meta http-equiv="cache-control" content="no-cache" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="-1" />
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+a.print { font-size: x-small; }
+
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>hotspot Sdiff src/share/vm/classfile </title>
+</head><body id="SUNWwebrev">
+<h2>src/share/vm/classfile/vmSymbols.hpp</h2>
+<a class="print" href="javascript:print()">Print this page</a>
+<pre></pre>
+
+<table><tr valign="top">
+<td><pre>
+
+</pre><hr></hr><pre>
+  58   template(java_lang_Thread,                          "java/lang/Thread")                         \
+  59   template(java_lang_ThreadGroup,                     "java/lang/ThreadGroup")                    \
+  60   template(java_lang_Cloneable,                       "java/lang/Cloneable")                      \
+  61   template(java_lang_Throwable,                       "java/lang/Throwable")                      \
+  62   template(java_lang_ClassLoader,                     "java/lang/ClassLoader")                    \
+  63   template(java_lang_ClassLoader_NativeLibrary,       "java/lang/ClassLoader\x024NativeLibrary")  \
+  64   template(java_lang_ThreadDeath,                     "java/lang/ThreadDeath")                    \
+  65   template(java_lang_Boolean,                         "java/lang/Boolean")                        \
+  66   template(java_lang_Character,                       "java/lang/Character")                      \
+  67   template(java_lang_Character_CharacterCache,        "java/lang/Character$CharacterCache")       \
+  68   template(java_lang_Float,                           "java/lang/Float")                          \
+  69   template(java_lang_Double,                          "java/lang/Double")                         \
+  70   template(java_lang_Byte,                            "java/lang/Byte")                           \
+  71   template(java_lang_Byte_ByteCache,                  "java/lang/Byte$ByteCache")                 \
+  72   template(java_lang_Short,                           "java/lang/Short")                          \
+  73   template(java_lang_Short_ShortCache,                "java/lang/Short$ShortCache")               \
+  74   template(java_lang_Integer,                         "java/lang/Integer")                        \
+  75   template(java_lang_Integer_IntegerCache,            "java/lang/Integer$IntegerCache")           \
+  76   template(java_lang_Long,                            "java/lang/Long")                           \
+  77   template(java_lang_Long_LongCache,                  "java/lang/Long$LongCache")                 \
+
+  78   template(java_lang_Shutdown,                        "java/lang/Shutdown")                       \
+  79   template(java_lang_ref_Reference,                   "java/lang/ref/Reference")                  \
+  80   template(java_lang_ref_SoftReference,               "java/lang/ref/SoftReference")              \
+  81   template(java_lang_ref_WeakReference,               "java/lang/ref/WeakReference")              \
+  82   template(java_lang_ref_FinalReference,              "java/lang/ref/FinalReference")             \
+  83   template(java_lang_ref_PhantomReference,            "java/lang/ref/PhantomReference")           \
+  84   template(sun_misc_Cleaner,                          "sun/misc/Cleaner")                         \
+  85   template(java_lang_ref_Finalizer,                   "java/lang/ref/Finalizer")                  \
+  86   template(java_lang_reflect_AccessibleObject,        "java/lang/reflect/AccessibleObject")       \
+  87   template(java_lang_reflect_Method,                  "java/lang/reflect/Method")                 \
+  88   template(java_lang_reflect_Constructor,             "java/lang/reflect/Constructor")            \
+  89   template(java_lang_reflect_Field,                   "java/lang/reflect/Field")                  \
+  90   template(java_lang_reflect_Parameter,               "java/lang/reflect/Parameter")              \
+  91   template(java_lang_reflect_Array,                   "java/lang/reflect/Array")                  \
+  92   template(java_lang_StringBuffer,                    "java/lang/StringBuffer")                   \
+  93   template(java_lang_StringBuilder,                   "java/lang/StringBuilder")                  \
+  94   template(java_lang_CharSequence,                    "java/lang/CharSequence")                   \
+  95   template(java_lang_SecurityManager,                 "java/lang/SecurityManager")                \
+  96   template(java_security_AccessControlContext,        "java/security/AccessControlContext")       \
+  97   template(java_security_CodeSource,                  "java/security/CodeSource")                 \
+
+</pre><hr></hr><pre>
+ 811   do_intrinsic(_isArray,                  java_lang_Class,        isArray_name, void_boolean_signature,          F_RN)  \
+ 812    do_name(     isArray_name,                                    "isArray")                                             \
+ 813   do_intrinsic(_isPrimitive,              java_lang_Class,        isPrimitive_name, void_boolean_signature,      F_RN)  \
+ 814    do_name(     isPrimitive_name,                                "isPrimitive")                                         \
+ 815   do_intrinsic(_getSuperclass,            java_lang_Class,        getSuperclass_name, void_class_signature,      F_RN)  \
+ 816    do_name(     getSuperclass_name,                              "getSuperclass")                                       \
+ 817   do_intrinsic(_Class_cast,               java_lang_Class,        Class_cast_name, object_object_signature,      F_R)   \
+ 818    do_name(     Class_cast_name,                                 "cast")                                                \
+ 819                                                                                                                         \
+ 820   do_intrinsic(_getClassAccessFlags,      sun_reflect_Reflection, getClassAccessFlags_name, class_int_signature, F_SN)  \
+ 821    do_name(     getClassAccessFlags_name,                        "getClassAccessFlags")                                 \
+ 822   do_intrinsic(_getLength,                java_lang_reflect_Array, getLength_name, object_int_signature,         F_SN)  \
+ 823    do_name(     getLength_name,                                   "getLength")                                          \
+ 824                                                                                                                         \
+ 825   do_intrinsic(_getCallerClass,           sun_reflect_Reflection, getCallerClass_name, void_class_signature,     F_SN)  \
+ 826    do_name(     getCallerClass_name,                             "getCallerClass")                                      \
+ 827                                                                                                                         \
+ 828   do_intrinsic(_newArray,                 java_lang_reflect_Array, newArray_name, newArray_signature,            F_SN)  \
+ 829    do_name(     newArray_name,                                    "newArray")                                           \
+ 830    do_signature(newArray_signature,                               "(Ljava/lang/Class;I)Ljava/lang/Object;")             \
+
+
+
+
+ 831                                                                                                                         \
+ 832   do_intrinsic(_copyOf,                   java_util_Arrays,       copyOf_name, copyOf_signature,                 F_S)   \
+ 833    do_name(     copyOf_name,                                     "copyOf")                                              \
+ 834    do_signature(copyOf_signature,             "([Ljava/lang/Object;ILjava/lang/Class;)[Ljava/lang/Object;")             \
+ 835                                                                                                                         \
+ 836   do_intrinsic(_copyOfRange,              java_util_Arrays,       copyOfRange_name, copyOfRange_signature,       F_S)   \
+ 837    do_name(     copyOfRange_name,                                "copyOfRange")                                         \
+ 838    do_signature(copyOfRange_signature,        "([Ljava/lang/Object;IILjava/lang/Class;)[Ljava/lang/Object;")            \
+ 839                                                                                                                         \
+ 840   do_intrinsic(_equalsC,                  java_util_Arrays,       equals_name,    equalsC_signature,             F_S)   \
+ 841    do_signature(equalsC_signature,                               "([C[C)Z")                                             \
+ 842   do_intrinsic(_equalsB,                  java_util_Arrays,       equals_name,    equalsB_signature,             F_S)   \
+ 843    do_signature(equalsB_signature,                               "([B[B)Z")                                             \
+ 844                                                                                                                         \
+ 845   do_intrinsic(_compressStringC,          java_lang_StringUTF16,  compress_name, encodeISOArray_signature,       F_S)   \
+ 846    do_name(     compress_name,                                   "compress")                                            \
+ 847   do_intrinsic(_compressStringB,          java_lang_StringUTF16,  compress_name, indexOfI_signature,             F_S)   \
+ 848   do_intrinsic(_inflateStringC,           java_lang_StringLatin1, inflate_name, inflateC_signature,              F_S)   \
+ 849    do_name(     inflate_name,                                    "inflate")                                             \
+ 850    do_signature(inflateC_signature,                              "([BI[CII)V")                                          \
+
+</pre><hr></hr>
+</pre></td><td><pre>
+
+</pre><hr></hr><pre>
+  58   template(java_lang_Thread,                          "java/lang/Thread")                         \
+  59   template(java_lang_ThreadGroup,                     "java/lang/ThreadGroup")                    \
+  60   template(java_lang_Cloneable,                       "java/lang/Cloneable")                      \
+  61   template(java_lang_Throwable,                       "java/lang/Throwable")                      \
+  62   template(java_lang_ClassLoader,                     "java/lang/ClassLoader")                    \
+  63   template(java_lang_ClassLoader_NativeLibrary,       "java/lang/ClassLoader\x024NativeLibrary")  \
+  64   template(java_lang_ThreadDeath,                     "java/lang/ThreadDeath")                    \
+  65   template(java_lang_Boolean,                         "java/lang/Boolean")                        \
+  66   template(java_lang_Character,                       "java/lang/Character")                      \
+  67   template(java_lang_Character_CharacterCache,        "java/lang/Character$CharacterCache")       \
+  68   template(java_lang_Float,                           "java/lang/Float")                          \
+  69   template(java_lang_Double,                          "java/lang/Double")                         \
+  70   template(java_lang_Byte,                            "java/lang/Byte")                           \
+  71   template(java_lang_Byte_ByteCache,                  "java/lang/Byte$ByteCache")                 \
+  72   template(java_lang_Short,                           "java/lang/Short")                          \
+  73   template(java_lang_Short_ShortCache,                "java/lang/Short$ShortCache")               \
+  74   template(java_lang_Integer,                         "java/lang/Integer")                        \
+  75   template(java_lang_Integer_IntegerCache,            "java/lang/Integer$IntegerCache")           \
+  76   template(java_lang_Long,                            "java/lang/Long")                           \
+  77   template(java_lang_Long_LongCache,                  "java/lang/Long$LongCache")                 \
+<span class="new">  78   template(java_lang_Runtime,                         "java/lang/Runtime")                        \</span>
+  79   template(java_lang_Shutdown,                        "java/lang/Shutdown")                       \
+  80   template(java_lang_ref_Reference,                   "java/lang/ref/Reference")                  \
+  81   template(java_lang_ref_SoftReference,               "java/lang/ref/SoftReference")              \
+  82   template(java_lang_ref_WeakReference,               "java/lang/ref/WeakReference")              \
+  83   template(java_lang_ref_FinalReference,              "java/lang/ref/FinalReference")             \
+  84   template(java_lang_ref_PhantomReference,            "java/lang/ref/PhantomReference")           \
+  85   template(sun_misc_Cleaner,                          "sun/misc/Cleaner")                         \
+  86   template(java_lang_ref_Finalizer,                   "java/lang/ref/Finalizer")                  \
+  87   template(java_lang_reflect_AccessibleObject,        "java/lang/reflect/AccessibleObject")       \
+  88   template(java_lang_reflect_Method,                  "java/lang/reflect/Method")                 \
+  89   template(java_lang_reflect_Constructor,             "java/lang/reflect/Constructor")            \
+  90   template(java_lang_reflect_Field,                   "java/lang/reflect/Field")                  \
+  91   template(java_lang_reflect_Parameter,               "java/lang/reflect/Parameter")              \
+  92   template(java_lang_reflect_Array,                   "java/lang/reflect/Array")                  \
+  93   template(java_lang_StringBuffer,                    "java/lang/StringBuffer")                   \
+  94   template(java_lang_StringBuilder,                   "java/lang/StringBuilder")                  \
+  95   template(java_lang_CharSequence,                    "java/lang/CharSequence")                   \
+  96   template(java_lang_SecurityManager,                 "java/lang/SecurityManager")                \
+  97   template(java_security_AccessControlContext,        "java/security/AccessControlContext")       \
+  98   template(java_security_CodeSource,                  "java/security/CodeSource")                 \
+
+</pre><hr></hr><pre>
+ 812   do_intrinsic(_isArray,                  java_lang_Class,        isArray_name, void_boolean_signature,          F_RN)  \
+ 813    do_name(     isArray_name,                                    "isArray")                                             \
+ 814   do_intrinsic(_isPrimitive,              java_lang_Class,        isPrimitive_name, void_boolean_signature,      F_RN)  \
+ 815    do_name(     isPrimitive_name,                                "isPrimitive")                                         \
+ 816   do_intrinsic(_getSuperclass,            java_lang_Class,        getSuperclass_name, void_class_signature,      F_RN)  \
+ 817    do_name(     getSuperclass_name,                              "getSuperclass")                                       \
+ 818   do_intrinsic(_Class_cast,               java_lang_Class,        Class_cast_name, object_object_signature,      F_R)   \
+ 819    do_name(     Class_cast_name,                                 "cast")                                                \
+ 820                                                                                                                         \
+ 821   do_intrinsic(_getClassAccessFlags,      sun_reflect_Reflection, getClassAccessFlags_name, class_int_signature, F_SN)  \
+ 822    do_name(     getClassAccessFlags_name,                        "getClassAccessFlags")                                 \
+ 823   do_intrinsic(_getLength,                java_lang_reflect_Array, getLength_name, object_int_signature,         F_SN)  \
+ 824    do_name(     getLength_name,                                   "getLength")                                          \
+ 825                                                                                                                         \
+ 826   do_intrinsic(_getCallerClass,           sun_reflect_Reflection, getCallerClass_name, void_class_signature,     F_SN)  \
+ 827    do_name(     getCallerClass_name,                             "getCallerClass")                                      \
+ 828                                                                                                                         \
+ 829   do_intrinsic(_newArray,                 java_lang_reflect_Array, newArray_name, newArray_signature,            F_SN)  \
+ 830    do_name(     newArray_name,                                    "newArray")                                           \
+ 831    do_signature(newArray_signature,                               "(Ljava/lang/Class;I)Ljava/lang/Object;")             \
+<span class="new"> 832                                                                                                                         \</span>
+<span class="new"> 833   do_intrinsic(_spinLoopHint,             java_lang_Runtime,      spinLoopHint_name, spinLoopHint_signature,     F_S)   \</span>
+<span class="new"> 834    do_name(     spinLoopHint_name,                               "onSpinWait")                                          \</span>
+<span class="new"> 835    do_alias(    spinLoopHint_signature,                           void_method_signature)                                \</span>
+ 836                                                                                                                         \
+ 837   do_intrinsic(_copyOf,                   java_util_Arrays,       copyOf_name, copyOf_signature,                 F_S)   \
+ 838    do_name(     copyOf_name,                                     "copyOf")                                              \
+ 839    do_signature(copyOf_signature,             "([Ljava/lang/Object;ILjava/lang/Class;)[Ljava/lang/Object;")             \
+ 840                                                                                                                         \
+ 841   do_intrinsic(_copyOfRange,              java_util_Arrays,       copyOfRange_name, copyOfRange_signature,       F_S)   \
+ 842    do_name(     copyOfRange_name,                                "copyOfRange")                                         \
+ 843    do_signature(copyOfRange_signature,        "([Ljava/lang/Object;IILjava/lang/Class;)[Ljava/lang/Object;")            \
+ 844                                                                                                                         \
+ 845   do_intrinsic(_equalsC,                  java_util_Arrays,       equals_name,    equalsC_signature,             F_S)   \
+ 846    do_signature(equalsC_signature,                               "([C[C)Z")                                             \
+ 847   do_intrinsic(_equalsB,                  java_util_Arrays,       equals_name,    equalsB_signature,             F_S)   \
+ 848    do_signature(equalsB_signature,                               "([B[B)Z")                                             \
+ 849                                                                                                                         \
+ 850   do_intrinsic(_compressStringC,          java_lang_StringUTF16,  compress_name, encodeISOArray_signature,       F_S)   \
+ 851    do_name(     compress_name,                                   "compress")                                            \
+ 852   do_intrinsic(_compressStringB,          java_lang_StringUTF16,  compress_name, indexOfI_signature,             F_S)   \
+ 853   do_intrinsic(_inflateStringC,           java_lang_StringLatin1, inflate_name, inflateC_signature,              F_S)   \
+ 854    do_name(     inflate_name,                                    "inflate")                                             \
+ 855    do_signature(inflateC_signature,                              "([BI[CII)V")                                          \
+
+</pre><hr></hr>
+</pre></td>
+</tr></table>
+</body></html>

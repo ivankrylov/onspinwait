@@ -1,0 +1,10 @@
+--- old/src/share/vm/opto/c2compiler.cpp	2015-11-30 17:23:05.216785672 +0300
++++ new/src/share/vm/opto/c2compiler.cpp	2015-11-30 17:23:05.092785676 +0300
+@@ -399,6 +399,7 @@
+   case vmIntrinsics::_fullFence:
+   case vmIntrinsics::_currentThread:
+   case vmIntrinsics::_isInterrupted:
++  case vmIntrinsics::_spinLoopHint:
+ #ifdef TRACE_HAVE_INTRINSICS
+   case vmIntrinsics::_classID:
+   case vmIntrinsics::_threadID:
