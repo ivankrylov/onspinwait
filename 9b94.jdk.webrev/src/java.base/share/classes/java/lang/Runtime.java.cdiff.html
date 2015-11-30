@@ -98,20 +98,17 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
    * {@code Runtime} that allows the application to interface with
    * the environment in which the application is running. The current
 <hr /><span class="oldmarker">*** 873,882 ****</span>
-<span class="newmarker">--- 874,896 ----</span>
+<span class="newmarker">--- 874,893 ----</span>
           }
           ClassLoader.loadLibrary(fromClass, libname, false);
       }
   
       /**
-<span class="new">+      * Provide the JVM with a hint that this call is made from within a spinning</span>
-<span class="new">+      * loop. The JVM may assume that the speed of executing the loop (e.g. in</span>
-<span class="new">+      * terms of number of loop executions per second) is less important than the</span>
-<span class="new">+      * reaction time to events that would cause the loop to terminate, or than</span>
-<span class="new">+      * potential power savings that may be derived from possible execution</span>
-<span class="new">+      * choices. The JVM will not slow down the loop execution to a point where</span>
-<span class="new">+      * execution will be delayed indefinitely, but other choices of loop execution</span>
-<span class="new">+      * speed are system-specific.</span>
+<span class="new">+      * Method signifying that the caller is momentarily unable to</span>
+<span class="new">+      * progress until the occurrence of one or more actions of one or</span>
+<span class="new">+      * more other activities.  When invoked within each iteration, this</span>
+<span class="new">+      * method typically improves performance of spin wait loop</span>
+<span class="new">+      * constructions.</span>
 <span class="new">+      */</span>
 <span class="new">+     @HotSpotIntrinsicCandidate</span>
 <span class="new">+     public static final void onSpinWait() {};</span>

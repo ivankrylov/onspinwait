@@ -876,14 +876,11 @@ public class Runtime {
     }
 
     /**
-     * Provide the JVM with a hint that this call is made from within a spinning
-     * loop. The JVM may assume that the speed of executing the loop (e.g. in
-     * terms of number of loop executions per second) is less important than the
-     * reaction time to events that would cause the loop to terminate, or than
-     * potential power savings that may be derived from possible execution
-     * choices. The JVM will not slow down the loop execution to a point where
-     * execution will be delayed indefinitely, but other choices of loop execution
-     * speed are system-specific.
+     * Method signifying that the caller is momentarily unable to
+     * progress until the occurrence of one or more actions of one or
+     * more other activities.  When invoked within each iteration, this
+     * method typically improves performance of spin wait loop
+     * constructions.
      */
     @HotSpotIntrinsicCandidate
     public static final void onSpinWait() {};

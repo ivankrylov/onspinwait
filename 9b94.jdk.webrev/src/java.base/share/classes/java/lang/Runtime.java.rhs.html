@@ -961,73 +961,70 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
  876     }
 <a name="2" id="anc2"></a><span class="new"> 877 </span>
 <span class="new"> 878     /**</span>
-<span class="new"> 879      * Provide the JVM with a hint that this call is made from within a spinning</span>
-<span class="new"> 880      * loop. The JVM may assume that the speed of executing the loop (e.g. in</span>
-<span class="new"> 881      * terms of number of loop executions per second) is less important than the</span>
-<span class="new"> 882      * reaction time to events that would cause the loop to terminate, or than</span>
-<span class="new"> 883      * potential power savings that may be derived from possible execution</span>
-<span class="new"> 884      * choices. The JVM will not slow down the loop execution to a point where</span>
-<span class="new"> 885      * execution will be delayed indefinitely, but other choices of loop execution</span>
-<span class="new"> 886      * speed are system-specific.</span>
-<span class="new"> 887      */</span>
-<span class="new"> 888     @HotSpotIntrinsicCandidate</span>
-<span class="new"> 889     public static final void onSpinWait() {};</span>
- 890 
- 891     /**
- 892      * Creates a localized version of an input stream. This method takes
- 893      * an {@code InputStream} and returns an {@code InputStream}
- 894      * equivalent to the argument in all respects except that it is
- 895      * localized: as characters in the local character set are read from
- 896      * the stream, they are automatically converted from the local
- 897      * character set to Unicode.
- 898      * &lt;p&gt;
- 899      * If the argument is already a localized stream, it may be returned
- 900      * as the result.
- 901      *
- 902      * @param      in InputStream to localize
- 903      * @return     a localized input stream
- 904      * @see        java.io.InputStream
- 905      * @see        java.io.BufferedReader#BufferedReader(java.io.Reader)
- 906      * @see        java.io.InputStreamReader#InputStreamReader(java.io.InputStream)
- 907      * @deprecated As of JDK&amp;nbsp;1.1, the preferred way to translate a byte
- 908      * stream in the local encoding into a character stream in Unicode is via
- 909      * the {@code InputStreamReader} and {@code BufferedReader}
- 910      * classes.
- 911      */
- 912     @Deprecated
- 913     public InputStream getLocalizedInputStream(InputStream in) {
- 914         return in;
- 915     }
- 916 
- 917     /**
- 918      * Creates a localized version of an output stream. This method
- 919      * takes an {@code OutputStream} and returns an
- 920      * {@code OutputStream} equivalent to the argument in all respects
- 921      * except that it is localized: as Unicode characters are written to
- 922      * the stream, they are automatically converted to the local
- 923      * character set.
- 924      * &lt;p&gt;
- 925      * If the argument is already a localized stream, it may be returned
- 926      * as the result.
- 927      *
- 928      * @deprecated As of JDK&amp;nbsp;1.1, the preferred way to translate a
- 929      * Unicode character stream into a byte stream in the local encoding is via
- 930      * the {@code OutputStreamWriter}, {@code BufferedWriter}, and
- 931      * {@code PrintWriter} classes.
- 932      *
- 933      * @param      out OutputStream to localize
- 934      * @return     a localized output stream
- 935      * @see        java.io.OutputStream
- 936      * @see        java.io.BufferedWriter#BufferedWriter(java.io.Writer)
- 937      * @see        java.io.OutputStreamWriter#OutputStreamWriter(java.io.OutputStream)
- 938      * @see        java.io.PrintWriter#PrintWriter(java.io.OutputStream)
- 939      */
- 940     @Deprecated
- 941     public OutputStream getLocalizedOutputStream(OutputStream out) {
- 942         return out;
- 943     }
- 944 
- 945 }
+<span class="new"> 879      * Method signifying that the caller is momentarily unable to</span>
+<span class="new"> 880      * progress until the occurrence of one or more actions of one or</span>
+<span class="new"> 881      * more other activities.  When invoked within each iteration, this</span>
+<span class="new"> 882      * method typically improves performance of spin wait loop</span>
+<span class="new"> 883      * constructions.</span>
+<span class="new"> 884      */</span>
+<span class="new"> 885     @HotSpotIntrinsicCandidate</span>
+<span class="new"> 886     public static final void onSpinWait() {};</span>
+ 887 
+ 888     /**
+ 889      * Creates a localized version of an input stream. This method takes
+ 890      * an {@code InputStream} and returns an {@code InputStream}
+ 891      * equivalent to the argument in all respects except that it is
+ 892      * localized: as characters in the local character set are read from
+ 893      * the stream, they are automatically converted from the local
+ 894      * character set to Unicode.
+ 895      * &lt;p&gt;
+ 896      * If the argument is already a localized stream, it may be returned
+ 897      * as the result.
+ 898      *
+ 899      * @param      in InputStream to localize
+ 900      * @return     a localized input stream
+ 901      * @see        java.io.InputStream
+ 902      * @see        java.io.BufferedReader#BufferedReader(java.io.Reader)
+ 903      * @see        java.io.InputStreamReader#InputStreamReader(java.io.InputStream)
+ 904      * @deprecated As of JDK&amp;nbsp;1.1, the preferred way to translate a byte
+ 905      * stream in the local encoding into a character stream in Unicode is via
+ 906      * the {@code InputStreamReader} and {@code BufferedReader}
+ 907      * classes.
+ 908      */
+ 909     @Deprecated
+ 910     public InputStream getLocalizedInputStream(InputStream in) {
+ 911         return in;
+ 912     }
+ 913 
+ 914     /**
+ 915      * Creates a localized version of an output stream. This method
+ 916      * takes an {@code OutputStream} and returns an
+ 917      * {@code OutputStream} equivalent to the argument in all respects
+ 918      * except that it is localized: as Unicode characters are written to
+ 919      * the stream, they are automatically converted to the local
+ 920      * character set.
+ 921      * &lt;p&gt;
+ 922      * If the argument is already a localized stream, it may be returned
+ 923      * as the result.
+ 924      *
+ 925      * @deprecated As of JDK&amp;nbsp;1.1, the preferred way to translate a
+ 926      * Unicode character stream into a byte stream in the local encoding is via
+ 927      * the {@code OutputStreamWriter}, {@code BufferedWriter}, and
+ 928      * {@code PrintWriter} classes.
+ 929      *
+ 930      * @param      out OutputStream to localize
+ 931      * @return     a localized output stream
+ 932      * @see        java.io.OutputStream
+ 933      * @see        java.io.BufferedWriter#BufferedWriter(java.io.Writer)
+ 934      * @see        java.io.OutputStreamWriter#OutputStreamWriter(java.io.OutputStream)
+ 935      * @see        java.io.PrintWriter#PrintWriter(java.io.OutputStream)
+ 936      */
+ 937     @Deprecated
+ 938     public OutputStream getLocalizedOutputStream(OutputStream out) {
+ 939         return out;
+ 940     }
+ 941 
+ 942 }
 <a name="3" id="anc3"></a><b style="font-size: large; color: red">--- EOF ---</b>
 
 
