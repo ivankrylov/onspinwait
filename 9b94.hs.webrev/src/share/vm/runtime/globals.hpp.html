@@ -940,8 +940,8 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
  858   diagnostic(ccstrlist, DisableIntrinsic, "",                               \
  859          "do not expand intrinsics whose (internal) names appear here")     \
  860                                                                             \
- 861   product(bool, UseSpinLoopHintIntrinsic, false,                            \
- 862           "Use intrinsics for spinLoopHint")                                \
+ 861   product(bool, UseOnSpinWaitIntrinsic, false,                              \
+ 862           "Use intrinsic for onSpinWait")                                   \
  863                                                                             \
  864   develop(bool, TraceCallFixup, false,                                      \
  865           "Trace all call fixups")                                          \

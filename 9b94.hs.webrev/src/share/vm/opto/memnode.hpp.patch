@@ -1,12 +1,12 @@
---- old/src/share/vm/opto/memnode.hpp	2015-11-30 17:23:06.844785629 +0300
-+++ new/src/share/vm/opto/memnode.hpp	2015-11-30 17:23:06.768785631 +0300
+--- old/src/share/vm/opto/memnode.hpp	2015-11-30 22:53:44.030593573 +0300
++++ new/src/share/vm/opto/memnode.hpp	2015-11-30 22:53:43.867253787 +0300
 @@ -1075,6 +1075,13 @@
    virtual uint ideal_reg() const { return 0; } // not matched in the AD file
  };
  
-+class SpinLoopHintNode: public MemBarNode {
++class OnSpinWaitNode: public MemBarNode {
 +public:
-+  SpinLoopHintNode(Compile* C, int alias_idx, Node* precedent)
++  OnSpinWaitNode(Compile* C, int alias_idx, Node* precedent)
 +    : MemBarNode(C, alias_idx, precedent) {}
 +  virtual int Opcode() const;
 +};

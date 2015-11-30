@@ -1,10 +1,10 @@
---- old/src/share/vm/opto/classes.hpp	2015-11-30 17:23:05.620785662 +0300
-+++ new/src/share/vm/opto/classes.hpp	2015-11-30 17:23:05.540785664 +0300
+--- old/src/share/vm/opto/classes.hpp	2015-11-30 22:53:39.612926930 +0300
++++ new/src/share/vm/opto/classes.hpp	2015-11-30 22:53:39.441660645 +0300
 @@ -169,6 +169,7 @@
  macro(Mach)
  macro(MachProj)
  macro(MaxI)
-+macro(SpinLoopHint)
++macro(OnSpinWait)
  macro(MemBarAcquire)
  macro(LoadFence)
  macro(MemBarAcquireLock)

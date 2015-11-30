@@ -1,50 +1,50 @@
---- old/src/cpu/ppc/vm/vm_version_ppc.cpp	2015-11-30 17:23:03.368785722 +0300
-+++ new/src/cpu/ppc/vm/vm_version_ppc.cpp	2015-11-30 17:23:03.268785725 +0300
+--- old/src/cpu/ppc/vm/vm_version_ppc.cpp	2015-11-30 22:53:30.625899055 +0300
++++ new/src/cpu/ppc/vm/vm_version_ppc.cpp	2015-11-30 22:53:29.387961463 +0300
 @@ -173,6 +173,12 @@
      FLAG_SET_DEFAULT(UseCRC32CIntrinsics, false);
    }
  
-+  if (UseSpinLoopHintIntrinsic) {
-+    if (!FLAG_IS_DEFAULT(UseSpinLoopHintIntrinsic))
-+      warning("spinLoopHint intrinsic is not available on this CPU");
-+    FLAG_SET_DEFAULT(UseSpinLoopHintIntrinsic, false);
++  if (UseOnSpinWaitIntrinsic) {
++    if (!FLAG_IS_DEFAULT(UseOnSpinWaitIntrinsic))
++      warning("onSpinWait intrinsic is not available on this CPU");
++    FLAG_SET_DEFAULT(UseOnSpinWaitIntrinsic, false);
 +  }
 +
    // The AES intrinsic stubs require AES instruction support.
    if (UseAES) {
      warning("AES instructions are not available on this CPU");
---- old/src/cpu/sparc/vm/vm_version_sparc.cpp	2015-11-30 17:23:03.648785715 +0300
-+++ new/src/cpu/sparc/vm/vm_version_sparc.cpp	2015-11-30 17:23:03.568785717 +0300
+--- old/src/cpu/sparc/vm/vm_version_sparc.cpp	2015-11-30 22:53:32.094837110 +0300
++++ new/src/cpu/sparc/vm/vm_version_sparc.cpp	2015-11-30 22:53:31.792281465 +0300
 @@ -347,6 +347,12 @@
      FLAG_SET_DEFAULT(UseAdler32Intrinsics, false);
    }
  
-+  if (UseSpinLoopHintIntrinsic) {
-+    if (!FLAG_IS_DEFAULT(UseSpinLoopHintIntrinsic))
-+      warning("spinLoopHint intrinsic is not available on this CPU");
-+    FLAG_SET_DEFAULT(UseSpinLoopHintIntrinsic, false);
++  if (UseOnSpinWaitIntrinsic) {
++    if (!FLAG_IS_DEFAULT(UseOnSpinWaitIntrinsic))
++      warning("onSpinWait intrinsic is not available on this CPU");
++    FLAG_SET_DEFAULT(UseOnSpinWaitIntrinsic, false);
 +  }
 +
    if (FLAG_IS_DEFAULT(ContendedPaddingWidth) &&
      (cache_line_size > ContendedPaddingWidth))
      ContendedPaddingWidth = cache_line_size;
---- old/src/cpu/x86/vm/x86_64.ad	2015-11-30 17:23:03.924785707 +0300
-+++ new/src/cpu/x86/vm/x86_64.ad	2015-11-30 17:23:03.840785709 +0300
+--- old/src/cpu/x86/vm/x86_64.ad	2015-11-30 22:53:33.333006295 +0300
++++ new/src/cpu/x86/vm/x86_64.ad	2015-11-30 22:53:32.994584072 +0300
 @@ -6340,6 +6340,25 @@
    ins_pipe(empty);
  %}
  
-+instruct spinloophint()
++instruct onspinwait()
 +%{
-+  match(SpinLoopHint);
++  match(OnSpinWait);
 +  ins_cost(200);
 +
 +  format %{
 +    $$template
 +    if (os::is_MP()) {
-+      $$emit$$"pause\t! membar_spinloophint"
++      $$emit$$"pause\t! membar_onspinwait"
 +    } else {
-+      $$emit$$"MEMBAR-spinloophint ! (empty encoding)"
++      $$emit$$"MEMBAR-onspinwait ! (empty encoding)"
 +    }
 +  %}
 +  ins_encode %{
@@ -56,13 +56,13 @@
  instruct membar_volatile(rFlagsReg cr) %{
    match(MemBarVolatile);
    effect(KILL cr);
---- old/src/share/vm/classfile/vmSymbols.cpp	2015-11-30 17:23:04.488785692 +0300
-+++ new/src/share/vm/classfile/vmSymbols.cpp	2015-11-30 17:23:04.384785695 +0300
+--- old/src/share/vm/classfile/vmSymbols.cpp	2015-11-30 22:53:34.718595406 +0300
++++ new/src/share/vm/classfile/vmSymbols.cpp	2015-11-30 22:53:34.312461721 +0300
 @@ -355,6 +355,7 @@
    case vmIntrinsics::_updateCRC32:
    case vmIntrinsics::_updateBytesCRC32:
    case vmIntrinsics::_updateByteBufferCRC32:
-+  case vmIntrinsics::_spinLoopHint:
++  case vmIntrinsics::_onSpinWait:
      return true;
    default:
      return false;
@@ -70,7 +70,7 @@
    case vmIntrinsics::_updateCRC32:
    case vmIntrinsics::_updateBytesCRC32:
    case vmIntrinsics::_updateByteBufferCRC32:
-+  case vmIntrinsics::_spinLoopHint:
++  case vmIntrinsics::_onSpinWait:
      return false;
    default:
      return true;
@@ -78,14 +78,14 @@
    case vmIntrinsics::_montgomerySquare:
      if (!UseMontgomerySquareIntrinsic) return true;
      break;
-+  case vmIntrinsics::_spinLoopHint:
-+    if (!UseSpinLoopHintIntrinsic) return true;
++  case vmIntrinsics::_onSpinWait:
++    if (!UseOnSpinWaitIntrinsic) return true;
 +    break;
    case vmIntrinsics::_addExactI:
    case vmIntrinsics::_addExactL:
    case vmIntrinsics::_decrementExactI:
---- old/src/share/vm/classfile/vmSymbols.hpp	2015-11-30 17:23:04.836785683 +0300
-+++ new/src/share/vm/classfile/vmSymbols.hpp	2015-11-30 17:23:04.752785685 +0300
+--- old/src/share/vm/classfile/vmSymbols.hpp	2015-11-30 22:53:35.753886255 +0300
++++ new/src/share/vm/classfile/vmSymbols.hpp	2015-11-30 22:53:35.546824469 +0300
 @@ -75,6 +75,7 @@
    template(java_lang_Integer_IntegerCache,            "java/lang/Integer$IntegerCache")           \
    template(java_lang_Long,                            "java/lang/Long")                           \
@@ -98,40 +98,40 @@
     do_name(     newArray_name,                                    "newArray")                                           \
     do_signature(newArray_signature,                               "(Ljava/lang/Class;I)Ljava/lang/Object;")             \
                                                                                                                          \
-+  do_intrinsic(_spinLoopHint,             java_lang_Runtime,      spinLoopHint_name, spinLoopHint_signature,     F_S)   \
-+   do_name(     spinLoopHint_name,                               "onSpinWait")                                          \
-+   do_alias(    spinLoopHint_signature,                           void_method_signature)                                \
++  do_intrinsic(_onSpinWait,               java_lang_Runtime,      onSpinWait_name, onSpinWait_signature,         F_S)   \
++   do_name(     onSpinWait_name,                                  "onSpinWait")                                          \
++   do_alias(    onSpinWait_signature,                             void_method_signature)                                \
 +                                                                                                                        \
    do_intrinsic(_copyOf,                   java_util_Arrays,       copyOf_name, copyOf_signature,                 F_S)   \
     do_name(     copyOf_name,                                     "copyOf")                                              \
     do_signature(copyOf_signature,             "([Ljava/lang/Object;ILjava/lang/Class;)[Ljava/lang/Object;")             \
---- old/src/share/vm/opto/c2compiler.cpp	2015-11-30 17:23:05.216785672 +0300
-+++ new/src/share/vm/opto/c2compiler.cpp	2015-11-30 17:23:05.092785676 +0300
+--- old/src/share/vm/opto/c2compiler.cpp	2015-11-30 22:53:36.745440527 +0300
++++ new/src/share/vm/opto/c2compiler.cpp	2015-11-30 22:53:36.510490252 +0300
 @@ -399,6 +399,7 @@
    case vmIntrinsics::_fullFence:
    case vmIntrinsics::_currentThread:
    case vmIntrinsics::_isInterrupted:
-+  case vmIntrinsics::_spinLoopHint:
++  case vmIntrinsics::_onSpinWait:
  #ifdef TRACE_HAVE_INTRINSICS
    case vmIntrinsics::_classID:
    case vmIntrinsics::_threadID:
---- old/src/share/vm/opto/classes.hpp	2015-11-30 17:23:05.620785662 +0300
-+++ new/src/share/vm/opto/classes.hpp	2015-11-30 17:23:05.540785664 +0300
+--- old/src/share/vm/opto/classes.hpp	2015-11-30 22:53:39.612926930 +0300
++++ new/src/share/vm/opto/classes.hpp	2015-11-30 22:53:39.441660645 +0300
 @@ -169,6 +169,7 @@
  macro(Mach)
  macro(MachProj)
  macro(MaxI)
-+macro(SpinLoopHint)
++macro(OnSpinWait)
  macro(MemBarAcquire)
  macro(LoadFence)
  macro(MemBarAcquireLock)
---- old/src/share/vm/opto/library_call.cpp	2015-11-30 17:23:05.884785654 +0300
-+++ new/src/share/vm/opto/library_call.cpp	2015-11-30 17:23:05.800785657 +0300
+--- old/src/share/vm/opto/library_call.cpp	2015-11-30 22:53:41.190250938 +0300
++++ new/src/share/vm/opto/library_call.cpp	2015-11-30 22:53:40.903451653 +0300
 @@ -274,6 +274,7 @@
    bool inline_unsafe_load_store(BasicType type,  LoadStoreKind kind);
    bool inline_unsafe_ordered_store(BasicType type);
    bool inline_unsafe_fence(vmIntrinsics::ID id);
-+  bool inline_spinloophint();
++  bool inline_onspinwait();
    bool inline_fp_conversions(vmIntrinsics::ID id);
    bool inline_number_methods(vmIntrinsics::ID id);
    bool inline_reference_get();
@@ -139,7 +139,7 @@
    case vmIntrinsics::_storeFence:
    case vmIntrinsics::_fullFence:                return inline_unsafe_fence(intrinsic_id());
  
-+  case vmIntrinsics::_spinLoopHint:             return inline_spinloophint();
++  case vmIntrinsics::_onSpinWait:             return inline_onspinwait();
 +
    case vmIntrinsics::_currentThread:            return inline_native_currentThread();
    case vmIntrinsics::_isInterrupted:            return inline_native_isInterrupted();
@@ -148,8 +148,8 @@
    }
  }
  
-+bool LibraryCallKit::inline_spinloophint() {
-+  insert_mem_bar(Op_SpinLoopHint);
++bool LibraryCallKit::inline_onspinwait() {
++  insert_mem_bar(Op_OnSpinWait);
 +  return true;
 +}
 +
@@ -161,40 +161,40 @@
      query_value = gen_instanceof(obj, kls, safe_for_replace);
      break;
 +  
-+  case vmIntrinsics::_spinLoopHint:
++  case vmIntrinsics::_onSpinWait:
 +    break;
  
    case vmIntrinsics::_getModifiers:
      p = basic_plus_adr(kls, in_bytes(Klass::modifier_flags_offset()));
---- old/src/share/vm/opto/matcher.cpp	2015-11-30 17:23:06.240785645 +0300
-+++ new/src/share/vm/opto/matcher.cpp	2015-11-30 17:23:06.156785647 +0300
+--- old/src/share/vm/opto/matcher.cpp	2015-11-30 22:53:42.229932348 +0300
++++ new/src/share/vm/opto/matcher.cpp	2015-11-30 22:53:42.078554324 +0300
 @@ -943,6 +943,7 @@
      case Op_MemBarCPUOrder: // %%% these ideals should have narrower adr_type?
      case Op_StrInflatedCopy:
      case Op_StrCompressedCopy:
-+    case Op_SpinLoopHint:
++    case Op_OnSpinWait:
      case Op_EncodeISOArray:
        nidx = Compile::AliasIdxTop;
        nat = NULL;
---- old/src/share/vm/opto/memnode.cpp	2015-11-30 17:23:06.532785637 +0300
-+++ new/src/share/vm/opto/memnode.cpp	2015-11-30 17:23:06.452785639 +0300
+--- old/src/share/vm/opto/memnode.cpp	2015-11-30 22:53:43.130240347 +0300
++++ new/src/share/vm/opto/memnode.cpp	2015-11-30 22:53:42.946986094 +0300
 @@ -2891,6 +2891,7 @@
    case Op_MemBarReleaseLock: return new MemBarReleaseLockNode(C, atp, pn);
    case Op_MemBarVolatile:    return new MemBarVolatileNode(C, atp, pn);
    case Op_MemBarCPUOrder:    return new MemBarCPUOrderNode(C, atp, pn);
-+  case Op_SpinLoopHint:      return new SpinLoopHintNode(C, atp, pn);
++  case Op_OnSpinWait:        return new OnSpinWaitNode(C, atp, pn);
    case Op_Initialize:        return new InitializeNode(C, atp, pn);
    case Op_MemBarStoreStore:  return new MemBarStoreStoreNode(C, atp, pn);
    default: ShouldNotReachHere(); return NULL;
---- old/src/share/vm/opto/memnode.hpp	2015-11-30 17:23:06.844785629 +0300
-+++ new/src/share/vm/opto/memnode.hpp	2015-11-30 17:23:06.768785631 +0300
+--- old/src/share/vm/opto/memnode.hpp	2015-11-30 22:53:44.030593573 +0300
++++ new/src/share/vm/opto/memnode.hpp	2015-11-30 22:53:43.867253787 +0300
 @@ -1075,6 +1075,13 @@
    virtual uint ideal_reg() const { return 0; } // not matched in the AD file
  };
  
-+class SpinLoopHintNode: public MemBarNode {
++class OnSpinWaitNode: public MemBarNode {
 +public:
-+  SpinLoopHintNode(Compile* C, int alias_idx, Node* precedent)
++  OnSpinWaitNode(Compile* C, int alias_idx, Node* precedent)
 +    : MemBarNode(C, alias_idx, precedent) {}
 +  virtual int Opcode() const;
 +};
@@ -202,25 +202,25 @@
  // Isolation of object setup after an AllocateNode and before next safepoint.
  // (See comment in memnode.cpp near InitializeNode::InitializeNode for semantics.)
  class InitializeNode: public MemBarNode {
---- old/src/share/vm/runtime/globals.hpp	2015-11-30 17:23:07.148785620 +0300
-+++ new/src/share/vm/runtime/globals.hpp	2015-11-30 17:23:07.052785623 +0300
+--- old/src/share/vm/runtime/globals.hpp	2015-11-30 22:53:45.357310590 +0300
++++ new/src/share/vm/runtime/globals.hpp	2015-11-30 22:53:44.799520390 +0300
 @@ -858,6 +858,9 @@
    diagnostic(ccstrlist, DisableIntrinsic, "",                               \
           "do not expand intrinsics whose (internal) names appear here")     \
                                                                              \
-+  product(bool, UseSpinLoopHintIntrinsic, false,                            \
-+          "Use intrinsics for spinLoopHint")                                \
++  product(bool, UseOnSpinWaitIntrinsic, false,                              \
++          "Use intrinsic for onSpinWait")                                   \
 +                                                                            \
    develop(bool, TraceCallFixup, false,                                      \
            "Trace all call fixups")                                          \
                                                                              \
---- old/src/share/vm/runtime/vmStructs.cpp	2015-11-30 17:23:07.480785612 +0300
-+++ new/src/share/vm/runtime/vmStructs.cpp	2015-11-30 17:23:07.400785614 +0300
+--- old/src/share/vm/runtime/vmStructs.cpp	2015-11-30 22:53:46.369341211 +0300
++++ new/src/share/vm/runtime/vmStructs.cpp	2015-11-30 22:53:46.178084773 +0300
 @@ -1931,6 +1931,7 @@
    declare_c2_type(StoreFenceNode, MemBarNode)                             \
    declare_c2_type(MemBarVolatileNode, MemBarNode)                         \
    declare_c2_type(MemBarCPUOrderNode, MemBarNode)                         \
-+  declare_c2_type(SpinLoopHintNode, MemBarNode)                           \
++  declare_c2_type(OnSpinWaitNode, MemBarNode)                             \
    declare_c2_type(InitializeNode, MemBarNode)                             \
    declare_c2_type(ThreadLocalNode, Node)                                  \
    declare_c2_type(Opaque1Node, Node)                                      \

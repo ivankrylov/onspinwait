@@ -258,10 +258,10 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
  173     FLAG_SET_DEFAULT(UseCRC32CIntrinsics, false);
  174   }
  175 
-<a name="1" id="anc1"></a><span class="new"> 176   if (UseSpinLoopHintIntrinsic) {</span>
-<span class="new"> 177     if (!FLAG_IS_DEFAULT(UseSpinLoopHintIntrinsic))</span>
-<span class="new"> 178       warning("spinLoopHint intrinsic is not available on this CPU");</span>
-<span class="new"> 179     FLAG_SET_DEFAULT(UseSpinLoopHintIntrinsic, false);</span>
+<a name="1" id="anc1"></a><span class="new"> 176   if (UseOnSpinWaitIntrinsic) {</span>
+<span class="new"> 177     if (!FLAG_IS_DEFAULT(UseOnSpinWaitIntrinsic))</span>
+<span class="new"> 178       warning("onSpinWait intrinsic is not available on this CPU");</span>
+<span class="new"> 179     FLAG_SET_DEFAULT(UseOnSpinWaitIntrinsic, false);</span>
 <span class="new"> 180   }</span>
 <span class="new"> 181 </span>
  182   // The AES intrinsic stubs require AES instruction support.

@@ -6340,17 +6340,17 @@ instruct membar_release_lock()
   ins_pipe(empty);
 %}
 
-instruct spinloophint()
+instruct onspinwait()
 %{
-  match(SpinLoopHint);
+  match(OnSpinWait);
   ins_cost(200);
 
   format %{
     $$template
     if (os::is_MP()) {
-      $$emit$$"pause\t! membar_spinloophint"
+      $$emit$$"pause\t! membar_onspinwait"
     } else {
-      $$emit$$"MEMBAR-spinloophint ! (empty encoding)"
+      $$emit$$"MEMBAR-onspinwait ! (empty encoding)"
     }
   %}
   ins_encode %{

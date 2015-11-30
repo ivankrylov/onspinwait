@@ -99,10 +99,10 @@ span.new {
      FLAG_SET_DEFAULT(UseAdler32Intrinsics, false);
    }
  
-<span class="new">+  if (UseSpinLoopHintIntrinsic) {</span>
-<span class="new">+    if (!FLAG_IS_DEFAULT(UseSpinLoopHintIntrinsic))</span>
-<span class="new">+      warning("spinLoopHint intrinsic is not available on this CPU");</span>
-<span class="new">+    FLAG_SET_DEFAULT(UseSpinLoopHintIntrinsic, false);</span>
+<span class="new">+  if (UseOnSpinWaitIntrinsic) {</span>
+<span class="new">+    if (!FLAG_IS_DEFAULT(UseOnSpinWaitIntrinsic))</span>
+<span class="new">+      warning("onSpinWait intrinsic is not available on this CPU");</span>
+<span class="new">+    FLAG_SET_DEFAULT(UseOnSpinWaitIntrinsic, false);</span>
 <span class="new">+  }</span>
 <span class="new">+</span>
    if (FLAG_IS_DEFAULT(ContendedPaddingWidth) &amp;&amp;

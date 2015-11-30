@@ -6422,17 +6422,17 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
 6340   ins_pipe(empty);
 6341 %}
 6342 
-6343 instruct spinloophint()
+6343 instruct onspinwait()
 6344 %{
-6345   match(SpinLoopHint);
+6345   match(OnSpinWait);
 6346   ins_cost(200);
 6347 
 6348   format %{
 6349     $$template
 6350     if (os::is_MP()) {
-6351       $$emit$$"pause\t! membar_spinloophint"
+6351       $$emit$$"pause\t! membar_onspinwait"
 6352     } else {
-6353       $$emit$$"MEMBAR-spinloophint ! (empty encoding)"
+6353       $$emit$$"MEMBAR-onspinwait ! (empty encoding)"
 6354     }
 6355   %}
 6356   ins_encode %{

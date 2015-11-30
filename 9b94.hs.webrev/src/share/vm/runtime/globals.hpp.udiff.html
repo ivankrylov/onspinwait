@@ -99,8 +99,8 @@ span.new {
    diagnostic(ccstrlist, DisableIntrinsic, "",                               \
           "do not expand intrinsics whose (internal) names appear here")     \
                                                                              \
-<span class="new">+  product(bool, UseSpinLoopHintIntrinsic, false,                            \</span>
-<span class="new">+          "Use intrinsics for spinLoopHint")                                \</span>
+<span class="new">+  product(bool, UseOnSpinWaitIntrinsic, false,                              \</span>
+<span class="new">+          "Use intrinsic for onSpinWait")                                   \</span>
 <span class="new">+                                                                            \</span>
    develop(bool, TraceCallFixup, false,                                      \
            "Trace all call fixups")                                          \

@@ -99,7 +99,7 @@ span.new {
      case Op_MemBarCPUOrder: // %%% these ideals should have narrower adr_type?
      case Op_StrInflatedCopy:
      case Op_StrCompressedCopy:
-<span class="new">+    case Op_SpinLoopHint:</span>
+<span class="new">+    case Op_OnSpinWait:</span>
      case Op_EncodeISOArray:
        nidx = Compile::AliasIdxTop;
        nat = NULL;

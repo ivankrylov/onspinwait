@@ -1,10 +1,10 @@
---- old/src/share/vm/classfile/vmSymbols.cpp	2015-11-30 17:23:04.488785692 +0300
-+++ new/src/share/vm/classfile/vmSymbols.cpp	2015-11-30 17:23:04.384785695 +0300
+--- old/src/share/vm/classfile/vmSymbols.cpp	2015-11-30 22:53:34.718595406 +0300
++++ new/src/share/vm/classfile/vmSymbols.cpp	2015-11-30 22:53:34.312461721 +0300
 @@ -355,6 +355,7 @@
    case vmIntrinsics::_updateCRC32:
    case vmIntrinsics::_updateBytesCRC32:
    case vmIntrinsics::_updateByteBufferCRC32:
-+  case vmIntrinsics::_spinLoopHint:
++  case vmIntrinsics::_onSpinWait:
      return true;
    default:
      return false;
@@ -12,7 +12,7 @@
    case vmIntrinsics::_updateCRC32:
    case vmIntrinsics::_updateBytesCRC32:
    case vmIntrinsics::_updateByteBufferCRC32:
-+  case vmIntrinsics::_spinLoopHint:
++  case vmIntrinsics::_onSpinWait:
      return false;
    default:
      return true;
@@ -20,8 +20,8 @@
    case vmIntrinsics::_montgomerySquare:
      if (!UseMontgomerySquareIntrinsic) return true;
      break;
-+  case vmIntrinsics::_spinLoopHint:
-+    if (!UseSpinLoopHintIntrinsic) return true;
++  case vmIntrinsics::_onSpinWait:
++    if (!UseOnSpinWaitIntrinsic) return true;
 +    break;
    case vmIntrinsics::_addExactI:
    case vmIntrinsics::_addExactL:

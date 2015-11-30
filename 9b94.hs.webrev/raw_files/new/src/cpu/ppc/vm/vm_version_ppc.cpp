@@ -173,10 +173,10 @@ void VM_Version::initialize() {
     FLAG_SET_DEFAULT(UseCRC32CIntrinsics, false);
   }
 
-  if (UseSpinLoopHintIntrinsic) {
-    if (!FLAG_IS_DEFAULT(UseSpinLoopHintIntrinsic))
-      warning("spinLoopHint intrinsic is not available on this CPU");
-    FLAG_SET_DEFAULT(UseSpinLoopHintIntrinsic, false);
+  if (UseOnSpinWaitIntrinsic) {
+    if (!FLAG_IS_DEFAULT(UseOnSpinWaitIntrinsic))
+      warning("onSpinWait intrinsic is not available on this CPU");
+    FLAG_SET_DEFAULT(UseOnSpinWaitIntrinsic, false);
   }
 
   // The AES intrinsic stubs require AES instruction support.

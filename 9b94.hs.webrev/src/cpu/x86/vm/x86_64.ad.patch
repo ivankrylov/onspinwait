@@ -1,20 +1,20 @@
---- old/src/cpu/x86/vm/x86_64.ad	2015-11-30 17:23:03.924785707 +0300
-+++ new/src/cpu/x86/vm/x86_64.ad	2015-11-30 17:23:03.840785709 +0300
+--- old/src/cpu/x86/vm/x86_64.ad	2015-11-30 22:53:33.333006295 +0300
++++ new/src/cpu/x86/vm/x86_64.ad	2015-11-30 22:53:32.994584072 +0300
 @@ -6340,6 +6340,25 @@
    ins_pipe(empty);
  %}
  
-+instruct spinloophint()
++instruct onspinwait()
 +%{
-+  match(SpinLoopHint);
++  match(OnSpinWait);
 +  ins_cost(200);
 +
 +  format %{
 +    $$template
 +    if (os::is_MP()) {
-+      $$emit$$"pause\t! membar_spinloophint"
++      $$emit$$"pause\t! membar_onspinwait"
 +    } else {
-+      $$emit$$"MEMBAR-spinloophint ! (empty encoding)"
++      $$emit$$"MEMBAR-onspinwait ! (empty encoding)"
 +    }
 +  %}
 +  ins_encode %{

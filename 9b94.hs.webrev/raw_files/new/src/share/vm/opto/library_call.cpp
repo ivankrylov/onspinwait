@@ -274,7 +274,7 @@ class LibraryCallKit : public GraphKit {
   bool inline_unsafe_load_store(BasicType type,  LoadStoreKind kind);
   bool inline_unsafe_ordered_store(BasicType type);
   bool inline_unsafe_fence(vmIntrinsics::ID id);
-  bool inline_spinloophint();
+  bool inline_onspinwait();
   bool inline_fp_conversions(vmIntrinsics::ID id);
   bool inline_number_methods(vmIntrinsics::ID id);
   bool inline_reference_get();
@@ -630,7 +630,7 @@ bool LibraryCallKit::try_to_inline(int predicate) {
   case vmIntrinsics::_storeFence:
   case vmIntrinsics::_fullFence:                return inline_unsafe_fence(intrinsic_id());
 
-  case vmIntrinsics::_spinLoopHint:             return inline_spinloophint();
+  case vmIntrinsics::_onSpinWait:             return inline_onspinwait();
 
   case vmIntrinsics::_currentThread:            return inline_native_currentThread();
   case vmIntrinsics::_isInterrupted:            return inline_native_isInterrupted();
@@ -2977,8 +2977,8 @@ bool LibraryCallKit::inline_unsafe_fence(vmIntrinsics::ID id) {
   }
 }
 
-bool LibraryCallKit::inline_spinloophint() {
-  insert_mem_bar(Op_SpinLoopHint);
+bool LibraryCallKit::inline_onspinwait() {
+  insert_mem_bar(Op_OnSpinWait);
   return true;
 }
 
@@ -3365,7 +3365,7 @@ bool LibraryCallKit::inline_native_Class_query(vmIntrinsics::ID id) {
     query_value = gen_instanceof(obj, kls, safe_for_replace);
     break;
   
-  case vmIntrinsics::_spinLoopHint:
+  case vmIntrinsics::_onSpinWait:
     break;
 
   case vmIntrinsics::_getModifiers:

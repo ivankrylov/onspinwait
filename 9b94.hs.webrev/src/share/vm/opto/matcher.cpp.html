@@ -1025,7 +1025,7 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
  943     case Op_MemBarCPUOrder: // %%% these ideals should have narrower adr_type?
  944     case Op_StrInflatedCopy:
  945     case Op_StrCompressedCopy:
- 946     case Op_SpinLoopHint:
+ 946     case Op_OnSpinWait:
  947     case Op_EncodeISOArray:
  948       nidx = Compile::AliasIdxTop;
  949       nat = NULL;

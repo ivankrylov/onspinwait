@@ -91,7 +91,7 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
     declare_c2_type(StoreFenceNode, MemBarNode)                             \
     declare_c2_type(MemBarVolatileNode, MemBarNode)                         \
     declare_c2_type(MemBarCPUOrderNode, MemBarNode)                         \
-<span class="new">+   declare_c2_type(SpinLoopHintNode, MemBarNode)                           \</span>
+<span class="new">+   declare_c2_type(OnSpinWaitNode, MemBarNode)                             \</span>
     declare_c2_type(InitializeNode, MemBarNode)                             \
     declare_c2_type(ThreadLocalNode, Node)                                  \
     declare_c2_type(Opaque1Node, Node)                                      \

@@ -830,9 +830,9 @@
    do_name(     newArray_name,                                    "newArray")                                           \
    do_signature(newArray_signature,                               "(Ljava/lang/Class;I)Ljava/lang/Object;")             \
                                                                                                                         \
-  do_intrinsic(_spinLoopHint,             java_lang_Runtime,      spinLoopHint_name, spinLoopHint_signature,     F_S)   \
-   do_name(     spinLoopHint_name,                               "onSpinWait")                                          \
-   do_alias(    spinLoopHint_signature,                           void_method_signature)                                \
+  do_intrinsic(_onSpinWait,               java_lang_Runtime,      onSpinWait_name, onSpinWait_signature,         F_S)   \
+   do_name(     onSpinWait_name,                                  "onSpinWait")                                          \
+   do_alias(    onSpinWait_signature,                             void_method_signature)                                \
                                                                                                                         \
   do_intrinsic(_copyOf,                   java_util_Arrays,       copyOf_name, copyOf_signature,                 F_S)   \
    do_name(     copyOf_name,                                     "copyOf")                                              \

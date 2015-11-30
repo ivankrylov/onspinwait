@@ -429,10 +429,10 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
  347     FLAG_SET_DEFAULT(UseAdler32Intrinsics, false);
  348   }
  349 
- 350   if (UseSpinLoopHintIntrinsic) {
- 351     if (!FLAG_IS_DEFAULT(UseSpinLoopHintIntrinsic))
- 352       warning("spinLoopHint intrinsic is not available on this CPU");
- 353     FLAG_SET_DEFAULT(UseSpinLoopHintIntrinsic, false);
+ 350   if (UseOnSpinWaitIntrinsic) {
+ 351     if (!FLAG_IS_DEFAULT(UseOnSpinWaitIntrinsic))
+ 352       warning("onSpinWait intrinsic is not available on this CPU");
+ 353     FLAG_SET_DEFAULT(UseOnSpinWaitIntrinsic, false);
  354   }
  355 
  356   if (FLAG_IS_DEFAULT(ContendedPaddingWidth) &amp;&amp;

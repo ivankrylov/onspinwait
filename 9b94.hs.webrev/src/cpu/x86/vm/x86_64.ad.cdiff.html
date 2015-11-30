@@ -91,17 +91,17 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
     ins_pipe(empty);
   %}
   
-<span class="new">+ instruct spinloophint()</span>
+<span class="new">+ instruct onspinwait()</span>
 <span class="new">+ %{</span>
-<span class="new">+   match(SpinLoopHint);</span>
+<span class="new">+   match(OnSpinWait);</span>
 <span class="new">+   ins_cost(200);</span>
 <span class="new">+ </span>
 <span class="new">+   format %{</span>
 <span class="new">+     $$template</span>
 <span class="new">+     if (os::is_MP()) {</span>
-<span class="new">+       $$emit$$"pause\t! membar_spinloophint"</span>
+<span class="new">+       $$emit$$"pause\t! membar_onspinwait"</span>
 <span class="new">+     } else {</span>
-<span class="new">+       $$emit$$"MEMBAR-spinloophint ! (empty encoding)"</span>
+<span class="new">+       $$emit$$"MEMBAR-onspinwait ! (empty encoding)"</span>
 <span class="new">+     }</span>
 <span class="new">+   %}</span>
 <span class="new">+   ins_encode %{</span>

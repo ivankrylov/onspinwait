@@ -347,10 +347,10 @@ void VM_Version::initialize() {
     FLAG_SET_DEFAULT(UseAdler32Intrinsics, false);
   }
 
-  if (UseSpinLoopHintIntrinsic) {
-    if (!FLAG_IS_DEFAULT(UseSpinLoopHintIntrinsic))
-      warning("spinLoopHint intrinsic is not available on this CPU");
-    FLAG_SET_DEFAULT(UseSpinLoopHintIntrinsic, false);
+  if (UseOnSpinWaitIntrinsic) {
+    if (!FLAG_IS_DEFAULT(UseOnSpinWaitIntrinsic))
+      warning("onSpinWait intrinsic is not available on this CPU");
+    FLAG_SET_DEFAULT(UseOnSpinWaitIntrinsic, false);
   }
 
   if (FLAG_IS_DEFAULT(ContendedPaddingWidth) &&

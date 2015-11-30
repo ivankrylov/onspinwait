@@ -153,7 +153,7 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
 2891   case Op_MemBarReleaseLock: return new MemBarReleaseLockNode(C, atp, pn);
 2892   case Op_MemBarVolatile:    return new MemBarVolatileNode(C, atp, pn);
 2893   case Op_MemBarCPUOrder:    return new MemBarCPUOrderNode(C, atp, pn);
-<span class="new">2894   case Op_SpinLoopHint:      return new SpinLoopHintNode(C, atp, pn);</span>
+<span class="new">2894   case Op_OnSpinWait:        return new OnSpinWaitNode(C, atp, pn);</span>
 2895   case Op_Initialize:        return new InitializeNode(C, atp, pn);
 2896   case Op_MemBarStoreStore:  return new MemBarStoreStoreNode(C, atp, pn);
 2897   default: ShouldNotReachHere(); return NULL;

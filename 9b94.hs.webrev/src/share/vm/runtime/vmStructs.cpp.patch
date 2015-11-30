@@ -1,10 +1,10 @@
---- old/src/share/vm/runtime/vmStructs.cpp	2015-11-30 17:23:07.480785612 +0300
-+++ new/src/share/vm/runtime/vmStructs.cpp	2015-11-30 17:23:07.400785614 +0300
+--- old/src/share/vm/runtime/vmStructs.cpp	2015-11-30 22:53:46.369341211 +0300
++++ new/src/share/vm/runtime/vmStructs.cpp	2015-11-30 22:53:46.178084773 +0300
 @@ -1931,6 +1931,7 @@
    declare_c2_type(StoreFenceNode, MemBarNode)                             \
    declare_c2_type(MemBarVolatileNode, MemBarNode)                         \
    declare_c2_type(MemBarCPUOrderNode, MemBarNode)                         \
-+  declare_c2_type(SpinLoopHintNode, MemBarNode)                           \
++  declare_c2_type(OnSpinWaitNode, MemBarNode)                             \
    declare_c2_type(InitializeNode, MemBarNode)                             \
    declare_c2_type(ThreadLocalNode, Node)                                  \
    declare_c2_type(Opaque1Node, Node)                                      \

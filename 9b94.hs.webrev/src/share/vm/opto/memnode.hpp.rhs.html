@@ -1160,9 +1160,9 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
 1075   virtual uint ideal_reg() const { return 0; } // not matched in the AD file
 1076 };
 1077 
-<a name="1" id="anc1"></a><span class="new">1078 class SpinLoopHintNode: public MemBarNode {</span>
+<a name="1" id="anc1"></a><span class="new">1078 class OnSpinWaitNode: public MemBarNode {</span>
 <span class="new">1079 public:</span>
-<span class="new">1080   SpinLoopHintNode(Compile* C, int alias_idx, Node* precedent)</span>
+<span class="new">1080   OnSpinWaitNode(Compile* C, int alias_idx, Node* precedent)</span>
 <span class="new">1081     : MemBarNode(C, alias_idx, precedent) {}</span>
 <span class="new">1082   virtual int Opcode() const;</span>
 <span class="new">1083 };</span>

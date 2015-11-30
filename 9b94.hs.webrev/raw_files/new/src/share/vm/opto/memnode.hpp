@@ -1075,9 +1075,9 @@ public:
   virtual uint ideal_reg() const { return 0; } // not matched in the AD file
 };
 
-class SpinLoopHintNode: public MemBarNode {
+class OnSpinWaitNode: public MemBarNode {
 public:
-  SpinLoopHintNode(Compile* C, int alias_idx, Node* precedent)
+  OnSpinWaitNode(Compile* C, int alias_idx, Node* precedent)
     : MemBarNode(C, alias_idx, precedent) {}
   virtual int Opcode() const;
 };

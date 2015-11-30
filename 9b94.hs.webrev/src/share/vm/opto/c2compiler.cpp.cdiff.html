@@ -91,7 +91,7 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
     case vmIntrinsics::_fullFence:
     case vmIntrinsics::_currentThread:
     case vmIntrinsics::_isInterrupted:
-<span class="new">+   case vmIntrinsics::_spinLoopHint:</span>
+<span class="new">+   case vmIntrinsics::_onSpinWait:</span>
   #ifdef TRACE_HAVE_INTRINSICS
     case vmIntrinsics::_classID:
     case vmIntrinsics::_threadID:

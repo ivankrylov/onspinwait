@@ -230,7 +230,7 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
  355   case vmIntrinsics::_updateCRC32:
  356   case vmIntrinsics::_updateBytesCRC32:
  357   case vmIntrinsics::_updateByteBufferCRC32:
-<span class="new"> 358   case vmIntrinsics::_spinLoopHint:</span>
+<span class="new"> 358   case vmIntrinsics::_onSpinWait:</span>
  359     return true;
  360   default:
  361     return false;
@@ -262,7 +262,7 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
  387   case vmIntrinsics::_updateCRC32:
  388   case vmIntrinsics::_updateBytesCRC32:
  389   case vmIntrinsics::_updateByteBufferCRC32:
-<span class="new"> 390   case vmIntrinsics::_spinLoopHint:</span>
+<span class="new"> 390   case vmIntrinsics::_onSpinWait:</span>
  391     return false;
  392   default:
  393     return true;
@@ -306,8 +306,8 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
  683   case vmIntrinsics::_montgomerySquare:
  684     if (!UseMontgomerySquareIntrinsic) return true;
 <span class="new"> 685     break;</span>
-<span class="new"> 686   case vmIntrinsics::_spinLoopHint:</span>
-<span class="new"> 687     if (!UseSpinLoopHintIntrinsic) return true;</span>
+<span class="new"> 686   case vmIntrinsics::_onSpinWait:</span>
+<span class="new"> 687     if (!UseOnSpinWaitIntrinsic) return true;</span>
  688     break;
  689   case vmIntrinsics::_addExactI:
  690   case vmIntrinsics::_addExactL:

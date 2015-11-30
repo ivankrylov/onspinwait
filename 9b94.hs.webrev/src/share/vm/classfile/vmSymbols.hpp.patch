@@ -1,5 +1,5 @@
---- old/src/share/vm/classfile/vmSymbols.hpp	2015-11-30 17:23:04.836785683 +0300
-+++ new/src/share/vm/classfile/vmSymbols.hpp	2015-11-30 17:23:04.752785685 +0300
+--- old/src/share/vm/classfile/vmSymbols.hpp	2015-11-30 22:53:35.753886255 +0300
++++ new/src/share/vm/classfile/vmSymbols.hpp	2015-11-30 22:53:35.546824469 +0300
 @@ -75,6 +75,7 @@
    template(java_lang_Integer_IntegerCache,            "java/lang/Integer$IntegerCache")           \
    template(java_lang_Long,                            "java/lang/Long")                           \
@@ -12,9 +12,9 @@
     do_name(     newArray_name,                                    "newArray")                                           \
     do_signature(newArray_signature,                               "(Ljava/lang/Class;I)Ljava/lang/Object;")             \
                                                                                                                          \
-+  do_intrinsic(_spinLoopHint,             java_lang_Runtime,      spinLoopHint_name, spinLoopHint_signature,     F_S)   \
-+   do_name(     spinLoopHint_name,                               "onSpinWait")                                          \
-+   do_alias(    spinLoopHint_signature,                           void_method_signature)                                \
++  do_intrinsic(_onSpinWait,               java_lang_Runtime,      onSpinWait_name, onSpinWait_signature,         F_S)   \
++   do_name(     onSpinWait_name,                                  "onSpinWait")                                          \
++   do_alias(    onSpinWait_signature,                             void_method_signature)                                \
 +                                                                                                                        \
    do_intrinsic(_copyOf,                   java_util_Arrays,       copyOf_name, copyOf_signature,                 F_S)   \
     do_name(     copyOf_name,                                     "copyOf")                                              \

@@ -289,7 +289,7 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
  274   bool inline_unsafe_load_store(BasicType type,  LoadStoreKind kind);
  275   bool inline_unsafe_ordered_store(BasicType type);
  276   bool inline_unsafe_fence(vmIntrinsics::ID id);
-<span class="new"> 277   bool inline_spinloophint();</span>
+<span class="new"> 277   bool inline_onspinwait();</span>
  278   bool inline_fp_conversions(vmIntrinsics::ID id);
  279   bool inline_number_methods(vmIntrinsics::ID id);
  280   bool inline_reference_get();
@@ -332,7 +332,7 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
  630   case vmIntrinsics::_storeFence:
  631   case vmIntrinsics::_fullFence:                return inline_unsafe_fence(intrinsic_id());
  632 
-<span class="new"> 633   case vmIntrinsics::_spinLoopHint:             return inline_spinloophint();</span>
+<span class="new"> 633   case vmIntrinsics::_onSpinWait:             return inline_onspinwait();</span>
 <span class="new"> 634 </span>
  635   case vmIntrinsics::_currentThread:            return inline_native_currentThread();
  636   case vmIntrinsics::_isInterrupted:            return inline_native_isInterrupted();
@@ -376,8 +376,8 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
 2977   }
 2978 }
 2979 
-<span class="new">2980 bool LibraryCallKit::inline_spinloophint() {</span>
-<span class="new">2981   insert_mem_bar(Op_SpinLoopHint);</span>
+<span class="new">2980 bool LibraryCallKit::inline_onspinwait() {</span>
+<span class="new">2981   insert_mem_bar(Op_OnSpinWait);</span>
 <span class="new">2982   return true;</span>
 <span class="new">2983 }</span>
 <span class="new">2984 </span>
@@ -425,7 +425,7 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
 3365     query_value = gen_instanceof(obj, kls, safe_for_replace);
 <span class="new">3366     break;</span>
 <span class="new">3367   </span>
-<span class="new">3368   case vmIntrinsics::_spinLoopHint:</span>
+<span class="new">3368   case vmIntrinsics::_onSpinWait:</span>
 3369     break;
 3370 
 3371   case vmIntrinsics::_getModifiers:

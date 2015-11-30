@@ -99,9 +99,9 @@ span.new {
    virtual uint ideal_reg() const { return 0; } // not matched in the AD file
  };
  
-<span class="new">+class SpinLoopHintNode: public MemBarNode {</span>
+<span class="new">+class OnSpinWaitNode: public MemBarNode {</span>
 <span class="new">+public:</span>
-<span class="new">+  SpinLoopHintNode(Compile* C, int alias_idx, Node* precedent)</span>
+<span class="new">+  OnSpinWaitNode(Compile* C, int alias_idx, Node* precedent)</span>
 <span class="new">+    : MemBarNode(C, alias_idx, precedent) {}</span>
 <span class="new">+  virtual int Opcode() const;</span>
 <span class="new">+};</span>

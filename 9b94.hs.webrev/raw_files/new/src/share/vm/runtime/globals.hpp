@@ -858,8 +858,8 @@ public:
   diagnostic(ccstrlist, DisableIntrinsic, "",                               \
          "do not expand intrinsics whose (internal) names appear here")     \
                                                                             \
-  product(bool, UseSpinLoopHintIntrinsic, false,                            \
-          "Use intrinsics for spinLoopHint")                                \
+  product(bool, UseOnSpinWaitIntrinsic, false,                              \
+          "Use intrinsic for onSpinWait")                                   \
                                                                             \
   develop(bool, TraceCallFixup, false,                                      \
           "Trace all call fixups")                                          \

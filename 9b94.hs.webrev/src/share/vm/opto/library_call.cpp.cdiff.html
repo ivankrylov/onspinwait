@@ -91,7 +91,7 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
     bool inline_unsafe_load_store(BasicType type,  LoadStoreKind kind);
     bool inline_unsafe_ordered_store(BasicType type);
     bool inline_unsafe_fence(vmIntrinsics::ID id);
-<span class="new">+   bool inline_spinloophint();</span>
+<span class="new">+   bool inline_onspinwait();</span>
     bool inline_fp_conversions(vmIntrinsics::ID id);
     bool inline_number_methods(vmIntrinsics::ID id);
     bool inline_reference_get();
@@ -104,7 +104,7 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
     case vmIntrinsics::_storeFence:
     case vmIntrinsics::_fullFence:                return inline_unsafe_fence(intrinsic_id());
   
-<span class="new">+   case vmIntrinsics::_spinLoopHint:             return inline_spinloophint();</span>
+<span class="new">+   case vmIntrinsics::_onSpinWait:             return inline_onspinwait();</span>
 <span class="new">+ </span>
     case vmIntrinsics::_currentThread:            return inline_native_currentThread();
     case vmIntrinsics::_isInterrupted:            return inline_native_isInterrupted();
@@ -118,8 +118,8 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
     }
   }
   
-<span class="new">+ bool LibraryCallKit::inline_spinloophint() {</span>
-<span class="new">+   insert_mem_bar(Op_SpinLoopHint);</span>
+<span class="new">+ bool LibraryCallKit::inline_onspinwait() {</span>
+<span class="new">+   insert_mem_bar(Op_OnSpinWait);</span>
 <span class="new">+   return true;</span>
 <span class="new">+ }</span>
 <span class="new">+ </span>
@@ -135,7 +135,7 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
       query_value = gen_instanceof(obj, kls, safe_for_replace);
       break;
     
-<span class="new">+   case vmIntrinsics::_spinLoopHint:</span>
+<span class="new">+   case vmIntrinsics::_onSpinWait:</span>
 <span class="new">+     break;</span>
 <span class="new">+ </span>
     case vmIntrinsics::_getModifiers:

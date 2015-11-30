@@ -356,7 +356,7 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
  274   bool inline_unsafe_load_store(BasicType type,  LoadStoreKind kind);
  275   bool inline_unsafe_ordered_store(BasicType type);
  276   bool inline_unsafe_fence(vmIntrinsics::ID id);
- 277   bool inline_spinloophint();
+ 277   bool inline_onspinwait();
  278   bool inline_fp_conversions(vmIntrinsics::ID id);
  279   bool inline_number_methods(vmIntrinsics::ID id);
  280   bool inline_reference_get();
@@ -712,7 +712,7 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
  630   case vmIntrinsics::_storeFence:
  631   case vmIntrinsics::_fullFence:                return inline_unsafe_fence(intrinsic_id());
  632 
- 633   case vmIntrinsics::_spinLoopHint:             return inline_spinloophint();
+ 633   case vmIntrinsics::_onSpinWait:             return inline_onspinwait();
  634 
  635   case vmIntrinsics::_currentThread:            return inline_native_currentThread();
  636   case vmIntrinsics::_isInterrupted:            return inline_native_isInterrupted();
@@ -3059,8 +3059,8 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
 2977   }
 2978 }
 2979 
-2980 bool LibraryCallKit::inline_spinloophint() {
-2981   insert_mem_bar(Op_SpinLoopHint);
+2980 bool LibraryCallKit::inline_onspinwait() {
+2981   insert_mem_bar(Op_OnSpinWait);
 2982   return true;
 2983 }
 2984 
@@ -3447,7 +3447,7 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
 3365     query_value = gen_instanceof(obj, kls, safe_for_replace);
 3366     break;
 3367   
-3368   case vmIntrinsics::_spinLoopHint:
+3368   case vmIntrinsics::_onSpinWait:
 3369     break;
 3370 
 3371   case vmIntrinsics::_getModifiers:
