@@ -883,7 +883,7 @@ public class Runtime {
      * constructions.
      */
     @HotSpotIntrinsicCandidate
-    public static final void onSpinWait() {};
+    public static void onSpinWait() {};
 
     /**
      * Creates a localized version of an input stream. This method takes

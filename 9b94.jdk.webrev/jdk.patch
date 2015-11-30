@@ -1,5 +1,5 @@
---- old/src/java.base/share/classes/java/lang/Runtime.java	2015-12-01 00:30:18.610150682 +0300
-+++ new/src/java.base/share/classes/java/lang/Runtime.java	2015-12-01 00:30:18.450153297 +0300
+--- old/src/java.base/share/classes/java/lang/Runtime.java	2015-12-01 01:06:30.682409094 +0300
++++ new/src/java.base/share/classes/java/lang/Runtime.java	2015-12-01 01:06:30.542411338 +0300
 @@ -29,6 +29,7 @@
  import java.util.StringTokenizer;
  import sun.reflect.CallerSensitive;
@@ -19,7 +19,7 @@
 +     * constructions.
 +     */
 +    @HotSpotIntrinsicCandidate
-+    public static final void onSpinWait() {};
++    public static void onSpinWait() {};
 +
 +    /**
       * Creates a localized version of an input stream. This method takes
