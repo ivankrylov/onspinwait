@@ -89,7 +89,9 @@ span.new {
 <body id="SUNWwebrev">
 <h2>src/java.base/share/classes/java/lang/Runtime.java</h2>
         <a class="print" href="javascript:print()">Print this page</a>
-<pre></pre>
+<pre>rev <a href="https://jbs.oracle.com/bugs/browse/JDK-13470">13470</a> : <a href="https://jbs.oracle.com/bugs/browse/JDK-8147844">8147844</a>: new method j.l.Runtime.onSpinWait() and the corresponding x86 hotspot instrinsic
+Contributed-by: Gil Tene &lt;gil@azul.com&gt;, ikrylov
+Reviewed-by: psandoz, alanb</pre>
         <pre>
 </pre><hr /><pre>
 <span class="newmarker">@@ -27,10 +27,11 @@</span>
@@ -105,7 +107,7 @@ span.new {
   * {@code Runtime} that allows the application to interface with
   * the environment in which the application is running. The current
 </pre><hr /><pre>
-<span class="newmarker">@@ -873,10 +874,21 @@</span>
+<span class="newmarker">@@ -873,10 +874,22 @@</span>
          }
          ClassLoader.loadLibrary(fromClass, libname, false);
      }
@@ -117,9 +119,10 @@ span.new {
 <span class="new">+     * the calling thread indicates to the runtime that it is busy-waiting. The runtime</span>
 <span class="new">+     * may take action to improve the performance of invoking spin-wait loop</span>
 <span class="new">+     * constructions.</span>
+<span class="new">+     * @since 9</span>
 <span class="new">+     */</span>
 <span class="new">+    @HotSpotIntrinsicCandidate</span>
-<span class="new">+    public static void onSpinWait() {};</span>
+<span class="new">+    public static void onSpinWait() { }</span>
 <span class="new">+</span>
 <span class="new">+    /**</span>
       * Creates a localized version of an input stream. This method takes

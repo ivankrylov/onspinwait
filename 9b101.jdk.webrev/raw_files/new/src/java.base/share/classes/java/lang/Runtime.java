@@ -882,9 +882,10 @@ public class Runtime {
      * the calling thread indicates to the runtime that it is busy-waiting. The runtime
      * may take action to improve the performance of invoking spin-wait loop
      * constructions.
+     * @since 9
      */
     @HotSpotIntrinsicCandidate
-    public static void onSpinWait() {};
+    public static void onSpinWait() { }
 
     /**
      * Creates a localized version of an input stream. This method takes

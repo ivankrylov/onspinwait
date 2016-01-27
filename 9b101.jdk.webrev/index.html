@@ -84,13 +84,14 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
 <div class="summary">
 <h2>Code Review for jdk</h2>
 <table>
-<tr><th>Prepared by:</th><td>ivan on Wed Jan 27 16:27:08 MSK 2016</td></tr>
+<tr><th>Prepared by:</th><td>ikrylov on Wed Jan 27 20:38:14 MSK 2016</td></tr>
 <tr><th>Workspace:</th><td>/Users/ivan/openjdk9_onspinwait/jdk</td></tr>
 <tr><th>Compare against:</th><td>
 =
 </td></tr>
+<tr><th>Compare against version:</th><td>8a709c82d16c</td></tr>
 <tr><th>Summary of changes:</th><td>
-12 lines changed: 12 ins; 0 del; 0 mod; 931 unchg</td></tr>
+13 lines changed: 13 ins; 0 del; 0 mod; 931 unchg</td></tr>
 <tr><th>Patch of changes:</th><td>
 <a href="jdk.patch">jdk.patch</a></td></tr>
 <tr><th>Legend:</th><td>
@@ -108,14 +109,17 @@ hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
 <a href="raw_files/new/src/java.base/share/classes/java/lang/Runtime.java">Raw</a>
 </code>
 <b>src/java.base/share/classes/java/lang/Runtime.java</b> 
-</p><blockquote><!-- Add comments to explain changes in src/java.base/share/classes/java/lang/Runtime.java here -->
-<span class="lineschanged">12 lines changed: 12 ins; 0 del; 0 mod; 931 unchg</span>
+</p><blockquote><pre>rev <a href="https://jbs.oracle.com/bugs/browse/JDK-13470">13470</a> : <a href="https://jbs.oracle.com/bugs/browse/JDK-8147844">8147844</a>: new method j.l.Runtime.onSpinWait() and the corresponding x86 hotspot instrinsic
+Contributed-by: Gil Tene &lt;gil@azul.com&gt;, ikrylov
+Reviewed-by: psandoz, alanb</pre>
+<!-- Add comments to explain changes in src/java.base/share/classes/java/lang/Runtime.java here -->
+<span class="lineschanged">13 lines changed: 13 ins; 0 del; 0 mod; 931 unchg</span>
 </blockquote>
 
 
 <hr />
 <p style="font-size: small">
-This code review page was prepared using <b>/Users/ivan/openjdk7u/make/scripts/webrev.ksh</b>
+This code review page was prepared using <b>/Users/ivan/openjdk7u-dev-u79/make/scripts/webrev.ksh</b>
 (vers 23.18-hg+jbs).
 </body>
 </html>
