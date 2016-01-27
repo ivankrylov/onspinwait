@@ -1,0 +1,12 @@
+--- old/src/share/vm/runtime/globals.hpp	2016-01-27 16:26:32.000000000 +0300
++++ new/src/share/vm/runtime/globals.hpp	2016-01-27 16:26:31.000000000 +0300
+@@ -860,6 +860,9 @@
+   diagnostic(ccstrlist, DisableIntrinsic, "",                               \
+          "do not expand intrinsics whose (internal) names appear here")     \
+                                                                             \
++  product(bool, UseOnSpinWaitIntrinsic, false,                              \
++          "Use intrinsic for onSpinWait")                                   \
++                                                                            \
+   develop(bool, TraceCallFixup, false,                                      \
+           "Trace all call fixups")                                          \
+                                                                             \

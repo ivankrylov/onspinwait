@@ -1,0 +1,16 @@
+--- old/src/share/vm/opto/memnode.hpp	2016-01-27 16:26:31.000000000 +0300
++++ new/src/share/vm/opto/memnode.hpp	2016-01-27 16:26:31.000000000 +0300
+@@ -1086,6 +1086,13 @@
+   virtual uint ideal_reg() const { return 0; } // not matched in the AD file
+ };
+ 
++class OnSpinWaitNode: public MemBarNode {
++public:
++  OnSpinWaitNode(Compile* C, int alias_idx, Node* precedent)
++    : MemBarNode(C, alias_idx, precedent) {}
++  virtual int Opcode() const;
++};
++
+ // Isolation of object setup after an AllocateNode and before next safepoint.
+ // (See comment in memnode.cpp near InitializeNode::InitializeNode for semantics.)
+ class InitializeNode: public MemBarNode {

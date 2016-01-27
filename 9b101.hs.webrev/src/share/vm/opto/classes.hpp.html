@@ -1,0 +1,427 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="-1" />
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+a.print { font-size: x-small; }
+
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>New src/share/vm/opto/classes.hpp</title>
+<body id="SUNWwebrev">
+<pre>
+   1 /*
+   2  * Copyright (c) 1997, 2015, Oracle and/or its affiliates. All rights reserved.
+   3  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4  *
+   5  * This code is free software; you can redistribute it and/or modify it
+   6  * under the terms of the GNU General Public License version 2 only, as
+   7  * published by the Free Software Foundation.
+   8  *
+   9  * This code is distributed in the hope that it will be useful, but WITHOUT
+  10  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  11  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  12  * version 2 for more details (a copy is included in the LICENSE file that
+  13  * accompanied this code).
+  14  *
+  15  * You should have received a copy of the GNU General Public License version
+  16  * 2 along with this work; if not, write to the Free Software Foundation,
+  17  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  18  *
+  19  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  20  * or visit www.oracle.com if you need additional information or have any
+  21  * questions.
+  22  *
+  23  */
+  24 
+  25 // The giant table of Node classes.
+  26 // One entry per class, sorted by class name.
+  27 
+  28 macro(AbsD)
+  29 macro(AbsF)
+  30 macro(AbsI)
+  31 macro(AddD)
+  32 macro(AddF)
+  33 macro(AddI)
+  34 macro(AddL)
+  35 macro(AddP)
+  36 macro(Allocate)
+  37 macro(AllocateArray)
+  38 macro(AndI)
+  39 macro(AndL)
+  40 macro(ArrayCopy)
+  41 macro(AryEq)
+  42 macro(AtanD)
+  43 macro(Binary)
+  44 macro(Bool)
+  45 macro(BoxLock)
+  46 macro(ReverseBytesI)
+  47 macro(ReverseBytesL)
+  48 macro(ReverseBytesUS)
+  49 macro(ReverseBytesS)
+  50 macro(CProj)
+  51 macro(CallDynamicJava)
+  52 macro(CallJava)
+  53 macro(CallLeaf)
+  54 macro(CallLeafNoFP)
+  55 macro(CallRuntime)
+  56 macro(CallStaticJava)
+  57 macro(CastII)
+  58 macro(CastX2P)
+  59 macro(CastP2X)
+  60 macro(CastPP)
+  61 macro(Catch)
+  62 macro(CatchProj)
+  63 macro(CheckCastPP)
+  64 macro(ClearArray)
+  65 macro(ConstraintCast)
+  66 macro(CMoveD)
+  67 macro(CMoveVD)
+  68 macro(CMoveF)
+  69 macro(CMoveI)
+  70 macro(CMoveL)
+  71 macro(CMoveP)
+  72 macro(CMoveN)
+  73 macro(CmpN)
+  74 macro(CmpD)
+  75 macro(CmpD3)
+  76 macro(CmpF)
+  77 macro(CmpF3)
+  78 macro(CmpI)
+  79 macro(CmpL)
+  80 macro(CmpL3)
+  81 macro(CmpLTMask)
+  82 macro(CmpP)
+  83 macro(CmpU)
+  84 macro(CompareAndSwapI)
+  85 macro(CompareAndSwapL)
+  86 macro(CompareAndSwapP)
+  87 macro(CompareAndSwapN)
+  88 macro(GetAndAddI)
+  89 macro(GetAndAddL)
+  90 macro(GetAndSetI)
+  91 macro(GetAndSetL)
+  92 macro(GetAndSetP)
+  93 macro(GetAndSetN)
+  94 macro(Con)
+  95 macro(ConN)
+  96 macro(ConNKlass)
+  97 macro(ConD)
+  98 macro(ConF)
+  99 macro(ConI)
+ 100 macro(ConL)
+ 101 macro(ConP)
+ 102 macro(Conv2B)
+ 103 macro(ConvD2F)
+ 104 macro(ConvD2I)
+ 105 macro(ConvD2L)
+ 106 macro(ConvF2D)
+ 107 macro(ConvF2I)
+ 108 macro(ConvF2L)
+ 109 macro(ConvI2D)
+ 110 macro(ConvI2F)
+ 111 macro(ConvI2L)
+ 112 macro(ConvL2D)
+ 113 macro(ConvL2F)
+ 114 macro(ConvL2I)
+ 115 macro(CosD)
+ 116 macro(CountedLoop)
+ 117 macro(CountedLoopEnd)
+ 118 macro(CountLeadingZerosI)
+ 119 macro(CountLeadingZerosL)
+ 120 macro(CountTrailingZerosI)
+ 121 macro(CountTrailingZerosL)
+ 122 macro(CreateEx)
+ 123 macro(DecodeN)
+ 124 macro(DecodeNKlass)
+ 125 macro(DivD)
+ 126 macro(DivF)
+ 127 macro(DivI)
+ 128 macro(DivL)
+ 129 macro(DivMod)
+ 130 macro(DivModI)
+ 131 macro(DivModL)
+ 132 macro(EncodeISOArray)
+ 133 macro(EncodeP)
+ 134 macro(EncodePKlass)
+ 135 macro(FastLock)
+ 136 macro(FastUnlock)
+ 137 macro(Goto)
+ 138 macro(Halt)
+ 139 macro(HasNegatives)
+ 140 macro(If)
+ 141 macro(RangeCheck)
+ 142 macro(IfFalse)
+ 143 macro(IfTrue)
+ 144 macro(Initialize)
+ 145 macro(JProj)
+ 146 macro(Jump)
+ 147 macro(JumpProj)
+ 148 macro(LShiftI)
+ 149 macro(LShiftL)
+ 150 macro(LoadB)
+ 151 macro(LoadUB)
+ 152 macro(LoadUS)
+ 153 macro(LoadD)
+ 154 macro(LoadD_unaligned)
+ 155 macro(LoadF)
+ 156 macro(LoadI)
+ 157 macro(LoadKlass)
+ 158 macro(LoadNKlass)
+ 159 macro(LoadL)
+ 160 macro(LoadL_unaligned)
+ 161 macro(LoadPLocked)
+ 162 macro(LoadP)
+ 163 macro(LoadN)
+ 164 macro(LoadRange)
+ 165 macro(LoadS)
+ 166 macro(Lock)
+ 167 macro(Log10D)
+ 168 macro(Loop)
+ 169 macro(LoopLimit)
+ 170 macro(Mach)
+ 171 macro(MachProj)
+ 172 macro(MaxI)
+ 173 macro(OnSpinWait)
+ 174 macro(MemBarAcquire)
+ 175 macro(LoadFence)
+ 176 macro(MemBarAcquireLock)
+ 177 macro(MemBarCPUOrder)
+ 178 macro(MemBarRelease)
+ 179 macro(StoreFence)
+ 180 macro(MemBarReleaseLock)
+ 181 macro(MemBarVolatile)
+ 182 macro(MemBarStoreStore)
+ 183 macro(MergeMem)
+ 184 macro(MinI)
+ 185 macro(ModD)
+ 186 macro(ModF)
+ 187 macro(ModI)
+ 188 macro(ModL)
+ 189 macro(MoveI2F)
+ 190 macro(MoveF2I)
+ 191 macro(MoveL2D)
+ 192 macro(MoveD2L)
+ 193 macro(MulD)
+ 194 macro(MulF)
+ 195 macro(MulHiL)
+ 196 macro(MulI)
+ 197 macro(MulL)
+ 198 macro(Multi)
+ 199 macro(NegD)
+ 200 macro(NegF)
+ 201 macro(NeverBranch)
+ 202 macro(Opaque1)
+ 203 macro(Opaque2)
+ 204 macro(Opaque3)
+ 205 macro(ProfileBoolean)
+ 206 macro(OrI)
+ 207 macro(OrL)
+ 208 macro(OverflowAddI)
+ 209 macro(OverflowSubI)
+ 210 macro(OverflowMulI)
+ 211 macro(OverflowAddL)
+ 212 macro(OverflowSubL)
+ 213 macro(OverflowMulL)
+ 214 macro(PCTable)
+ 215 macro(Parm)
+ 216 macro(PartialSubtypeCheck)
+ 217 macro(Phi)
+ 218 macro(PopCountI)
+ 219 macro(PopCountL)
+ 220 macro(PowD)
+ 221 macro(PrefetchAllocation)
+ 222 macro(Proj)
+ 223 macro(RShiftI)
+ 224 macro(RShiftL)
+ 225 macro(Region)
+ 226 macro(Rethrow)
+ 227 macro(Return)
+ 228 macro(Root)
+ 229 macro(RoundDouble)
+ 230 macro(RoundFloat)
+ 231 macro(SafePoint)
+ 232 macro(SafePointScalarObject)
+ 233 macro(SCMemProj)
+ 234 macro(SinD)
+ 235 macro(SqrtD)
+ 236 macro(Start)
+ 237 macro(StartOSR)
+ 238 macro(StoreB)
+ 239 macro(StoreC)
+ 240 macro(StoreCM)
+ 241 macro(StorePConditional)
+ 242 macro(StoreIConditional)
+ 243 macro(StoreLConditional)
+ 244 macro(StoreD)
+ 245 macro(StoreF)
+ 246 macro(StoreI)
+ 247 macro(StoreL)
+ 248 macro(StoreP)
+ 249 macro(StoreN)
+ 250 macro(StoreNKlass)
+ 251 macro(StrComp)
+ 252 macro(StrCompressedCopy)
+ 253 macro(StrEquals)
+ 254 macro(StrIndexOf)
+ 255 macro(StrIndexOfChar)
+ 256 macro(StrInflatedCopy)
+ 257 macro(SubD)
+ 258 macro(SubF)
+ 259 macro(SubI)
+ 260 macro(SubL)
+ 261 macro(TailCall)
+ 262 macro(TailJump)
+ 263 macro(TanD)
+ 264 macro(ThreadLocal)
+ 265 macro(Unlock)
+ 266 macro(URShiftI)
+ 267 macro(URShiftL)
+ 268 macro(XorI)
+ 269 macro(XorL)
+ 270 macro(Vector)
+ 271 macro(AddVB)
+ 272 macro(AddVS)
+ 273 macro(AddVI)
+ 274 macro(AddReductionVI)
+ 275 macro(AddVL)
+ 276 macro(AddReductionVL)
+ 277 macro(AddVF)
+ 278 macro(AddReductionVF)
+ 279 macro(AddVD)
+ 280 macro(AddReductionVD)
+ 281 macro(SubVB)
+ 282 macro(SubVS)
+ 283 macro(SubVI)
+ 284 macro(SubVL)
+ 285 macro(SubVF)
+ 286 macro(SubVD)
+ 287 macro(MulVS)
+ 288 macro(MulVI)
+ 289 macro(MulReductionVI)
+ 290 macro(MulVL)
+ 291 macro(MulReductionVL)
+ 292 macro(MulVF)
+ 293 macro(MulReductionVF)
+ 294 macro(MulVD)
+ 295 macro(MulReductionVD)
+ 296 macro(DivVF)
+ 297 macro(DivVD)
+ 298 macro(AbsVF)
+ 299 macro(AbsVD)
+ 300 macro(NegVF)
+ 301 macro(NegVD)
+ 302 macro(SqrtVD)
+ 303 macro(LShiftCntV)
+ 304 macro(RShiftCntV)
+ 305 macro(LShiftVB)
+ 306 macro(LShiftVS)
+ 307 macro(LShiftVI)
+ 308 macro(LShiftVL)
+ 309 macro(RShiftVB)
+ 310 macro(RShiftVS)
+ 311 macro(RShiftVI)
+ 312 macro(RShiftVL)
+ 313 macro(URShiftVB)
+ 314 macro(URShiftVS)
+ 315 macro(URShiftVI)
+ 316 macro(URShiftVL)
+ 317 macro(AndV)
+ 318 macro(OrV)
+ 319 macro(XorV)
+ 320 macro(LoadVector)
+ 321 macro(StoreVector)
+ 322 macro(Pack)
+ 323 macro(PackB)
+ 324 macro(PackS)
+ 325 macro(PackI)
+ 326 macro(PackL)
+ 327 macro(PackF)
+ 328 macro(PackD)
+ 329 macro(Pack2L)
+ 330 macro(Pack2D)
+ 331 macro(ReplicateB)
+ 332 macro(ReplicateS)
+ 333 macro(ReplicateI)
+ 334 macro(ReplicateL)
+ 335 macro(ReplicateF)
+ 336 macro(ReplicateD)
+ 337 macro(Extract)
+ 338 macro(ExtractB)
+ 339 macro(ExtractUB)
+ 340 macro(ExtractC)
+ 341 macro(ExtractS)
+ 342 macro(ExtractI)
+ 343 macro(ExtractL)
+ 344 macro(ExtractF)
+ 345 macro(ExtractD)
+</pre></body></html>

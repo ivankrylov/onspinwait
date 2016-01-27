@@ -1,0 +1,28 @@
+--- old/src/cpu/x86/vm/x86_64.ad	2016-01-27 16:26:27.000000000 +0300
++++ new/src/cpu/x86/vm/x86_64.ad	2016-01-27 16:26:27.000000000 +0300
+@@ -6336,6 +6336,25 @@
+   ins_pipe(empty);
+ %}
+ 
++instruct onspinwait()
++%{
++  match(OnSpinWait);
++  ins_cost(200);
++
++  format %{
++    $$template
++    if (os::is_MP()) {
++      $$emit$$"pause\t! membar_onspinwait"
++    } else {
++      $$emit$$"MEMBAR-onspinwait ! (empty encoding)"
++    }
++  %}
++  ins_encode %{
++    __ pause();
++  %}
++  ins_pipe(pipe_slow);
++%}
++
+ instruct membar_volatile(rFlagsReg cr) %{
+   match(MemBarVolatile);
+   effect(KILL cr);

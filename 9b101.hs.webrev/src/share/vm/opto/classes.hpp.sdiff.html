@@ -1,0 +1,180 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="-1" />
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+a.print { font-size: x-small; }
+
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>hotspot Sdiff src/share/vm/opto </title>
+</head><body id="SUNWwebrev">
+<h2>src/share/vm/opto/classes.hpp</h2>
+<a class="print" href="javascript:print()">Print this page</a>
+<pre></pre>
+
+<table><tr valign="top">
+<td><pre>
+
+</pre><hr></hr><pre>
+ 153 macro(LoadD)
+ 154 macro(LoadD_unaligned)
+ 155 macro(LoadF)
+ 156 macro(LoadI)
+ 157 macro(LoadKlass)
+ 158 macro(LoadNKlass)
+ 159 macro(LoadL)
+ 160 macro(LoadL_unaligned)
+ 161 macro(LoadPLocked)
+ 162 macro(LoadP)
+ 163 macro(LoadN)
+ 164 macro(LoadRange)
+ 165 macro(LoadS)
+ 166 macro(Lock)
+ 167 macro(Log10D)
+ 168 macro(Loop)
+ 169 macro(LoopLimit)
+ 170 macro(Mach)
+ 171 macro(MachProj)
+ 172 macro(MaxI)
+
+ 173 macro(MemBarAcquire)
+ 174 macro(LoadFence)
+ 175 macro(MemBarAcquireLock)
+ 176 macro(MemBarCPUOrder)
+ 177 macro(MemBarRelease)
+ 178 macro(StoreFence)
+ 179 macro(MemBarReleaseLock)
+ 180 macro(MemBarVolatile)
+ 181 macro(MemBarStoreStore)
+ 182 macro(MergeMem)
+ 183 macro(MinI)
+ 184 macro(ModD)
+ 185 macro(ModF)
+ 186 macro(ModI)
+ 187 macro(ModL)
+ 188 macro(MoveI2F)
+ 189 macro(MoveF2I)
+ 190 macro(MoveL2D)
+ 191 macro(MoveD2L)
+ 192 macro(MulD)
+
+</pre><hr></hr>
+</pre></td><td><pre>
+
+</pre><hr></hr><pre>
+ 153 macro(LoadD)
+ 154 macro(LoadD_unaligned)
+ 155 macro(LoadF)
+ 156 macro(LoadI)
+ 157 macro(LoadKlass)
+ 158 macro(LoadNKlass)
+ 159 macro(LoadL)
+ 160 macro(LoadL_unaligned)
+ 161 macro(LoadPLocked)
+ 162 macro(LoadP)
+ 163 macro(LoadN)
+ 164 macro(LoadRange)
+ 165 macro(LoadS)
+ 166 macro(Lock)
+ 167 macro(Log10D)
+ 168 macro(Loop)
+ 169 macro(LoopLimit)
+ 170 macro(Mach)
+ 171 macro(MachProj)
+ 172 macro(MaxI)
+<span class="new"> 173 macro(OnSpinWait)</span>
+ 174 macro(MemBarAcquire)
+ 175 macro(LoadFence)
+ 176 macro(MemBarAcquireLock)
+ 177 macro(MemBarCPUOrder)
+ 178 macro(MemBarRelease)
+ 179 macro(StoreFence)
+ 180 macro(MemBarReleaseLock)
+ 181 macro(MemBarVolatile)
+ 182 macro(MemBarStoreStore)
+ 183 macro(MergeMem)
+ 184 macro(MinI)
+ 185 macro(ModD)
+ 186 macro(ModF)
+ 187 macro(ModI)
+ 188 macro(ModL)
+ 189 macro(MoveI2F)
+ 190 macro(MoveF2I)
+ 191 macro(MoveL2D)
+ 192 macro(MoveD2L)
+ 193 macro(MulD)
+
+</pre><hr></hr>
+</pre></td>
+</tr></table>
+</body></html>

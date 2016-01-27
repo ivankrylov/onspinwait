@@ -1,0 +1,10 @@
+--- old/src/share/vm/opto/classes.hpp	2016-01-27 16:26:29.000000000 +0300
++++ new/src/share/vm/opto/classes.hpp	2016-01-27 16:26:29.000000000 +0300
+@@ -170,6 +170,7 @@
+ macro(Mach)
+ macro(MachProj)
+ macro(MaxI)
++macro(OnSpinWait)
+ macro(MemBarAcquire)
+ macro(LoadFence)
+ macro(MemBarAcquireLock)

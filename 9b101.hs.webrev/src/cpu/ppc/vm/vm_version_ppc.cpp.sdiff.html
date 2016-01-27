@@ -1,0 +1,190 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="-1" />
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+a.print { font-size: x-small; }
+
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>hotspot Sdiff src/cpu/ppc/vm </title>
+</head><body id="SUNWwebrev">
+<h2>src/cpu/ppc/vm/vm_version_ppc.cpp</h2>
+<a class="print" href="javascript:print()">Print this page</a>
+<pre></pre>
+
+<table><tr valign="top">
+<td><pre>
+
+</pre><hr></hr><pre>
+ 156   if (AllocatePrefetchStyle == 3 &amp;&amp; AllocatePrefetchDistance &lt; cache_line_size) {
+ 157     AllocatePrefetchStyle = 1; // Fall back if inappropriate.
+ 158   }
+ 159 
+ 160   assert(AllocatePrefetchStyle &gt;= 0, "AllocatePrefetchStyle should be positive");
+ 161 
+ 162   // Implementation does not use any of the vector instructions
+ 163   // available with Power8. Their exploitation is still pending.
+ 164   if (!UseCRC32Intrinsics) {
+ 165     if (FLAG_IS_DEFAULT(UseCRC32Intrinsics)) {
+ 166       FLAG_SET_DEFAULT(UseCRC32Intrinsics, true);
+ 167     }
+ 168   }
+ 169 
+ 170   if (UseCRC32CIntrinsics) {
+ 171     if (!FLAG_IS_DEFAULT(UseCRC32CIntrinsics))
+ 172       warning("CRC32C intrinsics are not available on this CPU");
+ 173     FLAG_SET_DEFAULT(UseCRC32CIntrinsics, false);
+ 174   }
+ 175 
+
+
+
+
+
+
+ 176   // The AES intrinsic stubs require AES instruction support.
+ 177   if (UseAES) {
+ 178     warning("AES instructions are not available on this CPU");
+ 179     FLAG_SET_DEFAULT(UseAES, false);
+ 180   }
+ 181   if (UseAESIntrinsics) {
+ 182     if (!FLAG_IS_DEFAULT(UseAESIntrinsics))
+ 183       warning("AES intrinsics are not available on this CPU");
+ 184     FLAG_SET_DEFAULT(UseAESIntrinsics, false);
+ 185   }
+ 186 
+ 187   if (UseGHASHIntrinsics) {
+ 188     warning("GHASH intrinsics are not available on this CPU");
+ 189     FLAG_SET_DEFAULT(UseGHASHIntrinsics, false);
+ 190   }
+ 191 
+ 192   if (UseSHA) {
+ 193     warning("SHA instructions are not available on this CPU");
+ 194     FLAG_SET_DEFAULT(UseSHA, false);
+ 195   }
+
+</pre><hr></hr>
+</pre></td><td><pre>
+
+</pre><hr></hr><pre>
+ 156   if (AllocatePrefetchStyle == 3 &amp;&amp; AllocatePrefetchDistance &lt; cache_line_size) {
+ 157     AllocatePrefetchStyle = 1; // Fall back if inappropriate.
+ 158   }
+ 159 
+ 160   assert(AllocatePrefetchStyle &gt;= 0, "AllocatePrefetchStyle should be positive");
+ 161 
+ 162   // Implementation does not use any of the vector instructions
+ 163   // available with Power8. Their exploitation is still pending.
+ 164   if (!UseCRC32Intrinsics) {
+ 165     if (FLAG_IS_DEFAULT(UseCRC32Intrinsics)) {
+ 166       FLAG_SET_DEFAULT(UseCRC32Intrinsics, true);
+ 167     }
+ 168   }
+ 169 
+ 170   if (UseCRC32CIntrinsics) {
+ 171     if (!FLAG_IS_DEFAULT(UseCRC32CIntrinsics))
+ 172       warning("CRC32C intrinsics are not available on this CPU");
+ 173     FLAG_SET_DEFAULT(UseCRC32CIntrinsics, false);
+ 174   }
+ 175 
+<span class="new"> 176   if (UseOnSpinWaitIntrinsic) {</span>
+<span class="new"> 177     if (!FLAG_IS_DEFAULT(UseOnSpinWaitIntrinsic))</span>
+<span class="new"> 178       warning("onSpinWait intrinsic is not available on this CPU");</span>
+<span class="new"> 179     FLAG_SET_DEFAULT(UseOnSpinWaitIntrinsic, false);</span>
+<span class="new"> 180   }</span>
+<span class="new"> 181 </span>
+ 182   // The AES intrinsic stubs require AES instruction support.
+ 183   if (UseAES) {
+ 184     warning("AES instructions are not available on this CPU");
+ 185     FLAG_SET_DEFAULT(UseAES, false);
+ 186   }
+ 187   if (UseAESIntrinsics) {
+ 188     if (!FLAG_IS_DEFAULT(UseAESIntrinsics))
+ 189       warning("AES intrinsics are not available on this CPU");
+ 190     FLAG_SET_DEFAULT(UseAESIntrinsics, false);
+ 191   }
+ 192 
+ 193   if (UseGHASHIntrinsics) {
+ 194     warning("GHASH intrinsics are not available on this CPU");
+ 195     FLAG_SET_DEFAULT(UseGHASHIntrinsics, false);
+ 196   }
+ 197 
+ 198   if (UseSHA) {
+ 199     warning("SHA instructions are not available on this CPU");
+ 200     FLAG_SET_DEFAULT(UseSHA, false);
+ 201   }
+
+</pre><hr></hr>
+</pre></td>
+</tr></table>
+</body></html>

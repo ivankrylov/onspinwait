@@ -1,0 +1,28 @@
+--- old/src/share/vm/classfile/vmSymbols.cpp	2016-01-27 16:26:28.000000000 +0300
++++ new/src/share/vm/classfile/vmSymbols.cpp	2016-01-27 16:26:28.000000000 +0300
+@@ -355,6 +355,7 @@
+   case vmIntrinsics::_updateCRC32:
+   case vmIntrinsics::_updateBytesCRC32:
+   case vmIntrinsics::_updateByteBufferCRC32:
++  case vmIntrinsics::_onSpinWait:
+     return true;
+   default:
+     return false;
+@@ -386,6 +387,7 @@
+   case vmIntrinsics::_updateCRC32:
+   case vmIntrinsics::_updateBytesCRC32:
+   case vmIntrinsics::_updateByteBufferCRC32:
++  case vmIntrinsics::_onSpinWait:
+     return false;
+   default:
+     return true;
+@@ -681,6 +683,9 @@
+   case vmIntrinsics::_montgomerySquare:
+     if (!UseMontgomerySquareIntrinsic) return true;
+     break;
++  case vmIntrinsics::_onSpinWait:
++    if (!UseOnSpinWaitIntrinsic) return true;
++    break;
+   case vmIntrinsics::_addExactI:
+   case vmIntrinsics::_addExactL:
+   case vmIntrinsics::_decrementExactI:

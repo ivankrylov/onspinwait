@@ -1,0 +1,15 @@
+--- old/src/cpu/sparc/vm/vm_version_sparc.cpp	2016-01-27 16:26:27.000000000 +0300
++++ new/src/cpu/sparc/vm/vm_version_sparc.cpp	2016-01-27 16:26:27.000000000 +0300
+@@ -356,6 +356,12 @@
+     FLAG_SET_DEFAULT(UseCRC32Intrinsics, false);
+   }
+ 
++  if (UseOnSpinWaitIntrinsic) {
++    if (!FLAG_IS_DEFAULT(UseOnSpinWaitIntrinsic))
++      warning("onSpinWait intrinsic is not available on this CPU");
++    FLAG_SET_DEFAULT(UseOnSpinWaitIntrinsic, false);
++  }
++
+   if (FLAG_IS_DEFAULT(ContendedPaddingWidth) &&
+     (cache_line_size > ContendedPaddingWidth))
+     ContendedPaddingWidth = cache_line_size;

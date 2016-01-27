@@ -1,0 +1,28 @@
+--- old/src/java.base/share/classes/java/lang/Runtime.java	2016-01-27 16:27:08.000000000 +0300
++++ new/src/java.base/share/classes/java/lang/Runtime.java	2016-01-27 16:27:07.000000000 +0300
+@@ -29,6 +29,7 @@
+ import java.util.StringTokenizer;
+ import sun.reflect.CallerSensitive;
+ import sun.reflect.Reflection;
++import jdk.internal.HotSpotIntrinsicCandidate;
+ 
+ /**
+  * Every Java application has a single instance of class
+@@ -874,6 +875,17 @@
+         ClassLoader.loadLibrary(fromClass, libname, false);
+     }
+ 
++    /** 
++     * Indicates that the caller is momentarily unable to progress, until the
++     * occurrence of one or more actions on the part of other activities.  By
++     * invoking this method within each iteration of a spin-wait loop construct,
++     * the calling thread indicates to the runtime that it is busy-waiting. The runtime
++     * may take action to improve the performance of invoking spin-wait loop
++     * constructions.
++     */
++    @HotSpotIntrinsicCandidate
++    public static void onSpinWait() {};
++
+     /**
+      * Creates a localized version of an input stream. This method takes
+      * an {@code InputStream} and returns an {@code InputStream}

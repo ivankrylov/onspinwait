@@ -1,0 +1,1108 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="-1" />
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+a.print { font-size: x-small; }
+
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+    <script type="text/javascript" src="../../../../../../ancnav.js"></script>
+    </head>
+    <body id="SUNWwebrev" onkeypress="keypress(event);">
+    <a name="0"></a>
+    <pre></pre><hr></hr>
+<pre>
+   1 /*
+   2  * Copyright (c) 1995, 2014, Oracle and/or its affiliates. All rights reserved.
+   3  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+   4  *
+   5  * This code is free software; you can redistribute it and/or modify it
+   6  * under the terms of the GNU General Public License version 2 only, as
+   7  * published by the Free Software Foundation.  Oracle designates this
+   8  * particular file as subject to the "Classpath" exception as provided
+   9  * by Oracle in the LICENSE file that accompanied this code.
+  10  *
+  11  * This code is distributed in the hope that it will be useful, but WITHOUT
+  12  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  13  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+  14  * version 2 for more details (a copy is included in the LICENSE file that
+  15  * accompanied this code).
+  16  *
+  17  * You should have received a copy of the GNU General Public License version
+  18  * 2 along with this work; if not, write to the Free Software Foundation,
+  19  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+  20  *
+  21  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+  22  * or visit www.oracle.com if you need additional information or have any
+  23  * questions.
+  24  */
+  25 
+  26 package java.lang;
+  27 
+  28 import java.io.*;
+  29 import java.util.StringTokenizer;
+  30 import sun.reflect.CallerSensitive;
+  31 import sun.reflect.Reflection;
+<a name="1" id="anc1"></a>
+  32 
+  33 /**
+  34  * Every Java application has a single instance of class
+  35  * {@code Runtime} that allows the application to interface with
+  36  * the environment in which the application is running. The current
+  37  * runtime can be obtained from the {@code getRuntime} method.
+  38  * &lt;p&gt;
+  39  * An application cannot create its own instance of this class.
+  40  *
+  41  * @author  unascribed
+  42  * @see     java.lang.Runtime#getRuntime()
+  43  * @since   1.0
+  44  */
+  45 
+  46 public class Runtime {
+  47     private static final Runtime currentRuntime = new Runtime();
+  48 
+  49     /**
+  50      * Returns the runtime object associated with the current Java application.
+  51      * Most of the methods of class {@code Runtime} are instance
+  52      * methods and must be invoked with respect to the current runtime object.
+  53      *
+  54      * @return  the {@code Runtime} object associated with the current
+  55      *          Java application.
+  56      */
+  57     public static Runtime getRuntime() {
+  58         return currentRuntime;
+  59     }
+  60 
+  61     /** Don't let anyone else instantiate this class */
+  62     private Runtime() {}
+  63 
+  64     /**
+  65      * Terminates the currently running Java virtual machine by initiating its
+  66      * shutdown sequence.  This method never returns normally.  The argument
+  67      * serves as a status code; by convention, a nonzero status code indicates
+  68      * abnormal termination.
+  69      *
+  70      * &lt;p&gt; The virtual machine's shutdown sequence consists of two phases.  In
+  71      * the first phase all registered {@link #addShutdownHook shutdown hooks},
+  72      * if any, are started in some unspecified order and allowed to run
+  73      * concurrently until they finish.  In the second phase all uninvoked
+  74      * finalizers are run if {@link #runFinalizersOnExit finalization-on-exit}
+  75      * has been enabled.  Once this is done the virtual machine {@link #halt halts}.
+  76      *
+  77      * &lt;p&gt; If this method is invoked after the virtual machine has begun its
+  78      * shutdown sequence then if shutdown hooks are being run this method will
+  79      * block indefinitely.  If shutdown hooks have already been run and on-exit
+  80      * finalization has been enabled then this method halts the virtual machine
+  81      * with the given status code if the status is nonzero; otherwise, it
+  82      * blocks indefinitely.
+  83      *
+  84      * &lt;p&gt; The {@link System#exit(int) System.exit} method is the
+  85      * conventional and convenient means of invoking this method.
+  86      *
+  87      * @param  status
+  88      *         Termination status.  By convention, a nonzero status code
+  89      *         indicates abnormal termination.
+  90      *
+  91      * @throws SecurityException
+  92      *         If a security manager is present and its
+  93      *         {@link SecurityManager#checkExit checkExit} method does not permit
+  94      *         exiting with the specified status
+  95      *
+  96      * @see java.lang.SecurityException
+  97      * @see java.lang.SecurityManager#checkExit(int)
+  98      * @see #addShutdownHook
+  99      * @see #removeShutdownHook
+ 100      * @see #runFinalizersOnExit
+ 101      * @see #halt(int)
+ 102      */
+ 103     public void exit(int status) {
+ 104         SecurityManager security = System.getSecurityManager();
+ 105         if (security != null) {
+ 106             security.checkExit(status);
+ 107         }
+ 108         Shutdown.exit(status);
+ 109     }
+ 110 
+ 111     /**
+ 112      * Registers a new virtual-machine shutdown hook.
+ 113      *
+ 114      * &lt;p&gt; The Java virtual machine &lt;i&gt;shuts down&lt;/i&gt; in response to two kinds
+ 115      * of events:
+ 116      *
+ 117      *   &lt;ul&gt;
+ 118      *
+ 119      *   &lt;li&gt; The program &lt;i&gt;exits&lt;/i&gt; normally, when the last non-daemon
+ 120      *   thread exits or when the {@link #exit exit} (equivalently,
+ 121      *   {@link System#exit(int) System.exit}) method is invoked, or
+ 122      *
+ 123      *   &lt;li&gt; The virtual machine is &lt;i&gt;terminated&lt;/i&gt; in response to a
+ 124      *   user interrupt, such as typing {@code ^C}, or a system-wide event,
+ 125      *   such as user logoff or system shutdown.
+ 126      *
+ 127      *   &lt;/ul&gt;
+ 128      *
+ 129      * &lt;p&gt; A &lt;i&gt;shutdown hook&lt;/i&gt; is simply an initialized but unstarted
+ 130      * thread.  When the virtual machine begins its shutdown sequence it will
+ 131      * start all registered shutdown hooks in some unspecified order and let
+ 132      * them run concurrently.  When all the hooks have finished it will then
+ 133      * run all uninvoked finalizers if finalization-on-exit has been enabled.
+ 134      * Finally, the virtual machine will halt.  Note that daemon threads will
+ 135      * continue to run during the shutdown sequence, as will non-daemon threads
+ 136      * if shutdown was initiated by invoking the {@link #exit exit} method.
+ 137      *
+ 138      * &lt;p&gt; Once the shutdown sequence has begun it can be stopped only by
+ 139      * invoking the {@link #halt halt} method, which forcibly
+ 140      * terminates the virtual machine.
+ 141      *
+ 142      * &lt;p&gt; Once the shutdown sequence has begun it is impossible to register a
+ 143      * new shutdown hook or de-register a previously-registered hook.
+ 144      * Attempting either of these operations will cause an
+ 145      * {@link IllegalStateException} to be thrown.
+ 146      *
+ 147      * &lt;p&gt; Shutdown hooks run at a delicate time in the life cycle of a virtual
+ 148      * machine and should therefore be coded defensively.  They should, in
+ 149      * particular, be written to be thread-safe and to avoid deadlocks insofar
+ 150      * as possible.  They should also not rely blindly upon services that may
+ 151      * have registered their own shutdown hooks and therefore may themselves in
+ 152      * the process of shutting down.  Attempts to use other thread-based
+ 153      * services such as the AWT event-dispatch thread, for example, may lead to
+ 154      * deadlocks.
+ 155      *
+ 156      * &lt;p&gt; Shutdown hooks should also finish their work quickly.  When a
+ 157      * program invokes {@link #exit exit} the expectation is
+ 158      * that the virtual machine will promptly shut down and exit.  When the
+ 159      * virtual machine is terminated due to user logoff or system shutdown the
+ 160      * underlying operating system may only allow a fixed amount of time in
+ 161      * which to shut down and exit.  It is therefore inadvisable to attempt any
+ 162      * user interaction or to perform a long-running computation in a shutdown
+ 163      * hook.
+ 164      *
+ 165      * &lt;p&gt; Uncaught exceptions are handled in shutdown hooks just as in any
+ 166      * other thread, by invoking the
+ 167      * {@link ThreadGroup#uncaughtException uncaughtException} method of the
+ 168      * thread's {@link ThreadGroup} object. The default implementation of this
+ 169      * method prints the exception's stack trace to {@link System#err} and
+ 170      * terminates the thread; it does not cause the virtual machine to exit or
+ 171      * halt.
+ 172      *
+ 173      * &lt;p&gt; In rare circumstances the virtual machine may &lt;i&gt;abort&lt;/i&gt;, that is,
+ 174      * stop running without shutting down cleanly.  This occurs when the
+ 175      * virtual machine is terminated externally, for example with the
+ 176      * {@code SIGKILL} signal on Unix or the {@code TerminateProcess} call on
+ 177      * Microsoft Windows.  The virtual machine may also abort if a native
+ 178      * method goes awry by, for example, corrupting internal data structures or
+ 179      * attempting to access nonexistent memory.  If the virtual machine aborts
+ 180      * then no guarantee can be made about whether or not any shutdown hooks
+ 181      * will be run.
+ 182      *
+ 183      * @param   hook
+ 184      *          An initialized but unstarted {@link Thread} object
+ 185      *
+ 186      * @throws  IllegalArgumentException
+ 187      *          If the specified hook has already been registered,
+ 188      *          or if it can be determined that the hook is already running or
+ 189      *          has already been run
+ 190      *
+ 191      * @throws  IllegalStateException
+ 192      *          If the virtual machine is already in the process
+ 193      *          of shutting down
+ 194      *
+ 195      * @throws  SecurityException
+ 196      *          If a security manager is present and it denies
+ 197      *          {@link RuntimePermission}("shutdownHooks")
+ 198      *
+ 199      * @see #removeShutdownHook
+ 200      * @see #halt(int)
+ 201      * @see #exit(int)
+ 202      * @since 1.3
+ 203      */
+ 204     public void addShutdownHook(Thread hook) {
+ 205         SecurityManager sm = System.getSecurityManager();
+ 206         if (sm != null) {
+ 207             sm.checkPermission(new RuntimePermission("shutdownHooks"));
+ 208         }
+ 209         ApplicationShutdownHooks.add(hook);
+ 210     }
+ 211 
+ 212     /**
+ 213      * De-registers a previously-registered virtual-machine shutdown hook.
+ 214      *
+ 215      * @param hook the hook to remove
+ 216      * @return {@code true} if the specified hook had previously been
+ 217      * registered and was successfully de-registered, {@code false}
+ 218      * otherwise.
+ 219      *
+ 220      * @throws  IllegalStateException
+ 221      *          If the virtual machine is already in the process of shutting
+ 222      *          down
+ 223      *
+ 224      * @throws  SecurityException
+ 225      *          If a security manager is present and it denies
+ 226      *          {@link RuntimePermission}("shutdownHooks")
+ 227      *
+ 228      * @see #addShutdownHook
+ 229      * @see #exit(int)
+ 230      * @since 1.3
+ 231      */
+ 232     public boolean removeShutdownHook(Thread hook) {
+ 233         SecurityManager sm = System.getSecurityManager();
+ 234         if (sm != null) {
+ 235             sm.checkPermission(new RuntimePermission("shutdownHooks"));
+ 236         }
+ 237         return ApplicationShutdownHooks.remove(hook);
+ 238     }
+ 239 
+ 240     /**
+ 241      * Forcibly terminates the currently running Java virtual machine.  This
+ 242      * method never returns normally.
+ 243      *
+ 244      * &lt;p&gt; This method should be used with extreme caution.  Unlike the
+ 245      * {@link #exit exit} method, this method does not cause shutdown
+ 246      * hooks to be started and does not run uninvoked finalizers if
+ 247      * finalization-on-exit has been enabled.  If the shutdown sequence has
+ 248      * already been initiated then this method does not wait for any running
+ 249      * shutdown hooks or finalizers to finish their work.
+ 250      *
+ 251      * @param  status
+ 252      *         Termination status. By convention, a nonzero status code
+ 253      *         indicates abnormal termination. If the {@link Runtime#exit exit}
+ 254      *         (equivalently, {@link System#exit(int) System.exit}) method
+ 255      *         has already been invoked then this status code
+ 256      *         will override the status code passed to that method.
+ 257      *
+ 258      * @throws SecurityException
+ 259      *         If a security manager is present and its
+ 260      *         {@link SecurityManager#checkExit checkExit} method
+ 261      *         does not permit an exit with the specified status
+ 262      *
+ 263      * @see #exit
+ 264      * @see #addShutdownHook
+ 265      * @see #removeShutdownHook
+ 266      * @since 1.3
+ 267      */
+ 268     public void halt(int status) {
+ 269         SecurityManager sm = System.getSecurityManager();
+ 270         if (sm != null) {
+ 271             sm.checkExit(status);
+ 272         }
+ 273         Shutdown.halt(status);
+ 274     }
+ 275 
+ 276     /**
+ 277      * Enable or disable finalization on exit; doing so specifies that the
+ 278      * finalizers of all objects that have finalizers that have not yet been
+ 279      * automatically invoked are to be run before the Java runtime exits.
+ 280      * By default, finalization on exit is disabled.
+ 281      *
+ 282      * &lt;p&gt;If there is a security manager,
+ 283      * its {@code checkExit} method is first called
+ 284      * with 0 as its argument to ensure the exit is allowed.
+ 285      * This could result in a SecurityException.
+ 286      *
+ 287      * @param value true to enable finalization on exit, false to disable
+ 288      * @deprecated  This method is inherently unsafe.  It may result in
+ 289      *      finalizers being called on live objects while other threads are
+ 290      *      concurrently manipulating those objects, resulting in erratic
+ 291      *      behavior or deadlock.
+ 292      *
+ 293      * @throws  SecurityException
+ 294      *        if a security manager exists and its {@code checkExit}
+ 295      *        method doesn't allow the exit.
+ 296      *
+ 297      * @see     java.lang.Runtime#exit(int)
+ 298      * @see     java.lang.Runtime#gc()
+ 299      * @see     java.lang.SecurityManager#checkExit(int)
+ 300      * @since   1.1
+ 301      */
+ 302     @Deprecated
+ 303     public static void runFinalizersOnExit(boolean value) {
+ 304         SecurityManager security = System.getSecurityManager();
+ 305         if (security != null) {
+ 306             try {
+ 307                 security.checkExit(0);
+ 308             } catch (SecurityException e) {
+ 309                 throw new SecurityException("runFinalizersOnExit");
+ 310             }
+ 311         }
+ 312         Shutdown.setRunFinalizersOnExit(value);
+ 313     }
+ 314 
+ 315     /**
+ 316      * Executes the specified string command in a separate process.
+ 317      *
+ 318      * &lt;p&gt;This is a convenience method.  An invocation of the form
+ 319      * {@code exec(command)}
+ 320      * behaves in exactly the same way as the invocation
+ 321      * {@link #exec(String, String[], File) exec}{@code (command, null, null)}.
+ 322      *
+ 323      * @param   command   a specified system command.
+ 324      *
+ 325      * @return  A new {@link Process} object for managing the subprocess
+ 326      *
+ 327      * @throws  SecurityException
+ 328      *          If a security manager exists and its
+ 329      *          {@link SecurityManager#checkExec checkExec}
+ 330      *          method doesn't allow creation of the subprocess
+ 331      *
+ 332      * @throws  IOException
+ 333      *          If an I/O error occurs
+ 334      *
+ 335      * @throws  NullPointerException
+ 336      *          If {@code command} is {@code null}
+ 337      *
+ 338      * @throws  IllegalArgumentException
+ 339      *          If {@code command} is empty
+ 340      *
+ 341      * @see     #exec(String[], String[], File)
+ 342      * @see     ProcessBuilder
+ 343      */
+ 344     public Process exec(String command) throws IOException {
+ 345         return exec(command, null, null);
+ 346     }
+ 347 
+ 348     /**
+ 349      * Executes the specified string command in a separate process with the
+ 350      * specified environment.
+ 351      *
+ 352      * &lt;p&gt;This is a convenience method.  An invocation of the form
+ 353      * {@code exec(command, envp)}
+ 354      * behaves in exactly the same way as the invocation
+ 355      * {@link #exec(String, String[], File) exec}{@code (command, envp, null)}.
+ 356      *
+ 357      * @param   command   a specified system command.
+ 358      *
+ 359      * @param   envp      array of strings, each element of which
+ 360      *                    has environment variable settings in the format
+ 361      *                    &lt;i&gt;name&lt;/i&gt;=&lt;i&gt;value&lt;/i&gt;, or
+ 362      *                    {@code null} if the subprocess should inherit
+ 363      *                    the environment of the current process.
+ 364      *
+ 365      * @return  A new {@link Process} object for managing the subprocess
+ 366      *
+ 367      * @throws  SecurityException
+ 368      *          If a security manager exists and its
+ 369      *          {@link SecurityManager#checkExec checkExec}
+ 370      *          method doesn't allow creation of the subprocess
+ 371      *
+ 372      * @throws  IOException
+ 373      *          If an I/O error occurs
+ 374      *
+ 375      * @throws  NullPointerException
+ 376      *          If {@code command} is {@code null},
+ 377      *          or one of the elements of {@code envp} is {@code null}
+ 378      *
+ 379      * @throws  IllegalArgumentException
+ 380      *          If {@code command} is empty
+ 381      *
+ 382      * @see     #exec(String[], String[], File)
+ 383      * @see     ProcessBuilder
+ 384      */
+ 385     public Process exec(String command, String[] envp) throws IOException {
+ 386         return exec(command, envp, null);
+ 387     }
+ 388 
+ 389     /**
+ 390      * Executes the specified string command in a separate process with the
+ 391      * specified environment and working directory.
+ 392      *
+ 393      * &lt;p&gt;This is a convenience method.  An invocation of the form
+ 394      * {@code exec(command, envp, dir)}
+ 395      * behaves in exactly the same way as the invocation
+ 396      * {@link #exec(String[], String[], File) exec}{@code (cmdarray, envp, dir)},
+ 397      * where {@code cmdarray} is an array of all the tokens in
+ 398      * {@code command}.
+ 399      *
+ 400      * &lt;p&gt;More precisely, the {@code command} string is broken
+ 401      * into tokens using a {@link StringTokenizer} created by the call
+ 402      * {@code new {@link StringTokenizer}(command)} with no
+ 403      * further modification of the character categories.  The tokens
+ 404      * produced by the tokenizer are then placed in the new string
+ 405      * array {@code cmdarray}, in the same order.
+ 406      *
+ 407      * @param   command   a specified system command.
+ 408      *
+ 409      * @param   envp      array of strings, each element of which
+ 410      *                    has environment variable settings in the format
+ 411      *                    &lt;i&gt;name&lt;/i&gt;=&lt;i&gt;value&lt;/i&gt;, or
+ 412      *                    {@code null} if the subprocess should inherit
+ 413      *                    the environment of the current process.
+ 414      *
+ 415      * @param   dir       the working directory of the subprocess, or
+ 416      *                    {@code null} if the subprocess should inherit
+ 417      *                    the working directory of the current process.
+ 418      *
+ 419      * @return  A new {@link Process} object for managing the subprocess
+ 420      *
+ 421      * @throws  SecurityException
+ 422      *          If a security manager exists and its
+ 423      *          {@link SecurityManager#checkExec checkExec}
+ 424      *          method doesn't allow creation of the subprocess
+ 425      *
+ 426      * @throws  IOException
+ 427      *          If an I/O error occurs
+ 428      *
+ 429      * @throws  NullPointerException
+ 430      *          If {@code command} is {@code null},
+ 431      *          or one of the elements of {@code envp} is {@code null}
+ 432      *
+ 433      * @throws  IllegalArgumentException
+ 434      *          If {@code command} is empty
+ 435      *
+ 436      * @see     ProcessBuilder
+ 437      * @since 1.3
+ 438      */
+ 439     public Process exec(String command, String[] envp, File dir)
+ 440         throws IOException {
+ 441         if (command.length() == 0)
+ 442             throw new IllegalArgumentException("Empty command");
+ 443 
+ 444         StringTokenizer st = new StringTokenizer(command);
+ 445         String[] cmdarray = new String[st.countTokens()];
+ 446         for (int i = 0; st.hasMoreTokens(); i++)
+ 447             cmdarray[i] = st.nextToken();
+ 448         return exec(cmdarray, envp, dir);
+ 449     }
+ 450 
+ 451     /**
+ 452      * Executes the specified command and arguments in a separate process.
+ 453      *
+ 454      * &lt;p&gt;This is a convenience method.  An invocation of the form
+ 455      * {@code exec(cmdarray)}
+ 456      * behaves in exactly the same way as the invocation
+ 457      * {@link #exec(String[], String[], File) exec}{@code (cmdarray, null, null)}.
+ 458      *
+ 459      * @param   cmdarray  array containing the command to call and
+ 460      *                    its arguments.
+ 461      *
+ 462      * @return  A new {@link Process} object for managing the subprocess
+ 463      *
+ 464      * @throws  SecurityException
+ 465      *          If a security manager exists and its
+ 466      *          {@link SecurityManager#checkExec checkExec}
+ 467      *          method doesn't allow creation of the subprocess
+ 468      *
+ 469      * @throws  IOException
+ 470      *          If an I/O error occurs
+ 471      *
+ 472      * @throws  NullPointerException
+ 473      *          If {@code cmdarray} is {@code null},
+ 474      *          or one of the elements of {@code cmdarray} is {@code null}
+ 475      *
+ 476      * @throws  IndexOutOfBoundsException
+ 477      *          If {@code cmdarray} is an empty array
+ 478      *          (has length {@code 0})
+ 479      *
+ 480      * @see     ProcessBuilder
+ 481      */
+ 482     public Process exec(String cmdarray[]) throws IOException {
+ 483         return exec(cmdarray, null, null);
+ 484     }
+ 485 
+ 486     /**
+ 487      * Executes the specified command and arguments in a separate process
+ 488      * with the specified environment.
+ 489      *
+ 490      * &lt;p&gt;This is a convenience method.  An invocation of the form
+ 491      * {@code exec(cmdarray, envp)}
+ 492      * behaves in exactly the same way as the invocation
+ 493      * {@link #exec(String[], String[], File) exec}{@code (cmdarray, envp, null)}.
+ 494      *
+ 495      * @param   cmdarray  array containing the command to call and
+ 496      *                    its arguments.
+ 497      *
+ 498      * @param   envp      array of strings, each element of which
+ 499      *                    has environment variable settings in the format
+ 500      *                    &lt;i&gt;name&lt;/i&gt;=&lt;i&gt;value&lt;/i&gt;, or
+ 501      *                    {@code null} if the subprocess should inherit
+ 502      *                    the environment of the current process.
+ 503      *
+ 504      * @return  A new {@link Process} object for managing the subprocess
+ 505      *
+ 506      * @throws  SecurityException
+ 507      *          If a security manager exists and its
+ 508      *          {@link SecurityManager#checkExec checkExec}
+ 509      *          method doesn't allow creation of the subprocess
+ 510      *
+ 511      * @throws  IOException
+ 512      *          If an I/O error occurs
+ 513      *
+ 514      * @throws  NullPointerException
+ 515      *          If {@code cmdarray} is {@code null},
+ 516      *          or one of the elements of {@code cmdarray} is {@code null},
+ 517      *          or one of the elements of {@code envp} is {@code null}
+ 518      *
+ 519      * @throws  IndexOutOfBoundsException
+ 520      *          If {@code cmdarray} is an empty array
+ 521      *          (has length {@code 0})
+ 522      *
+ 523      * @see     ProcessBuilder
+ 524      */
+ 525     public Process exec(String[] cmdarray, String[] envp) throws IOException {
+ 526         return exec(cmdarray, envp, null);
+ 527     }
+ 528 
+ 529 
+ 530     /**
+ 531      * Executes the specified command and arguments in a separate process with
+ 532      * the specified environment and working directory.
+ 533      *
+ 534      * &lt;p&gt;Given an array of strings {@code cmdarray}, representing the
+ 535      * tokens of a command line, and an array of strings {@code envp},
+ 536      * representing "environment" variable settings, this method creates
+ 537      * a new process in which to execute the specified command.
+ 538      *
+ 539      * &lt;p&gt;This method checks that {@code cmdarray} is a valid operating
+ 540      * system command.  Which commands are valid is system-dependent,
+ 541      * but at the very least the command must be a non-empty list of
+ 542      * non-null strings.
+ 543      *
+ 544      * &lt;p&gt;If {@code envp} is {@code null}, the subprocess inherits the
+ 545      * environment settings of the current process.
+ 546      *
+ 547      * &lt;p&gt;A minimal set of system dependent environment variables may
+ 548      * be required to start a process on some operating systems.
+ 549      * As a result, the subprocess may inherit additional environment variable
+ 550      * settings beyond those in the specified environment.
+ 551      *
+ 552      * &lt;p&gt;{@link ProcessBuilder#start()} is now the preferred way to
+ 553      * start a process with a modified environment.
+ 554      *
+ 555      * &lt;p&gt;The working directory of the new subprocess is specified by {@code dir}.
+ 556      * If {@code dir} is {@code null}, the subprocess inherits the
+ 557      * current working directory of the current process.
+ 558      *
+ 559      * &lt;p&gt;If a security manager exists, its
+ 560      * {@link SecurityManager#checkExec checkExec}
+ 561      * method is invoked with the first component of the array
+ 562      * {@code cmdarray} as its argument. This may result in a
+ 563      * {@link SecurityException} being thrown.
+ 564      *
+ 565      * &lt;p&gt;Starting an operating system process is highly system-dependent.
+ 566      * Among the many things that can go wrong are:
+ 567      * &lt;ul&gt;
+ 568      * &lt;li&gt;The operating system program file was not found.
+ 569      * &lt;li&gt;Access to the program file was denied.
+ 570      * &lt;li&gt;The working directory does not exist.
+ 571      * &lt;/ul&gt;
+ 572      *
+ 573      * &lt;p&gt;In such cases an exception will be thrown.  The exact nature
+ 574      * of the exception is system-dependent, but it will always be a
+ 575      * subclass of {@link IOException}.
+ 576      *
+ 577      * &lt;p&gt;If the operating system does not support the creation of
+ 578      * processes, an {@link UnsupportedOperationException} will be thrown.
+ 579      *
+ 580      *
+ 581      * @param   cmdarray  array containing the command to call and
+ 582      *                    its arguments.
+ 583      *
+ 584      * @param   envp      array of strings, each element of which
+ 585      *                    has environment variable settings in the format
+ 586      *                    &lt;i&gt;name&lt;/i&gt;=&lt;i&gt;value&lt;/i&gt;, or
+ 587      *                    {@code null} if the subprocess should inherit
+ 588      *                    the environment of the current process.
+ 589      *
+ 590      * @param   dir       the working directory of the subprocess, or
+ 591      *                    {@code null} if the subprocess should inherit
+ 592      *                    the working directory of the current process.
+ 593      *
+ 594      * @return  A new {@link Process} object for managing the subprocess
+ 595      *
+ 596      * @throws  SecurityException
+ 597      *          If a security manager exists and its
+ 598      *          {@link SecurityManager#checkExec checkExec}
+ 599      *          method doesn't allow creation of the subprocess
+ 600      *
+ 601      * @throws  UnsupportedOperationException
+ 602      *          If the operating system does not support the creation of processes.
+ 603      *
+ 604      * @throws  IOException
+ 605      *          If an I/O error occurs
+ 606      *
+ 607      * @throws  NullPointerException
+ 608      *          If {@code cmdarray} is {@code null},
+ 609      *          or one of the elements of {@code cmdarray} is {@code null},
+ 610      *          or one of the elements of {@code envp} is {@code null}
+ 611      *
+ 612      * @throws  IndexOutOfBoundsException
+ 613      *          If {@code cmdarray} is an empty array
+ 614      *          (has length {@code 0})
+ 615      *
+ 616      * @see     ProcessBuilder
+ 617      * @since 1.3
+ 618      */
+ 619     public Process exec(String[] cmdarray, String[] envp, File dir)
+ 620         throws IOException {
+ 621         return new ProcessBuilder(cmdarray)
+ 622             .environment(envp)
+ 623             .directory(dir)
+ 624             .start();
+ 625     }
+ 626 
+ 627     /**
+ 628      * Returns the number of processors available to the Java virtual machine.
+ 629      *
+ 630      * &lt;p&gt; This value may change during a particular invocation of the virtual
+ 631      * machine.  Applications that are sensitive to the number of available
+ 632      * processors should therefore occasionally poll this property and adjust
+ 633      * their resource usage appropriately. &lt;/p&gt;
+ 634      *
+ 635      * @return  the maximum number of processors available to the virtual
+ 636      *          machine; never smaller than one
+ 637      * @since 1.4
+ 638      */
+ 639     public native int availableProcessors();
+ 640 
+ 641     /**
+ 642      * Returns the amount of free memory in the Java Virtual Machine.
+ 643      * Calling the
+ 644      * {@code gc} method may result in increasing the value returned
+ 645      * by {@code freeMemory.}
+ 646      *
+ 647      * @return  an approximation to the total amount of memory currently
+ 648      *          available for future allocated objects, measured in bytes.
+ 649      */
+ 650     public native long freeMemory();
+ 651 
+ 652     /**
+ 653      * Returns the total amount of memory in the Java virtual machine.
+ 654      * The value returned by this method may vary over time, depending on
+ 655      * the host environment.
+ 656      * &lt;p&gt;
+ 657      * Note that the amount of memory required to hold an object of any
+ 658      * given type may be implementation-dependent.
+ 659      *
+ 660      * @return  the total amount of memory currently available for current
+ 661      *          and future objects, measured in bytes.
+ 662      */
+ 663     public native long totalMemory();
+ 664 
+ 665     /**
+ 666      * Returns the maximum amount of memory that the Java virtual machine
+ 667      * will attempt to use.  If there is no inherent limit then the value
+ 668      * {@link java.lang.Long#MAX_VALUE} will be returned.
+ 669      *
+ 670      * @return  the maximum amount of memory that the virtual machine will
+ 671      *          attempt to use, measured in bytes
+ 672      * @since 1.4
+ 673      */
+ 674     public native long maxMemory();
+ 675 
+ 676     /**
+ 677      * Runs the garbage collector.
+ 678      * Calling this method suggests that the Java virtual machine expend
+ 679      * effort toward recycling unused objects in order to make the memory
+ 680      * they currently occupy available for quick reuse. When control
+ 681      * returns from the method call, the virtual machine has made
+ 682      * its best effort to recycle all discarded objects.
+ 683      * &lt;p&gt;
+ 684      * The name {@code gc} stands for "garbage
+ 685      * collector". The virtual machine performs this recycling
+ 686      * process automatically as needed, in a separate thread, even if the
+ 687      * {@code gc} method is not invoked explicitly.
+ 688      * &lt;p&gt;
+ 689      * The method {@link System#gc()} is the conventional and convenient
+ 690      * means of invoking this method.
+ 691      */
+ 692     public native void gc();
+ 693 
+ 694     /* Wormhole for calling java.lang.ref.Finalizer.runFinalization */
+ 695     private static native void runFinalization0();
+ 696 
+ 697     /**
+ 698      * Runs the finalization methods of any objects pending finalization.
+ 699      * Calling this method suggests that the Java virtual machine expend
+ 700      * effort toward running the {@code finalize} methods of objects
+ 701      * that have been found to be discarded but whose {@code finalize}
+ 702      * methods have not yet been run. When control returns from the
+ 703      * method call, the virtual machine has made a best effort to
+ 704      * complete all outstanding finalizations.
+ 705      * &lt;p&gt;
+ 706      * The virtual machine performs the finalization process
+ 707      * automatically as needed, in a separate thread, if the
+ 708      * {@code runFinalization} method is not invoked explicitly.
+ 709      * &lt;p&gt;
+ 710      * The method {@link System#runFinalization()} is the conventional
+ 711      * and convenient means of invoking this method.
+ 712      *
+ 713      * @see     java.lang.Object#finalize()
+ 714      */
+ 715     public void runFinalization() {
+ 716         runFinalization0();
+ 717     }
+ 718 
+ 719     /**
+ 720      * Enables/Disables tracing of instructions.
+ 721      * If the {@code boolean} argument is {@code true}, this
+ 722      * method suggests that the Java virtual machine emit debugging
+ 723      * information for each instruction in the virtual machine as it
+ 724      * is executed. The format of this information, and the file or other
+ 725      * output stream to which it is emitted, depends on the host environment.
+ 726      * The virtual machine may ignore this request if it does not support
+ 727      * this feature. The destination of the trace output is system
+ 728      * dependent.
+ 729      * &lt;p&gt;
+ 730      * If the {@code boolean} argument is {@code false}, this
+ 731      * method causes the virtual machine to stop performing the
+ 732      * detailed instruction trace it is performing.
+ 733      *
+ 734      * @param   on   {@code true} to enable instruction tracing;
+ 735      *               {@code false} to disable this feature.
+ 736      */
+ 737     public void traceInstructions(boolean on) { }
+ 738 
+ 739     /**
+ 740      * Enables/Disables tracing of method calls.
+ 741      * If the {@code boolean} argument is {@code true}, this
+ 742      * method suggests that the Java virtual machine emit debugging
+ 743      * information for each method in the virtual machine as it is
+ 744      * called. The format of this information, and the file or other output
+ 745      * stream to which it is emitted, depends on the host environment. The
+ 746      * virtual machine may ignore this request if it does not support
+ 747      * this feature.
+ 748      * &lt;p&gt;
+ 749      * Calling this method with argument false suggests that the
+ 750      * virtual machine cease emitting per-call debugging information.
+ 751      *
+ 752      * @param   on   {@code true} to enable instruction tracing;
+ 753      *               {@code false} to disable this feature.
+ 754      */
+ 755     public void traceMethodCalls(boolean on) { }
+ 756 
+ 757     /**
+ 758      * Loads the native library specified by the filename argument.  The filename
+ 759      * argument must be an absolute path name.
+ 760      * (for example
+ 761      * {@code Runtime.getRuntime().load("/home/avh/lib/libX11.so");}).
+ 762      *
+ 763      * If the filename argument, when stripped of any platform-specific library
+ 764      * prefix, path, and file extension, indicates a library whose name is,
+ 765      * for example, L, and a native library called L is statically linked
+ 766      * with the VM, then the JNI_OnLoad_L function exported by the library
+ 767      * is invoked rather than attempting to load a dynamic library.
+ 768      * A filename matching the argument does not have to exist in the file
+ 769      * system. See the JNI Specification for more details.
+ 770      *
+ 771      * Otherwise, the filename argument is mapped to a native library image in
+ 772      * an implementation-dependent manner.
+ 773      * &lt;p&gt;
+ 774      * First, if there is a security manager, its {@code checkLink}
+ 775      * method is called with the {@code filename} as its argument.
+ 776      * This may result in a security exception.
+ 777      * &lt;p&gt;
+ 778      * This is similar to the method {@link #loadLibrary(String)}, but it
+ 779      * accepts a general file name as an argument rather than just a library
+ 780      * name, allowing any file of native code to be loaded.
+ 781      * &lt;p&gt;
+ 782      * The method {@link System#load(String)} is the conventional and
+ 783      * convenient means of invoking this method.
+ 784      *
+ 785      * @param      filename   the file to load.
+ 786      * @exception  SecurityException  if a security manager exists and its
+ 787      *             {@code checkLink} method doesn't allow
+ 788      *             loading of the specified dynamic library
+ 789      * @exception  UnsatisfiedLinkError  if either the filename is not an
+ 790      *             absolute path name, the native library is not statically
+ 791      *             linked with the VM, or the library cannot be mapped to
+ 792      *             a native library image by the host system.
+ 793      * @exception  NullPointerException if {@code filename} is
+ 794      *             {@code null}
+ 795      * @see        java.lang.Runtime#getRuntime()
+ 796      * @see        java.lang.SecurityException
+ 797      * @see        java.lang.SecurityManager#checkLink(java.lang.String)
+ 798      */
+ 799     @CallerSensitive
+ 800     public void load(String filename) {
+ 801         load0(Reflection.getCallerClass(), filename);
+ 802     }
+ 803 
+ 804     synchronized void load0(Class&lt;?&gt; fromClass, String filename) {
+ 805         SecurityManager security = System.getSecurityManager();
+ 806         if (security != null) {
+ 807             security.checkLink(filename);
+ 808         }
+ 809         if (!(new File(filename).isAbsolute())) {
+ 810             throw new UnsatisfiedLinkError(
+ 811                 "Expecting an absolute path of the library: " + filename);
+ 812         }
+ 813         ClassLoader.loadLibrary(fromClass, filename, true);
+ 814     }
+ 815 
+ 816     /**
+ 817      * Loads the native library specified by the {@code libname}
+ 818      * argument.  The {@code libname} argument must not contain any platform
+ 819      * specific prefix, file extension or path. If a native library
+ 820      * called {@code libname} is statically linked with the VM, then the
+ 821      * JNI_OnLoad_{@code libname} function exported by the library is invoked.
+ 822      * See the JNI Specification for more details.
+ 823      *
+ 824      * Otherwise, the libname argument is loaded from a system library
+ 825      * location and mapped to a native library image in an implementation-
+ 826      * dependent manner.
+ 827      * &lt;p&gt;
+ 828      * First, if there is a security manager, its {@code checkLink}
+ 829      * method is called with the {@code libname} as its argument.
+ 830      * This may result in a security exception.
+ 831      * &lt;p&gt;
+ 832      * The method {@link System#loadLibrary(String)} is the conventional
+ 833      * and convenient means of invoking this method. If native
+ 834      * methods are to be used in the implementation of a class, a standard
+ 835      * strategy is to put the native code in a library file (call it
+ 836      * {@code LibFile}) and then to put a static initializer:
+ 837      * &lt;blockquote&gt;&lt;pre&gt;
+ 838      * static { System.loadLibrary("LibFile"); }
+ 839      * &lt;/pre&gt;&lt;/blockquote&gt;
+ 840      * within the class declaration. When the class is loaded and
+ 841      * initialized, the necessary native code implementation for the native
+ 842      * methods will then be loaded as well.
+ 843      * &lt;p&gt;
+ 844      * If this method is called more than once with the same library
+ 845      * name, the second and subsequent calls are ignored.
+ 846      *
+ 847      * @param      libname   the name of the library.
+ 848      * @exception  SecurityException  if a security manager exists and its
+ 849      *             {@code checkLink} method doesn't allow
+ 850      *             loading of the specified dynamic library
+ 851      * @exception  UnsatisfiedLinkError if either the libname argument
+ 852      *             contains a file path, the native library is not statically
+ 853      *             linked with the VM,  or the library cannot be mapped to a
+ 854      *             native library image by the host system.
+ 855      * @exception  NullPointerException if {@code libname} is
+ 856      *             {@code null}
+ 857      * @see        java.lang.SecurityException
+ 858      * @see        java.lang.SecurityManager#checkLink(java.lang.String)
+ 859      */
+ 860     @CallerSensitive
+ 861     public void loadLibrary(String libname) {
+ 862         loadLibrary0(Reflection.getCallerClass(), libname);
+ 863     }
+ 864 
+ 865     synchronized void loadLibrary0(Class&lt;?&gt; fromClass, String libname) {
+ 866         SecurityManager security = System.getSecurityManager();
+ 867         if (security != null) {
+ 868             security.checkLink(libname);
+ 869         }
+ 870         if (libname.indexOf((int)File.separatorChar) != -1) {
+ 871             throw new UnsatisfiedLinkError(
+ 872     "Directory separator should not appear in library name: " + libname);
+ 873         }
+ 874         ClassLoader.loadLibrary(fromClass, libname, false);
+ 875     }
+ 876 
+ 877     /**
+<a name="2" id="anc2"></a>
+
+
+
+
+
+
+
+
+
+
+ 878      * Creates a localized version of an input stream. This method takes
+ 879      * an {@code InputStream} and returns an {@code InputStream}
+ 880      * equivalent to the argument in all respects except that it is
+ 881      * localized: as characters in the local character set are read from
+ 882      * the stream, they are automatically converted from the local
+ 883      * character set to Unicode.
+ 884      * &lt;p&gt;
+ 885      * If the argument is already a localized stream, it may be returned
+ 886      * as the result.
+ 887      *
+ 888      * @param      in InputStream to localize
+ 889      * @return     a localized input stream
+ 890      * @see        java.io.InputStream
+ 891      * @see        java.io.BufferedReader#BufferedReader(java.io.Reader)
+ 892      * @see        java.io.InputStreamReader#InputStreamReader(java.io.InputStream)
+ 893      * @deprecated As of JDK&amp;nbsp;1.1, the preferred way to translate a byte
+ 894      * stream in the local encoding into a character stream in Unicode is via
+ 895      * the {@code InputStreamReader} and {@code BufferedReader}
+ 896      * classes.
+ 897      */
+ 898     @Deprecated
+ 899     public InputStream getLocalizedInputStream(InputStream in) {
+ 900         return in;
+ 901     }
+ 902 
+ 903     /**
+ 904      * Creates a localized version of an output stream. This method
+ 905      * takes an {@code OutputStream} and returns an
+ 906      * {@code OutputStream} equivalent to the argument in all respects
+ 907      * except that it is localized: as Unicode characters are written to
+ 908      * the stream, they are automatically converted to the local
+ 909      * character set.
+ 910      * &lt;p&gt;
+ 911      * If the argument is already a localized stream, it may be returned
+ 912      * as the result.
+ 913      *
+ 914      * @deprecated As of JDK&amp;nbsp;1.1, the preferred way to translate a
+ 915      * Unicode character stream into a byte stream in the local encoding is via
+ 916      * the {@code OutputStreamWriter}, {@code BufferedWriter}, and
+ 917      * {@code PrintWriter} classes.
+ 918      *
+ 919      * @param      out OutputStream to localize
+ 920      * @return     a localized output stream
+ 921      * @see        java.io.OutputStream
+ 922      * @see        java.io.BufferedWriter#BufferedWriter(java.io.Writer)
+ 923      * @see        java.io.OutputStreamWriter#OutputStreamWriter(java.io.OutputStream)
+ 924      * @see        java.io.PrintWriter#PrintWriter(java.io.OutputStream)
+ 925      */
+ 926     @Deprecated
+ 927     public OutputStream getLocalizedOutputStream(OutputStream out) {
+ 928         return out;
+ 929     }
+ 930 
+ 931 }
+<a name="3" id="anc3"></a><b style="font-size: large; color: red">--- EOF ---</b>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</pre><form name="eof"><input name="value" value="3" type="hidden" /></form></body></html>

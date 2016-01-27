@@ -1,0 +1,14 @@
+src/cpu/ppc/vm/vm_version_ppc.cpp
+src/cpu/sparc/vm/vm_version_sparc.cpp
+src/cpu/x86/vm/x86_64.ad
+src/share/vm/classfile/vmSymbols.cpp
+src/share/vm/classfile/vmSymbols.hpp
+src/share/vm/opto/c2compiler.cpp
+src/share/vm/opto/classes.hpp
+src/share/vm/opto/library_call.cpp
+src/share/vm/opto/matcher.cpp
+src/share/vm/opto/memnode.cpp
+src/share/vm/opto/memnode.hpp
+src/share/vm/runtime/globals.hpp
+src/share/vm/runtime/vmStructs.cpp
+test/compiler/onSpinWait/TestOnSpinWait.java

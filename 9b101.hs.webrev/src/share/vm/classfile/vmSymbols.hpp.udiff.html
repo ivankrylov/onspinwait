@@ -1,0 +1,124 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="-1" />
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+a.print { font-size: x-small; }
+
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>hotspot Udiff src/share/vm/classfile/vmSymbols.hpp</title>
+
+<style type="text/css" media="screen">
+span.new {
+    color: blue;
+    font-weight: normal;
+}
+</style>
+
+</head>
+<body id="SUNWwebrev">
+<h2>src/share/vm/classfile/vmSymbols.hpp</h2>
+        <a class="print" href="javascript:print()">Print this page</a>
+<pre></pre>
+        <pre>
+</pre><hr /><pre>
+<span class="newmarker">@@ -74,10 +74,11 @@</span>
+   template(java_lang_Short_ShortCache,                "java/lang/Short$ShortCache")               \
+   template(java_lang_Integer,                         "java/lang/Integer")                        \
+   template(java_lang_Integer_IntegerCache,            "java/lang/Integer$IntegerCache")           \
+   template(java_lang_Long,                            "java/lang/Long")                           \
+   template(java_lang_Long_LongCache,                  "java/lang/Long$LongCache")                 \
+<span class="new">+  template(java_lang_Runtime,                         "java/lang/Runtime")                        \</span>
+   template(java_lang_Shutdown,                        "java/lang/Shutdown")                       \
+   template(java_lang_ref_Reference,                   "java/lang/ref/Reference")                  \
+   template(java_lang_ref_SoftReference,               "java/lang/ref/SoftReference")              \
+   template(java_lang_ref_WeakReference,               "java/lang/ref/WeakReference")              \
+   template(java_lang_ref_FinalReference,              "java/lang/ref/FinalReference")             \
+</pre><hr /><pre>
+<span class="newmarker">@@ -861,10 +862,14 @@</span>
+                                                                                                                         \
+   do_intrinsic(_newArray,                 java_lang_reflect_Array, newArray_name, newArray_signature,            F_SN)  \
+    do_name(     newArray_name,                                    "newArray")                                           \
+    do_signature(newArray_signature,                               "(Ljava/lang/Class;I)Ljava/lang/Object;")             \
+                                                                                                                         \
+<span class="new">+  do_intrinsic(_onSpinWait,               java_lang_Runtime,      onSpinWait_name, onSpinWait_signature,         F_S)   \</span>
+<span class="new">+   do_name(     onSpinWait_name,                                  "onSpinWait")                                          \</span>
+<span class="new">+   do_alias(    onSpinWait_signature,                             void_method_signature)                                \</span>
+<span class="new">+                                                                                                                        \</span>
+   do_intrinsic(_copyOf,                   java_util_Arrays,       copyOf_name, copyOf_signature,                 F_S)   \
+    do_name(     copyOf_name,                                     "copyOf")                                              \
+    do_signature(copyOf_signature,             "([Ljava/lang/Object;ILjava/lang/Class;)[Ljava/lang/Object;")             \
+                                                                                                                         \
+   do_intrinsic(_copyOfRange,              java_util_Arrays,       copyOfRange_name, copyOfRange_signature,       F_S)   \
+</pre></body></html>
+

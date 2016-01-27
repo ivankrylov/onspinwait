@@ -1,0 +1,190 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><meta http-equiv="cache-control" content="no-cache" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="-1" />
+<!--
+   Note to customizers: the body of the webrev is IDed as SUNWwebrev
+   to allow easy overriding by users of webrev via the userContent.css
+   mechanism available in some browsers.
+
+   For example, to have all "removed" information be red instead of
+   brown, set a rule in your userContent.css file like:
+
+       body#SUNWwebrev span.removed { color: red ! important; }
+-->
+<style type="text/css" media="screen">
+body {
+    background-color: #eeeeee;
+}
+hr {
+    border: none 0;
+    border-top: 1px solid #aaa;
+    height: 1px;
+}
+div.summary {
+    font-size: .8em;
+    border-bottom: 1px solid #aaa;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+div.summary h2 {
+    margin-bottom: 0.3em;
+}
+div.summary table th {
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+}
+span.lineschanged {
+    font-size: 0.7em;
+}
+span.oldmarker {
+    color: red;
+    font-size: large;
+    font-weight: bold;
+}
+span.newmarker {
+    color: green;
+    font-size: large;
+    font-weight: bold;
+}
+span.removed {
+    color: brown;
+}
+span.changed {
+    color: blue;
+}
+span.new {
+    color: blue;
+    font-weight: bold;
+}
+a.print { font-size: x-small; }
+
+</style>
+
+<style type="text/css" media="print">
+pre { font-size: 0.8em; font-family: courier, monospace; }
+span.removed { color: #444; font-style: italic }
+span.changed { font-weight: bold; }
+span.new { font-weight: bold; }
+span.newmarker { font-size: 1.2em; font-weight: bold; }
+span.oldmarker { font-size: 1.2em; font-weight: bold; }
+a.print {display: none}
+hr { border: none 0; border-top: 1px solid #aaa; height: 1px; }
+</style>
+
+<title>hotspot Sdiff src/cpu/sparc/vm </title>
+</head><body id="SUNWwebrev">
+<h2>src/cpu/sparc/vm/vm_version_sparc.cpp</h2>
+<a class="print" href="javascript:print()">Print this page</a>
+<pre></pre>
+
+<table><tr valign="top">
+<td><pre>
+
+</pre><hr></hr><pre>
+ 339   }
+ 340 
+ 341   if (UseVIS &gt; 2) {
+ 342     if (FLAG_IS_DEFAULT(UseAdler32Intrinsics)) {
+ 343       FLAG_SET_DEFAULT(UseAdler32Intrinsics, true);
+ 344     }
+ 345   } else if (UseAdler32Intrinsics) {
+ 346     warning("SPARC Adler32 intrinsics require VIS3 instruction support. Intrinsics will be disabled.");
+ 347     FLAG_SET_DEFAULT(UseAdler32Intrinsics, false);
+ 348   }
+ 349 
+ 350   if (UseVIS &gt; 2) {
+ 351     if (FLAG_IS_DEFAULT(UseCRC32Intrinsics)) {
+ 352       FLAG_SET_DEFAULT(UseCRC32Intrinsics, true);
+ 353     }
+ 354   } else if (UseCRC32Intrinsics) {
+ 355     warning("SPARC CRC32 intrinsics require VIS3 insructions support. Intriniscs will be disabled");
+ 356     FLAG_SET_DEFAULT(UseCRC32Intrinsics, false);
+ 357   }
+ 358 
+
+
+
+
+
+
+ 359   if (FLAG_IS_DEFAULT(ContendedPaddingWidth) &amp;&amp;
+ 360     (cache_line_size &gt; ContendedPaddingWidth))
+ 361     ContendedPaddingWidth = cache_line_size;
+ 362 
+ 363   // This machine does not allow unaligned memory accesses
+ 364   if (UseUnalignedAccesses) {
+ 365     if (!FLAG_IS_DEFAULT(UseUnalignedAccesses))
+ 366       warning("Unaligned memory access is not available on this CPU");
+ 367     FLAG_SET_DEFAULT(UseUnalignedAccesses, false);
+ 368   }
+ 369 
+ 370   if (PrintMiscellaneous &amp;&amp; Verbose) {
+ 371     tty-&gt;print_cr("L1 data cache line size: %u", L1_data_cache_line_size());
+ 372     tty-&gt;print_cr("L2 data cache line size: %u", L2_data_cache_line_size());
+ 373     tty-&gt;print("Allocation");
+ 374     if (AllocatePrefetchStyle &lt;= 0) {
+ 375       tty-&gt;print_cr(": no prefetching");
+ 376     } else {
+ 377       tty-&gt;print(" prefetching: ");
+ 378       if (AllocatePrefetchInstr == 0) {
+
+</pre><hr></hr>
+</pre></td><td><pre>
+
+</pre><hr></hr><pre>
+ 339   }
+ 340 
+ 341   if (UseVIS &gt; 2) {
+ 342     if (FLAG_IS_DEFAULT(UseAdler32Intrinsics)) {
+ 343       FLAG_SET_DEFAULT(UseAdler32Intrinsics, true);
+ 344     }
+ 345   } else if (UseAdler32Intrinsics) {
+ 346     warning("SPARC Adler32 intrinsics require VIS3 instruction support. Intrinsics will be disabled.");
+ 347     FLAG_SET_DEFAULT(UseAdler32Intrinsics, false);
+ 348   }
+ 349 
+ 350   if (UseVIS &gt; 2) {
+ 351     if (FLAG_IS_DEFAULT(UseCRC32Intrinsics)) {
+ 352       FLAG_SET_DEFAULT(UseCRC32Intrinsics, true);
+ 353     }
+ 354   } else if (UseCRC32Intrinsics) {
+ 355     warning("SPARC CRC32 intrinsics require VIS3 insructions support. Intriniscs will be disabled");
+ 356     FLAG_SET_DEFAULT(UseCRC32Intrinsics, false);
+ 357   }
+ 358 
+<span class="new"> 359   if (UseOnSpinWaitIntrinsic) {</span>
+<span class="new"> 360     if (!FLAG_IS_DEFAULT(UseOnSpinWaitIntrinsic))</span>
+<span class="new"> 361       warning("onSpinWait intrinsic is not available on this CPU");</span>
+<span class="new"> 362     FLAG_SET_DEFAULT(UseOnSpinWaitIntrinsic, false);</span>
+<span class="new"> 363   }</span>
+<span class="new"> 364 </span>
+ 365   if (FLAG_IS_DEFAULT(ContendedPaddingWidth) &amp;&amp;
+ 366     (cache_line_size &gt; ContendedPaddingWidth))
+ 367     ContendedPaddingWidth = cache_line_size;
+ 368 
+ 369   // This machine does not allow unaligned memory accesses
+ 370   if (UseUnalignedAccesses) {
+ 371     if (!FLAG_IS_DEFAULT(UseUnalignedAccesses))
+ 372       warning("Unaligned memory access is not available on this CPU");
+ 373     FLAG_SET_DEFAULT(UseUnalignedAccesses, false);
+ 374   }
+ 375 
+ 376   if (PrintMiscellaneous &amp;&amp; Verbose) {
+ 377     tty-&gt;print_cr("L1 data cache line size: %u", L1_data_cache_line_size());
+ 378     tty-&gt;print_cr("L2 data cache line size: %u", L2_data_cache_line_size());
+ 379     tty-&gt;print("Allocation");
+ 380     if (AllocatePrefetchStyle &lt;= 0) {
+ 381       tty-&gt;print_cr(": no prefetching");
+ 382     } else {
+ 383       tty-&gt;print(" prefetching: ");
+ 384       if (AllocatePrefetchInstr == 0) {
+
+</pre><hr></hr>
+</pre></td>
+</tr></table>
+</body></html>

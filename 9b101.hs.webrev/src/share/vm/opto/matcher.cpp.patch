@@ -1,0 +1,10 @@
+--- old/src/share/vm/opto/matcher.cpp	2016-01-27 16:26:30.000000000 +0300
++++ new/src/share/vm/opto/matcher.cpp	2016-01-27 16:26:30.000000000 +0300
+@@ -943,6 +943,7 @@
+     case Op_MemBarCPUOrder: // %%% these ideals should have narrower adr_type?
+     case Op_StrInflatedCopy:
+     case Op_StrCompressedCopy:
++    case Op_OnSpinWait:
+     case Op_EncodeISOArray:
+       nidx = Compile::AliasIdxTop;
+       nat = NULL;
